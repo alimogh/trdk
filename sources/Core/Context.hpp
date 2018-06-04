@@ -30,8 +30,6 @@ class TRDK_CORE_API Context {
   typedef EventsLog Log;
   typedef TradingLog TradingLog;
 
-  class TRDK_CORE_API Params;
-
   class TRDK_CORE_API DispatchingLock {
    public:
     DispatchingLock() = default;
@@ -60,11 +58,7 @@ class TRDK_CORE_API Context {
   typedef boost::function<StateUpdateSlotSignature> StateUpdateSlot;
   typedef boost::signals2::connection StateUpdateConnection;
 
-  explicit Context(
-      Log&,
-      TradingLog&,
-      Settings&&,
-      const boost::unordered_map<std::string, std::string>& params);
+  explicit Context(Log&, TradingLog&, Settings&&);
   Context(Context&&);
   Context(const Context&) = delete;
   Context& operator=(Context&&) = delete;
@@ -153,11 +147,6 @@ class TRDK_CORE_API Context {
     }
   }
 
-  //! User context parameters. No predefined key list. Any key can be changed.
-  Params& GetParams();
-  //! User context parameters. No predefined key list.
-  const Params& GetParams() const;
-
   //! Returns expiration calendar.
   /**
    * Throws an exception if expiration calendar is not set.
@@ -221,7 +210,7 @@ class TRDK_CORE_API Context {
   //! Asks each strategy to close all opened positions if it has.
   virtual void CloseSrategiesPositions() = 0;
 
-  virtual void Add(const Lib::Ini&) = 0;
+  virtual void Add(const boost::property_tree::ptree&) = 0;
 
  protected:
   //! Returns Drop Copy or nullptr.
@@ -229,48 +218,6 @@ class TRDK_CORE_API Context {
 
   void OnStarted();
   void OnBeforeStop();
-
- private:
-  class Implementation;
-  std::unique_ptr<Implementation> m_pimpl;
-};
-
-class Context::Params {
- public:
-  class TRDK_CORE_API Exception : public Context::Exception {
-   public:
-    explicit Exception(const char* what) noexcept;
-  };
-
-  class TRDK_CORE_API KeyDoesntExistError : public Exception {
-   public:
-    explicit KeyDoesntExistError(const char* what) noexcept;
-  };
-
-  typedef uintmax_t Revision;
-
-  explicit Params(
-      const Context&,
-      const boost::unordered_map<std::string, std::string>& initial);
-  ~Params();
-
-  //! Returns key value.
-  /**
-   * Throws an exception if key doesn't exist.
-   * @sa trdk::Context::Parameters::Update
-   * @throw trdk::Context::Parameters::KeyDoesntExistError
-   */
-  std::string operator[](const std::string&) const;
-
-  //! Returns current object revision.
-  /** Any field update changes revision number. Update rule isn't defined.
-   */
-  Revision GetRevision() const;
-
-  bool IsExist(const std::string&) const;
-
-  //! Updates key. Creates new if key doesn't exist.
-  void Update(const std::string& key, const std::string& value);
 
  private:
   class Implementation;

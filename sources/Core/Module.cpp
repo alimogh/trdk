@@ -18,9 +18,9 @@
 
 namespace fs = boost::filesystem;
 namespace uuids = boost::uuids;
-
+namespace ptr = boost::property_tree;
 using namespace trdk;
-using namespace trdk::Lib;
+using namespace Lib;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -138,15 +138,15 @@ class Module::Implementation : private boost::noncopyable {
   const std::string m_tag;
   const std::string m_stringId;
 
-  Module::Log m_log;
-  Module::TradingLog m_tradingLog;
+  Log m_log;
+  TradingLog m_tradingLog;
 
   explicit Implementation(Context &context,
                           const std::string &typeName,
                           const std::string &implementationName,
                           const std::string &instanceName,
-                          const IniSectionRef &conf)
-      : m_id(uuids::string_generator()(conf.ReadKey("id"))),
+                          const ptr::ptree &conf)
+      : m_id(uuids::string_generator()(conf.get<std::string>("id"))),
         m_instanceId(nextFreeInstanceId++),
         m_implementationName(implementationName),
         m_instanceName(instanceName),
@@ -163,7 +163,7 @@ Module::Module(Context &context,
                const std::string &typeName,
                const std::string &implementationName,
                const std::string &instanceName,
-               const IniSectionRef &conf)
+               const ptr::ptree &conf)
     : m_pimpl(boost::make_unique<Implementation>(
           context, typeName, implementationName, instanceName, conf)) {}
 
@@ -203,9 +203,9 @@ Module::TradingLog &Module::GetTradingLog() const noexcept {
 
 std::string Module::GetRequiredSuppliers() const { return std::string(); }
 
-void Module::OnSettingsUpdate(const trdk::Lib::IniSectionRef &) {}
+void Module::OnSettingsUpdate(const ptr::ptree &) {}
 
-void Module::RaiseSettingsUpdateEvent(const IniSectionRef &conf) {
+void Module::RaiseSettingsUpdateEvent(const ptr::ptree &conf) {
   const auto lock = LockForOtherThreads();
   OnSettingsUpdate(conf);
 }

@@ -25,7 +25,7 @@ namespace ptr = boost::property_tree;
 Exmo::MarketDataSource::MarketDataSource(const App &,
                                          Context &context,
                                          const std::string &instanceName,
-                                         const IniSectionRef &conf)
+                                         const ptr::ptree &conf)
     : Base(context, instanceName),
       m_settings(conf, GetLog()),
       m_session(CreateSession(m_settings, false)),
@@ -45,14 +45,12 @@ Exmo::MarketDataSource::~MarketDataSource() {
 }
 
 boost::shared_ptr<trdk::MarketDataSource> CreateMarketDataSource(
-    Context &context,
-    const std::string &instanceName,
-    const IniSectionRef &configuration) {
-  return boost::make_shared<Exmo::MarketDataSource>(
-      App::GetInstance(), context, instanceName, configuration);
+    Context &context, const std::string &instanceName, const ptr::ptree &conf) {
+  return boost::make_shared<Exmo::MarketDataSource>(App::GetInstance(), context,
+                                                    instanceName, conf);
 }
 
-void Exmo::MarketDataSource::Connect(const IniSectionRef &) {
+void Exmo::MarketDataSource::Connect() {
   GetLog().Debug("Creating connection...");
   boost::unordered_map<std::string, Product> products;
   try {

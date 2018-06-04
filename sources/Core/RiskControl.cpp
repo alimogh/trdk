@@ -16,9 +16,9 @@
 #include "TradingLog.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-
+using namespace Lib;
 namespace pt = boost::posix_time;
+namespace ptr = boost::property_tree;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -38,7 +38,7 @@ struct ConcurrencyPolicyT<Lib::Concurrency::PROFILE_HFT> {
   typedef Lib::Concurrency::SpinMutex Mutex;
   typedef Mutex::ScopedLock Lock;
 };
-}
+}  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -124,7 +124,7 @@ void EmptyRiskControlScope::ConfirmSellOrder(const RiskControlOperationId &,
 void EmptyRiskControlScope::CheckTotalPnl(const Volume &) const {}
 void EmptyRiskControlScope::CheckTotalWinRatio(
     size_t /*totalWinRatio*/, size_t /*operationsCount*/) const {}
-void EmptyRiskControlScope::OnSettingsUpdate(const IniSectionRef &) {}
+void EmptyRiskControlScope::OnSettingsUpdate(const ptr::ptree &) {}
 
 class StandardRiskControlScope : public RiskControlScope {
  protected:
@@ -314,7 +314,7 @@ class StandardRiskControlScope : public RiskControlScope {
     m_orderTimePoints.set_capacity(maxOrdersNumber);
   }
 
-  virtual void OnSettingsUpdate(const IniSectionRef &) {
+  virtual void OnSettingsUpdate(const ptr::ptree &) {
     m_log.Warn("Failed to update current positions rest!");
   }
 
@@ -388,8 +388,8 @@ class StandardRiskControlScope : public RiskControlScope {
  private:
   //! Calculates order volumes.
   /** @return First value - order subject (base currency, security and so on),
-    *         second value - money or quote currency.
-    */
+   *         second value - money or quote currency.
+   */
   static std::pair<Volume, Volume> CalcOrderVolumes(
       const Security &security,
       const Currency &currency,
@@ -633,7 +633,7 @@ class GlobalRiskControlScope : public StandardRiskControlScope {
 
  public:
   explicit GlobalRiskControlScope(Context &context,
-                                  const IniSectionRef &conf,
+                                  const ptr::ptree &conf,
                                   const std::string &name,
                                   size_t index,
                                   const TradingMode &tradingMode)
@@ -642,24 +642,22 @@ class GlobalRiskControlScope : public StandardRiskControlScope {
              index,
              tradingMode,
              ReadSettings(conf),
-             conf.ReadTypedKey<size_t>("flood_control.orders.max_number")) {}
+             conf.get<size_t>("floodControlOrders.maxNumber")) {}
 
   virtual ~GlobalRiskControlScope() {}
 
-  virtual void OnSettingsUpdate(const IniSectionRef &conf) {
+  virtual void OnSettingsUpdate(const ptr::ptree &conf) {
     Base::OnSettingsUpdate(conf);
     SetSettings(ReadSettings(conf),
-                conf.ReadTypedKey<size_t>("flood_control.orders.max_number"));
+                conf.get<size_t>("floodControl.orders.maxNumber"));
   }
 
-  Settings ReadSettings(const IniSectionRef &conf) {
+  Settings ReadSettings(const ptr::ptree &conf) {
     return Settings(
-        pt::milliseconds(
-            conf.ReadTypedKey<size_t>("flood_control.orders.period_ms")),
-        conf.ReadTypedKey<double>("pnl.loss"),
-        conf.ReadTypedKey<double>("pnl.profit"),
-        conf.ReadTypedKey<uint16_t>("win_ratio.first_operations_to_skip"),
-        conf.ReadTypedKey<uint16_t>("win_ratio.min"));
+        pt::milliseconds(conf.get<size_t>("floodControl.orders.periodMs")),
+        conf.get<double>("pnl.loss"), conf.get<double>("pnl.profit"),
+        conf.get<uint16_t>("winRatio.firstOperationsToSkip"),
+        conf.get<uint16_t>("winRatio.min"));
   }
 
  private:
@@ -678,35 +676,33 @@ class LocalRiskControlScope : public StandardRiskControlScope {
   typedef StandardRiskControlScope Base;
 
   explicit LocalRiskControlScope(Context &context,
-                                 const IniSectionRef &conf,
+                                 const ptr::ptree &conf,
                                  const std::string &name,
-                                 size_t index,
+                                 const size_t index,
                                  const TradingMode &tradingMode)
       : Base(context,
              name,
              index,
              tradingMode,
              ReadSettings(conf),
-             conf.ReadTypedKey<size_t>(
-                 "risk_control.flood_control.orders.max_number")) {}
+             conf.get<size_t>("riskControl.floodControl.orders.maxNumber")) {}
 
   virtual ~LocalRiskControlScope() {}
 
-  virtual void OnSettingsUpdate(const IniSectionRef &conf) {
+  virtual void OnSettingsUpdate(const ptr::ptree &conf) {
     Base::OnSettingsUpdate(conf);
     SetSettings(ReadSettings(conf),
-                conf.ReadTypedKey<size_t>(
-                    "risk_control.flood_control.orders.max_number"));
+                conf.get<size_t>("riskControl.floodControl.orders.maxNumber"));
   }
 
-  Settings ReadSettings(const IniSectionRef &conf) {
-    return Settings(pt::milliseconds(conf.ReadTypedKey<size_t>(
-                        "risk_control.flood_control.orders.period_ms")),
-                    conf.ReadTypedKey<double>("risk_control.pnl.loss"),
-                    conf.ReadTypedKey<double>("risk_control.pnl.profit"),
-                    conf.ReadTypedKey<uint16_t>(
-                        "risk_control.win_ratio.first_operations_to_skip"),
-                    conf.ReadTypedKey<uint16_t>("risk_control.win_ratio.min"));
+  Settings ReadSettings(const ptr::ptree &conf) {
+    return Settings(
+        pt::milliseconds(
+            conf.get<size_t>("riskControl.floodControl.orders.periodMs")),
+        conf.get<double>("riskControl.pnl.loss"),
+        conf.get<double>("riskControl.pnl.profit"),
+        conf.get<uint16_t>("riskControl.winRatio.firstOperationsToSkip"),
+        conf.get<uint16_t>("riskControl.winRatio.min"));
   }
 
  private:
@@ -724,7 +720,7 @@ class LocalRiskControlScope : public StandardRiskControlScope {
 
 RiskControlSymbolContext::RiskControlSymbolContext(
     const Symbol &symbol,
-    const IniSectionRef &conf,
+    const ptr::ptree &conf,
     const PositionFabric &positionFabric)
     : m_symbol(symbol) {
   m_scopes.emplace_back(new Scope);
@@ -733,9 +729,9 @@ RiskControlSymbolContext::RiskControlSymbolContext(
 
 const Symbol &RiskControlSymbolContext::GetSymbol() const { return m_symbol; }
 
-void RiskControlSymbolContext::AddScope(const IniSectionRef &conf,
+void RiskControlSymbolContext::AddScope(const ptr::ptree &conf,
                                         const PositionFabric &posFabric,
-                                        size_t index) {
+                                        const size_t index) {
   if (index <= m_scopes.size()) {
     m_scopes.resize(index + 1);
   }
@@ -744,17 +740,17 @@ void RiskControlSymbolContext::AddScope(const IniSectionRef &conf,
 }
 
 void RiskControlSymbolContext::InitScope(Scope &scope,
-                                         const IniSectionRef &conf,
+                                         const ptr::ptree &conf,
                                          const PositionFabric &posFabric,
                                          bool isAdditinalScope) const {
   {
     const auto &readLimit = [&](const Currency &currency, const char *type) {
       boost::format key("%1%.limit.%2%");
       key % currency % type;
-      return conf.ReadTypedKey<double>(
-          !isAdditinalScope ? key.str()
-                            : std::string("risk_control.") + key.str(),
-          0);
+      return conf.get<double>(!isAdditinalScope
+                                  ? key.str()
+                                  : std::string("riskControl.") + key.str(),
+                              0);
     };
 
     scope.baseCurrencyPosition =
@@ -814,7 +810,7 @@ RiskControl::WinRatioIsOutOfRangeException::WinRatioIsOutOfRangeException(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class RiskControl::Implementation : private boost::noncopyable {
+class RiskControl::Implementation : boost::noncopyable {
  public:
   typedef std::map<Currency,
                    boost::shared_ptr<RiskControlSymbolContext::Position>>
@@ -822,19 +818,18 @@ class RiskControl::Implementation : private boost::noncopyable {
 
   struct ScopeInfo {
     std::string name;
-    IniSectionRef conf;
+    ptr::ptree conf;
     PositionsCache positionsCache;
 
-    explicit ScopeInfo(const std::string &name, const IniSectionRef &conf)
+    explicit ScopeInfo(const std::string &name, const ptr::ptree &conf)
         : name(name), conf(conf) {}
   };
 
- public:
   Context &m_context;
   mutable ModuleEventsLog m_log;
   ModuleTradingLog m_tradingLog;
 
-  const IniSectionRef m_conf;
+  const ptr::ptree m_conf;
 
   const TradingMode m_tradingMode;
 
@@ -850,7 +845,7 @@ class RiskControl::Implementation : private boost::noncopyable {
 
  public:
   explicit Implementation(Context &context,
-                          const IniSectionRef &conf,
+                          const ptr::ptree &conf,
                           const TradingMode &tradingMode)
       : m_context(context),
         m_log(logPrefix, m_context.GetLog()),
@@ -858,14 +853,13 @@ class RiskControl::Implementation : private boost::noncopyable {
         m_conf(conf),
         m_tradingMode(tradingMode),
         m_lastOperationId(0) {
-    if (m_conf.ReadBoolKey("is_enabled")) {
+    if (m_conf.get<bool>("isEnabled")) {
       m_globalScope.reset(new GlobalRiskControlScope(
           m_context, m_conf, "Global", m_additionalScopesInfo.size(),
           m_tradingMode));
     }
   }
 
- public:
   boost::shared_ptr<RiskControlSymbolContext::Position> CreatePosition(
       const std::string &scopeName,
       PositionsCache &cache,
@@ -911,10 +905,10 @@ class RiskControl::Implementation : private boost::noncopyable {
 ////////////////////////////////////////////////////////////////////////////////
 
 RiskControl::RiskControl(Context &context,
-                         const Ini &conf,
+                         const ptr::ptree &conf,
                          const TradingMode &tradingMode)
     : m_pimpl(new Implementation(
-          context, IniSectionRef(conf, "RiskControl"), tradingMode)) {}
+          context, conf.get_child("riskControl"), tradingMode)) {}
 
 RiskControl::~RiskControl() { delete m_pimpl; }
 
@@ -956,7 +950,7 @@ boost::shared_ptr<RiskControlSymbolContext> RiskControl::CreateSymbolContext(
 }
 
 std::unique_ptr<RiskControlScope> RiskControl::CreateScope(
-    const std::string &name, const IniSectionRef &conf) const {
+    const std::string &name, const ptr::ptree &conf) const {
   if (!m_pimpl->m_globalScope) {
     return boost::make_unique<EmptyRiskControlScope>(GetTradingMode(), name);
   }
@@ -1081,11 +1075,11 @@ void RiskControl::CheckTotalWinRatio(const RiskControlScope &scope,
   m_pimpl->m_globalScope->CheckTotalWinRatio(totalWinRatio, operationsCount);
 }
 
-void RiskControl::OnSettingsUpdate(const Ini &conf) {
+void RiskControl::OnSettingsUpdate(const ptr::ptree &conf) {
   if (!m_pimpl->m_globalScope) {
     return;
   }
-  m_pimpl->m_globalScope->OnSettingsUpdate(IniSectionRef(conf, "RiskControl"));
+  m_pimpl->m_globalScope->OnSettingsUpdate(conf.get_child("riskControl"));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

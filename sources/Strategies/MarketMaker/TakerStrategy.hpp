@@ -20,7 +20,7 @@ class TakerStrategy : public Strategy {
 
   explicit TakerStrategy(Context &,
                          const std::string &instanceName,
-                         const Lib::IniSectionRef &);
+                         const boost::property_tree::ptree &);
   ~TakerStrategy() override;
 
   void Stop() noexcept;

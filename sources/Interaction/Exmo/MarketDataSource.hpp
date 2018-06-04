@@ -23,14 +23,14 @@ class MarketDataSource : public trdk::MarketDataSource {
   explicit MarketDataSource(const Rest::App &,
                             Context &context,
                             const std::string &instanceName,
-                            const Lib::IniSectionRef &);
+                            const boost::property_tree::ptree &conf);
   MarketDataSource(MarketDataSource &&) = default;
   MarketDataSource(const MarketDataSource &) = delete;
   MarketDataSource &operator=(const MarketDataSource &) = delete;
   MarketDataSource &operator=(MarketDataSource &&) = default;
   ~MarketDataSource() override;
 
-  void Connect(const Lib::IniSectionRef &) override;
+  void Connect() override;
 
   void SubscribeToSecurities() override;
 

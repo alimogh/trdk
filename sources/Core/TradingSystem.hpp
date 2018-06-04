@@ -21,17 +21,18 @@ typedef boost::shared_ptr<TradingSystem>(TradingSystemFactory)(
     const TradingMode &,
     Context &,
     const std::string &instanceName,
-    const Lib::IniSectionRef &);
+    const boost::property_tree::ptree &);
 
 struct TradingSystemAndMarketDataSourceFactoryResult {
   boost::shared_ptr<TradingSystem> tradingSystem;
   boost::shared_ptr<MarketDataSource> marketDataSource;
 };
 typedef TradingSystemAndMarketDataSourceFactoryResult(
-    TradingSystemAndMarketDataSourceFactory)(const TradingMode &,
-                                             Context &,
-                                             const std::string &instanceName,
-                                             const Lib::IniSectionRef &);
+    TradingSystemAndMarketDataSourceFactory)(
+    const TradingMode &,
+    Context &,
+    const std::string &instanceName,
+    const boost::property_tree::ptree &);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -107,10 +108,9 @@ class TRDK_CORE_API TradingSystem : virtual public Interactor {
                          const std::string &instanceName);
   TradingSystem(TradingSystem &&);
   TradingSystem(const TradingSystem &) = delete;
-  ~TradingSystem() override;
-
-  TradingSystem &operator=(TradingSystem &&);
+  TradingSystem &operator=(TradingSystem &&) = delete;
   TradingSystem &operator=(const TradingSystem &) = delete;
+  ~TradingSystem() override;
 
   friend std::ostream &operator<<(std::ostream &oss,
                                   const TradingSystem &tradingSystem) {
@@ -128,6 +128,8 @@ class TRDK_CORE_API TradingSystem : virtual public Interactor {
   Log &GetLog() const noexcept;
   TradingLog &GetTradingLog() const noexcept;
 
+  const boost::property_tree::ptree &GetConfig() const;
+
   //! Identifies Trading System object by verbose name.
   /** Trading System instance name is unique, but can be empty.
    */
@@ -136,7 +138,7 @@ class TRDK_CORE_API TradingSystem : virtual public Interactor {
   const std::string &GetStringId() const noexcept;
 
   virtual bool IsConnected() const = 0;
-  void Connect(const Lib::IniSectionRef &);
+  void Connect();
 
   const boost::posix_time::time_duration &GetDefaultPollingInterval() const;
 
@@ -194,10 +196,8 @@ class TRDK_CORE_API TradingSystem : virtual public Interactor {
    */
   bool CancelOrder(const OrderId &);
 
-  virtual void OnSettingsUpdate(const Lib::IniSectionRef &);
-
  protected:
-  virtual void CreateConnection(const Lib::IniSectionRef &) = 0;
+  virtual void CreateConnection() = 0;
 
   virtual Balances &GetBalancesStorage();
 

@@ -21,6 +21,7 @@
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/mem_fun.hpp>
 #include <boost/multi_index_container.hpp>
+#include <boost/property_tree/json_parser.hpp>
 #include <boost/thread.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/uuid/string_generator.hpp>

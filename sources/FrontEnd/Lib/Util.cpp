@@ -13,8 +13,8 @@
 using namespace trdk;
 using namespace Lib;
 using namespace FrontEnd;
-
 namespace pt = boost::posix_time;
+namespace ptr = boost::property_tree;
 namespace fs = boost::filesystem;
 namespace ids = boost::uuids;
 namespace front = FrontEnd;
@@ -258,19 +258,6 @@ void front::ShowBlockedStrategyMessage(const QString& reason, QWidget* parent) {
       QObject::tr("Please notify the software vendor about this incident.");
   QMessageBox::critical(parent, QObject::tr("Strategy is blocked"), message,
                         QMessageBox::Ok);
-}
-
-std::string front::ExtractSymbolFromConfig(const QString& config) {
-  IniString ini(config.toStdString());
-  for (const auto& line : ini.ReadList()) {
-    std::vector<std::string> parts;
-    boost::split(parts, line, boost::is_any_of("="));
-    if (parts.size() != 2 || boost::trim_copy(parts.front()) != "symbol") {
-      continue;
-    }
-    return boost::trim_copy(parts.back());
-  }
-  throw Exception("Failed to find symbol in the strategy configuration");
 }
 
 fs::path front::GetStandardFilePath(

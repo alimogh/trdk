@@ -22,7 +22,7 @@ class MarketDataSource : public trdk::MarketDataSource {
   virtual ~MarketDataSource() override = default;
 
  public:
-  MOCK_METHOD1(Connect, void(const trdk::Lib::IniSectionRef &));
+  MOCK_METHOD0(Connect, void());
   MOCK_METHOD0(SubscribeToSecurities, void());
 
  protected:
@@ -43,6 +43,6 @@ class MarketDataSource : public trdk::MarketDataSource {
     SwitchToContract(security, expiration);
   }
 };
-}
-}
-}
+}  // namespace Mocks
+}  // namespace Tests
+}  // namespace trdk

@@ -23,6 +23,7 @@
 #include <boost/make_shared.hpp>
 #include <boost/make_unique.hpp>
 #include <boost/noncopyable.hpp>
+#include <boost/property_tree/ptree_fwd.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/signals2.hpp>
 #include <boost/thread/mutex.hpp>
@@ -41,7 +42,6 @@
 #include "Currency.hpp"
 #include "Dll.hpp"
 #include "Exception.hpp"
-#include "Ini.hpp"
 #include "Numeric.hpp"
 #include "Spin.hpp"
 #include "Symbol.hpp"

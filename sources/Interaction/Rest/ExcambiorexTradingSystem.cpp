@@ -24,11 +24,11 @@ namespace gr = boost::gregorian;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-ExcambiorexTradingSystem::Settings::Settings(const IniSectionRef &conf,
+ExcambiorexTradingSystem::Settings::Settings(const ptr::ptree &conf,
                                              ModuleEventsLog &log)
     : Rest::Settings(conf, log),
-      apiKey(conf.ReadKey("api_key")),
-      apiSecret(conf.ReadKey("api_secret")) {
+      apiKey(conf.get<std::string>("config.auth.apiKey")),
+      apiSecret(conf.get<std::string>("auth.apiSecret")) {
   log.Info("API key: \"%1%\". API secret: %2%.",
            apiKey,                                     // 1
            apiSecret.empty() ? "not set" : "is set");  // 2
@@ -100,7 +100,7 @@ ExcambiorexTradingSystem::ExcambiorexTradingSystem(
     const TradingMode &mode,
     Context &context,
     const std::string &instanceName,
-    const IniSectionRef &conf)
+    const ptr::ptree &conf)
     : Base(mode, context, instanceName),
       m_settings(conf, GetLog()),
       m_balances(*this, GetLog(), GetTradingLog()),
@@ -114,7 +114,7 @@ bool ExcambiorexTradingSystem::IsConnected() const {
   return !m_products.empty();
 }
 
-void ExcambiorexTradingSystem::CreateConnection(const IniSectionRef &) {
+void ExcambiorexTradingSystem::CreateConnection() {
   Assert(m_products.empty());
 
   try {
@@ -428,7 +428,7 @@ boost::shared_ptr<trdk::TradingSystem> CreateExcambiorexTradingSystem(
     const TradingMode &mode,
     Context &context,
     const std::string &instanceName,
-    const IniSectionRef &configuration) {
+    const ptr::ptree &configuration) {
   const auto &result = boost::make_shared<ExcambiorexTradingSystem>(
       App::GetInstance(), mode, context, instanceName, configuration);
   return result;

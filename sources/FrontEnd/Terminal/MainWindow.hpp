@@ -43,6 +43,9 @@ class MainWindow : public QMainWindow {
   void CreateNewBalanceListWindow();
   void CreateNewTotalResultsReportWindow();
 
+  void EditExchangeList();
+  void AddSymbol();
+
   Engine &m_engine;
   Ui::MainWindow m_ui;
   std::vector<std::unique_ptr<Lib::Dll>> &m_moduleDlls;

@@ -17,8 +17,8 @@ class Interactor {
   Interactor() = default;
   Interactor(Interactor &&) = default;
   Interactor(const Interactor &) = delete;
-  Interactor &operator=(Interactor &&) = default;
-  Interactor &operator=(const Interactor &) = default;
+  Interactor &operator=(Interactor &&) = delete;
+  Interactor &operator=(const Interactor &) = delete;
   virtual ~Interactor() = default;
 };
 }  // namespace trdk

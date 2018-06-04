@@ -21,20 +21,18 @@ class BittrexMarketDataSource : public MarketDataSource {
  public:
   typedef MarketDataSource Base;
 
- public:
   explicit BittrexMarketDataSource(const App &,
                                    Context &context,
                                    const std::string &instanceName,
-                                   const Lib::IniSectionRef &);
-  virtual ~BittrexMarketDataSource() override;
+                                   const boost::property_tree::ptree &);
+  ~BittrexMarketDataSource() override;
 
- public:
-  virtual void Connect(const Lib::IniSectionRef &conf) override;
+  void Connect() override;
 
-  virtual void SubscribeToSecurities() override;
+  void SubscribeToSecurities() override;
 
  protected:
-  virtual trdk::Security &CreateNewSecurityObject(const Lib::Symbol &) override;
+  trdk::Security &CreateNewSecurityObject(const Lib::Symbol &) override;
 
  private:
   void UpdatePrices();
@@ -43,7 +41,6 @@ class BittrexMarketDataSource : public MarketDataSource {
                     Rest::Security &,
                     const Lib::TimeMeasurement::Milestones &);
 
- private:
   const Settings m_settings;
   boost::unordered_map<std::string, BittrexProduct> m_products;
   boost::mutex m_securitiesLock;
@@ -53,6 +50,7 @@ class BittrexMarketDataSource : public MarketDataSource {
   std::unique_ptr<Poco::Net::HTTPSClientSession> m_session;
   std::unique_ptr<PollingTask> m_pollingTask;
 };
+
 }  // namespace Rest
 }  // namespace Interaction
 }  // namespace trdk

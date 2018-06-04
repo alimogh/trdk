@@ -21,30 +21,30 @@ class TRDK_CORE_API Settings {
   explicit Settings(const boost::filesystem::path& confFile,
                     boost::filesystem::path logsDir,
                     const boost::posix_time::ptime& universalStartTime);
-  Settings(Settings&&) = default;
+  Settings(Settings&&);
   Settings(const Settings&) = delete;
-  Settings& operator=(Settings&&) = default;
+  Settings& operator=(Settings&&);
   Settings& operator=(const Settings&) = delete;
-  ~Settings() = default;
+  ~Settings();
 
-  const Lib::Ini& GetConfig() const { return *m_ini; }
+  const boost::property_tree::ptree& GetConfig() const;
 
   void Log(Context::Log&) const;
 
-  const boost::posix_time::ptime& GetStartTime() const { return m_startTime; }
+  const boost::posix_time::ptime& GetStartTime() const;
 
-  bool IsReplayMode() const noexcept { return m_isReplayMode; }
+  bool IsReplayMode() const noexcept;
 
-  bool IsMarketDataLogEnabled() const { return m_isMarketDataLogEnabled; }
+  bool IsMarketDataLogEnabled() const;
 
-  const boost::filesystem::path& GetLogsDir() const { return m_logsDir; }
+  const boost::filesystem::path& GetLogsDir() const;
 
   //! Default security Currency.
   /**
    * Path: Defaults::currency
    * Ex.: "currency = USD"
    */
-  const Lib::Currency& GetDefaultCurrency() const { return m_defaultCurrency; }
+  const Lib::Currency& GetDefaultCurrency() const;
 
   //! Default security Security Type.
   /**
@@ -52,33 +52,19 @@ class TRDK_CORE_API Settings {
    * Values: STK, FUT, FOP, FOR, FORFOP
    * Ex.: "security_type = FOP"
    */
-  const Lib::SecurityType& GetDefaultSecurityType() const {
-    return m_defaultSecurityType;
-  }
+  const Lib::SecurityType& GetDefaultSecurityType() const;
 
-  const boost::local_time::time_zone_ptr& GetTimeZone() const {
-    return m_timeZone;
-  }
+  const boost::local_time::time_zone_ptr& GetTimeZone() const;
 
   const boost::gregorian::date_duration&
-  GetPeriodBeforeExpiryDayToSwitchContract() const {
-    return m_periodBeforeExpiryDayToSwitchContract;
-  }
+  GetPeriodBeforeExpiryDayToSwitchContract() const;
 
   const std::string& ResolveSymbolAlias(const std::string&) const;
   void ReplaceSymbolWithAlias(std::string&) const;
 
  private:
-  std::unique_ptr<Lib::Ini> m_ini;
-  Lib::SecurityType m_defaultSecurityType;
-  Lib::Currency m_defaultCurrency;
-  bool m_isReplayMode;
-  bool m_isMarketDataLogEnabled;
-  boost::posix_time::ptime m_startTime;
-  boost::filesystem::path m_logsDir;
-  boost::local_time::time_zone_ptr m_timeZone;
-  boost::gregorian::date_duration m_periodBeforeExpiryDayToSwitchContract;
-  boost::unordered_map<std::string, std::string> m_symbolAliases;
+  class Implementation;
+  std::unique_ptr<Implementation> m_pimpl;
 };
 
 }  // namespace trdk

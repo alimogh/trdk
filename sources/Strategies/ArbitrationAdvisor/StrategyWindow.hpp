@@ -89,7 +89,7 @@ class StrategyWindow : public QMainWindow {
   explicit StrategyWindow(FrontEnd::Engine&,
                           const QUuid& strategyId,
                           const QString& name,
-                          const QString& config,
+                          const boost::property_tree::ptree& config,
                           QWidget* parent);
   ~StrategyWindow() override;
 
@@ -99,7 +99,7 @@ class StrategyWindow : public QMainWindow {
   void closeEvent(QCloseEvent*) override;
 
  private slots:
-  void TakeAdvice(const trdk::Strategies::ArbitrageAdvisor::Advice &);
+  void TakeAdvice(const trdk::Strategies::ArbitrageAdvisor::Advice&);
   void OnSignalCheckErrors(const std::vector<std::string>&);
   void OnBlocked(const QString& reason);
 
@@ -124,15 +124,15 @@ class StrategyWindow : public QMainWindow {
 
   Strategy& GenerateNewStrategyInstance();
   Strategy& RestoreStrategyInstance(const QUuid& strategyId,
-                                    const QString& name,
-                                    const QString& config);
+                                    const std::string& name,
+                                    const boost::property_tree::ptree& config);
   Strategy& CreateStrategyInstance(const boost::uuids::uuid& strategyId,
-                                   const QString& name,
-                                   const std::string& config);
+                                   const std::string& name,
+                                   const boost::property_tree::ptree& config);
 
   void AddTargetWidgets(TargetWidgets&);
 
-  std::string CreateConfig(
+  boost::property_tree::ptree CreateConfig(
       const boost::uuids::uuid& strategyId,
       const Lib::Double& minPriceDifferenceToHighlightPercentage,
       bool isAutoTradingEnabled,
@@ -142,7 +142,7 @@ class StrategyWindow : public QMainWindow {
       const Lib::Double& lowestSpreadPercentage,
       bool isStopLossEnabled,
       size_t stopLossDelaySec) const;
-  std::string DumpConfig() const;
+  boost::property_tree::ptree DumpConfig() const;
 
   void StoreConfig(bool isActive);
 

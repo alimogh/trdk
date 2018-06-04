@@ -58,8 +58,6 @@ void ScrollToLastChild(QAbstractItemView&);
 TRDK_FRONTEND_LIB_API void ShowBlockedStrategyMessage(const QString&,
                                                       QWidget* parent);
 
-TRDK_FRONTEND_LIB_API std::string ExtractSymbolFromConfig(const QString&);
-
 TRDK_FRONTEND_LIB_API boost::filesystem::path GetStandardFilePath(
     const QString& fileName, const QStandardPaths::StandardLocation&);
 

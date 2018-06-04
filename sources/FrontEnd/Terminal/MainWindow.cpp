@@ -21,17 +21,20 @@
 #include "Lib/OrderListModel.hpp"
 #include "Lib/OrderListView.hpp"
 #include "Lib/SortFilterProxyModel.hpp"
+#include "Lib/SourcePropertiesDialog.hpp"
+#include "Lib/SourcesListWidget.hpp"
+#include "Lib/SymbolDialog.hpp"
 #include "Lib/SymbolSelectionDialog.hpp"
 #include "Lib/TotalResultsReportModel.hpp"
 #include "Lib/TotalResultsReportSettingsWidget.hpp"
 #include "Lib/TotalResultsReportView.hpp"
-#include <boost/unordered/unordered_set.hpp>
 
 using namespace trdk::Lib;
 using namespace trdk::FrontEnd;
 using namespace Charts;
 using namespace Terminal;
 namespace pt = boost::posix_time;
+namespace ptr = boost::property_tree;
 namespace fs = boost::filesystem;
 
 MainWindow::MainWindow(Engine &engine,
@@ -57,6 +60,11 @@ MainWindow::MainWindow(Engine &engine,
 MainWindow::~MainWindow() = default;
 
 void MainWindow::ConnectSignals() {
+  Verify(connect(m_ui.editExchangeList, &QAction::triggered, this,
+                 &MainWindow::EditExchangeList));
+  Verify(connect(m_ui.addSymbol, &QAction::triggered, this,
+                 &MainWindow::AddSymbol));
+
   Verify(connect(
       m_ui.centalTabs, &QTabWidget::tabCloseRequested, [this](const int index) {
         std::unique_ptr<const QWidget> widget(m_ui.centalTabs->widget(index));
@@ -122,7 +130,7 @@ void MainWindow::LoadModule(const fs::path &path) {
             "CreateMenuActions")(m_engine);
   } catch (const std::exception &ex) {
     const auto &error =
-        QString("Failed to load module front-end: \"%1\".").arg(ex.what());
+        QString(tr("Failed to load module front-end: \"%1\".")).arg(ex.what());
     QMessageBox::critical(this, tr("Failed to load module."), error,
                           QMessageBox::Ignore);
   }
@@ -136,7 +144,17 @@ void MainWindow::LoadModule(const fs::path &path) {
 }
 
 void MainWindow::CreateModuleWindows(const StrategyWindowFactory &factory) {
-  auto widgets = factory(this);
+  StrategyWidgetList widgets;
+  try {
+    widgets = factory(this);
+  } catch (const std::exception &ex) {
+    const auto &error =
+        QString(R"(Failed to create new strategy window: "%1".)")
+            .arg(ex.what());
+    QMessageBox::critical(this, tr("Strategy error."), error,
+                          QMessageBox::Abort);
+    return;
+  }
   ShowModuleWindows(widgets);
 }
 
@@ -174,13 +192,13 @@ void MainWindow::RestoreModules() {
   StrategyWidgetList widgets;
   m_engine.ForEachActiveStrategy(
       [this, &widgets](const QUuid &typeId, const QUuid &instanceId,
-                       const QString &name, const QString &config) {
+                       const QString &name, const ptr::ptree &config) {
         for (const auto &module : m_moduleDlls) {
           try {
             for (auto &widget :
                  module->GetFunction<StrategyWidgetList(
                      Engine &, const QUuid &, const QUuid &, const QString &,
-                     const QString &, QWidget *)>("RestoreStrategyWidgets")(
+                     const ptr::ptree &, QWidget *)>("RestoreStrategyWidgets")(
                      m_engine, typeId, instanceId, name, config, this)) {
               widgets.emplace_back(widget.release());
             }
@@ -366,4 +384,120 @@ void MainWindow::CreateNewTotalResultsReportWindow() {
   }
   m_ui.centalTabs->setCurrentIndex(
       m_ui.centalTabs->addTab(&tab, tr("Total Results Report")));
+}
+
+void MainWindow::EditExchangeList() {
+  QDialog sourceListDialog(this);
+
+  try {
+    auto &listWidget = *new SourcesListWidget(
+        m_engine.LoadConfig().get_child("sources", {}), &sourceListDialog);
+
+    {
+      sourceListDialog.setWindowTitle(QObject::tr("Source List"));
+      auto &vLayout = *new QVBoxLayout(&sourceListDialog);
+      sourceListDialog.setLayout(&vLayout);
+      vLayout.addWidget(&listWidget);
+      Verify(QObject::connect(
+          &listWidget, &SourcesListWidget::SourceDoubleClicked,
+          &sourceListDialog,
+          [&listWidget, &sourceListDialog](const QModelIndex &index) {
+            SourcePropertiesDialog dialog(listWidget.Dump(index),
+                                          listWidget.GetImplementations(),
+                                          &sourceListDialog);
+            if (dialog.exec() != QDialog::Accepted) {
+              return;
+            }
+            listWidget.AddSource(dialog.Dump());
+          }));
+      {
+        auto &addButton =
+            *new QPushButton(QObject::tr("Add New..."), &sourceListDialog);
+        vLayout.addWidget(&addButton);
+        Verify(QObject::connect(
+            &addButton, &QPushButton::clicked, &sourceListDialog,
+            [&listWidget, &sourceListDialog]() {
+              SourcePropertiesDialog dialog(boost::none,
+                                            listWidget.GetImplementations(),
+                                            &sourceListDialog);
+              if (dialog.exec() != QDialog::Accepted) {
+                return;
+              }
+              listWidget.AddSource(dialog.Dump());
+            }));
+      }
+      {
+        auto &okButton =
+            *new QPushButton(QObject::tr("Save"), &sourceListDialog);
+        auto &cancelButton =
+            *new QPushButton(QObject::tr("Cancel"), &sourceListDialog);
+        Verify(QObject::connect(&okButton, &QPushButton::clicked,
+                                &sourceListDialog, &QDialog::accept));
+        Verify(QObject::connect(&cancelButton, &QPushButton::clicked,
+                                &sourceListDialog, &QDialog::reject));
+        auto &hLayout = *new QHBoxLayout(&sourceListDialog);
+        hLayout.addItem(new QSpacerItem(1, 1, QSizePolicy::Expanding,
+                                        QSizePolicy::Minimum));
+        hLayout.addWidget(&okButton);
+        hLayout.addWidget(&cancelButton);
+        vLayout.addLayout(&hLayout);
+      }
+    }
+
+    if (sourceListDialog.exec() != QDialog::Accepted) {
+      return;
+    }
+
+    {
+      auto config = m_engine.LoadConfig();
+      config.put_child("sources", listWidget.Dump());
+      m_engine.StoreConfig(config);
+    }
+
+  } catch (const std::exception &ex) {
+    const auto &error =
+        QString(tr(R"(Failed to edit source list: "%1".)")).arg(ex.what());
+    QMessageBox::critical(this, tr("Source list"), error, QMessageBox::Ignore);
+    return;
+  }
+
+  QMessageBox::information(
+      this, tr("Source list"),
+      tr("Changes will take effect after the application restart."),
+      QMessageBox::Ok);
+}
+
+void MainWindow::AddSymbol() {
+  SymbolDialog dialog(this);
+  if (dialog.exec() != QDialog::Accepted) {
+    return;
+  }
+  auto symbol = dialog.GetSymbol().toStdString();
+  if (symbol.empty() || symbol[0] == '_') {
+    return;
+  }
+
+  boost::to_upper(symbol);
+
+  try {
+    auto config = m_engine.LoadConfig();
+    auto symbolsConfig = config.get_child("defaults.symbols");
+    for (const auto &node : symbolsConfig) {
+      if (node.second.get_value<std::string>() == symbol) {
+        return;
+      }
+    }
+    symbolsConfig.push_back({"", ptr::ptree().put("", symbol)});
+    config.put_child("defaults.symbols", symbolsConfig);
+    m_engine.StoreConfig(config);
+  } catch (const std::exception &ex) {
+    const auto &error =
+        QString(tr(R"(Failed to edit source list: "%1".)")).arg(ex.what());
+    QMessageBox::critical(this, tr("Source list"), error, QMessageBox::Ignore);
+    return;
+  }
+  QMessageBox::information(
+      this, tr("Symbol list"),
+      tr("Changes will take effect after the application restart."),
+      QMessageBox::Ok);
 }

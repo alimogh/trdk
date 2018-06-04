@@ -15,27 +15,26 @@
 #include "TradingLog.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Tests;
-
+using namespace Lib;
+using namespace Tests;
 namespace lt = boost::local_time;
+namespace ptr = boost::property_tree;
 
 namespace {
 const lt::time_zone_ptr timeZone =
     boost::make_shared<lt::posix_time_zone>("GMT");
 Mocks::Context::Log contextLog(timeZone);
 Mocks::Context::TradingLog tradingLog(timeZone);
-}
+}  // namespace
 
-Mocks::Context::Context()
-    : trdk::Context(contextLog,
-                    tradingLog,
-                    Settings(),
-                    boost::unordered_map<std::string, std::string>()) {}
+Mocks::Context::Context() : trdk::Context(contextLog, tradingLog, Settings()) {}
 
 RiskControl &Mocks::Context::GetRiskControl(const TradingMode &tradingMode) {
   static RiskControl riskControl(
-      *this, IniString("[RiskControl]\nis_enabled = no"), tradingMode);
+      *this,
+      ptr::ptree().add_child("RiskControl",
+                             ptr::ptree().add("isEnabled", false)),
+      tradingMode);
   return riskControl;
 }
 

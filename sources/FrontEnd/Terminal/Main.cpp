@@ -58,7 +58,7 @@ fs::path GetLogsDir() {
 }
 
 fs::path GetConfigFilePath() {
-  return GetStandardFilePath("default.ini", QStandardPaths::AppDataLocation);
+  return GetStandardFilePath("config.json", QStandardPaths::AppDataLocation);
 }
 
 }  // namespace

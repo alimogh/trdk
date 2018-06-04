@@ -12,10 +12,9 @@
 #include "Crex24TradingSystem.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Lib::Crypto;
-using namespace trdk::Interaction::Rest;
-
+using namespace Lib;
+using namespace Crypto;
+using namespace Interaction::Rest;
 namespace net = Poco::Net;
 namespace pt = boost::posix_time;
 namespace ptr = boost::property_tree;
@@ -23,11 +22,11 @@ namespace gr = boost::gregorian;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Crex24TradingSystem::Settings::Settings(const IniSectionRef &conf,
+Crex24TradingSystem::Settings::Settings(const ptr::ptree &conf,
                                         ModuleEventsLog &log)
     : Rest::Settings(conf, log),
-      apiKey(conf.ReadKey("api_key")),
-      apiSecret(Base64::Decode(conf.ReadKey("api_secret"))) {
+      apiKey(conf.get<std::string>("config.auth.apiKey")),
+      apiSecret(Base64::Decode(conf.get<std::string>("auth.apiSecret"))) {
   log.Info("API key: \"%1%\". API secret: %2%.",
            apiKey,                                     // 1
            apiSecret.empty() ? "not set" : "is set");  // 2
@@ -139,7 +138,7 @@ Crex24TradingSystem::Crex24TradingSystem(const App &,
                                          const TradingMode &mode,
                                          Context &context,
                                          const std::string &instanceName,
-                                         const IniSectionRef &conf)
+                                         const ptr::ptree &conf)
     : Base(mode, context, instanceName),
       m_settings(conf, GetLog()),
       m_serverTimeDiff(
@@ -159,7 +158,7 @@ Crex24TradingSystem::Crex24TradingSystem(const App &,
 
 bool Crex24TradingSystem::IsConnected() const { return !m_products.empty(); }
 
-void Crex24TradingSystem::CreateConnection(const IniSectionRef &) {
+void Crex24TradingSystem::CreateConnection() {
   Assert(m_products.empty());
 
   try {
@@ -361,7 +360,7 @@ boost::shared_ptr<trdk::TradingSystem> CreateCrex24TradingSystem(
     const TradingMode &mode,
     Context &context,
     const std::string &instanceName,
-    const IniSectionRef &configuration) {
+    const ptr::ptree &configuration) {
   const auto &result = boost::make_shared<Crex24TradingSystem>(
       App::GetInstance(), mode, context, instanceName, configuration);
   return result;

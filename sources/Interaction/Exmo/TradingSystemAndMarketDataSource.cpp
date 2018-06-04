@@ -18,10 +18,11 @@ using namespace Interaction;
 using namespace Rest;
 
 TradingSystemAndMarketDataSourceFactoryResult
-CreateTradingSystemAndMarketDataSource(const TradingMode &mode,
-                                       Context &context,
-                                       const std::string &instanceName,
-                                       const IniSectionRef &conf) {
+CreateTradingSystemAndMarketDataSource(
+    const TradingMode &mode,
+    Context &context,
+    const std::string &instanceName,
+    const boost::property_tree::ptree &conf) {
   return {boost::make_shared<Exmo::TradingSystem>(App::GetInstance(), mode,
                                                   context, instanceName, conf),
           boost::make_shared<Exmo::MarketDataSource>(

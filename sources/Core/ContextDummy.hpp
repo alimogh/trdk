@@ -19,49 +19,43 @@ namespace Dummies {
 class Context : public trdk::Context {
  public:
   Context();
-  virtual ~Context() override = default;
+  ~Context() override = default;
 
-  static Context &GetInstance();
+  static Context& GetInstance();
 
- public:
-  virtual std::unique_ptr<DispatchingLock> SyncDispatching() const override;
+  std::unique_ptr<DispatchingLock> SyncDispatching() const override;
 
-  virtual RiskControl &GetRiskControl(const trdk::TradingMode &) override;
-  virtual const RiskControl &GetRiskControl(
-      const trdk::TradingMode &mode) const override;
+  RiskControl& GetRiskControl(const TradingMode&) override;
+  const RiskControl& GetRiskControl(const TradingMode& mode) const override;
 
-  virtual const trdk::Lib::ExpirationCalendar &GetExpirationCalendar()
+  const Lib::ExpirationCalendar& GetExpirationCalendar() const override;
+  bool HasExpirationCalendar() const override;
+
+  size_t GetNumberOfMarketDataSources() const override;
+  const MarketDataSource& GetMarketDataSource(size_t) const override;
+  MarketDataSource& GetMarketDataSource(size_t) override;
+
+  void ForEachMarketDataSource(
+      const boost::function<void(const trdk::MarketDataSource&)>&)
       const override;
-  virtual bool HasExpirationCalendar() const override;
+  void ForEachMarketDataSource(
+      const boost::function<void(trdk::MarketDataSource&)>&) override;
 
-  virtual size_t GetNumberOfMarketDataSources() const override;
-  virtual const trdk::MarketDataSource &GetMarketDataSource(
-      size_t) const override;
-  virtual trdk::MarketDataSource &GetMarketDataSource(size_t) override;
+  size_t GetNumberOfTradingSystems() const override;
+  const TradingSystem& GetTradingSystem(size_t,
+                                        const TradingMode&) const override;
+  TradingSystem& GetTradingSystem(size_t, const TradingMode&) override;
 
-  virtual void ForEachMarketDataSource(
-      const boost::function<void(const trdk::MarketDataSource &)> &)
-      const override;
-  virtual void ForEachMarketDataSource(
-      const boost::function<void(trdk::MarketDataSource &)> &) override;
+  Strategy& GetSrategy(const boost::uuids::uuid&) override;
+  const Strategy& GetSrategy(const boost::uuids::uuid&) const override;
 
-  virtual size_t GetNumberOfTradingSystems() const override;
-  virtual const trdk::TradingSystem &GetTradingSystem(
-      size_t, const trdk::TradingMode &) const override;
-  virtual trdk::TradingSystem &GetTradingSystem(
-      size_t, const trdk::TradingMode &) override;
+  void CloseSrategiesPositions() override;
 
-  virtual trdk::Strategy &GetSrategy(const boost::uuids::uuid &) override;
-  virtual const trdk::Strategy &GetSrategy(
-      const boost::uuids::uuid &) const override;
-
-  virtual void CloseSrategiesPositions() override;
-
-  virtual void Add(const trdk::Lib::Ini &) override;
+  void Add(const boost::property_tree::ptree&) override;
 
  protected:
-  virtual DropCopy *GetDropCopy() const override;
+  DropCopy* GetDropCopy() const override;
 };
-}
-}
-}
+}  // namespace Dummies
+}  // namespace Tests
+}  // namespace trdk

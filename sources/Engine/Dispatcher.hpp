@@ -158,14 +158,14 @@ class Dispatcher : private boost::noncopyable {
           return;
         }
         Assert(m_current == &m_lists.first || m_current == &m_lists.second);
-        if (!Dispatcher::QueueEvent(std::move(event), *m_current)) {
+        if (!Dispatcher::QueueEvent(std::forward<Event>(event), *m_current)) {
           flush = false;
         }
         if (flush) {
           flush = !m_context.GetSettings().IsReplayMode();
         }
         if (!(m_current->size() % m_queueSizeConstrolLevel)) {
-          const char *const message =
+          const auto message =
               "Dispatcher queue \"%1%\" is too long (%2% events)!";
           if (m_current->size() <= 100) {
             m_context.GetLog().Info(message, m_name, m_current->size());
@@ -265,8 +265,7 @@ class Dispatcher : private boost::noncopyable {
       BrokerPositionsUpdateEventQueue;
 
   typedef boost::tuple<Security *, Bar, SubscriberPtrWrapper> NewBarEvent;
-  //! @todo HAVY OPTIMIZATION!!! Use preallocated buffer here instead
-  //!       std::list.
+  //! @todo HAVY OPTIMIZATION!!! Use preallocated buffer here instead std::list.
   typedef EventQueue<std::vector<NewBarEvent>> NewBarEventQueue;
 
   typedef boost::tuple<Security *,
@@ -274,8 +273,7 @@ class Dispatcher : private boost::noncopyable {
                        Lib::TimeMeasurement::Milestones,
                        SubscriberPtrWrapper>
       BookUpdateTickEvent;
-  //! @todo HAVY OPTIMIZATION!!! Use preallocated buffer here instead
-  //!       std::list.
+  //! @todo HAVY OPTIMIZATION!!! Use preallocated buffer here instead std::list.
   typedef EventQueue<std::vector<BookUpdateTickEvent>> BookUpdateTickEventQueue;
 
   typedef boost::variant<Level1UpdateEventQueue *,
@@ -291,7 +289,6 @@ class Dispatcher : private boost::noncopyable {
   explicit Dispatcher(Engine::Context &);
   ~Dispatcher();
 
- public:
   bool IsActive() const;
 
   void Activate();
@@ -299,7 +296,6 @@ class Dispatcher : private boost::noncopyable {
 
   UniqueSyncLock SyncDispatching() const;
 
- public:
   void SignalSecurityContractSwitched(SubscriberPtrWrapper &,
                                       const boost::posix_time::ptime &,
                                       Security &,
@@ -354,7 +350,9 @@ class Dispatcher : private boost::noncopyable {
 #else
     AssertFail("Failed to find event raise specialization.");
 #endif
+    return false;
   }
+
   template <typename EventList>
   static bool QueueEvent(Level1UpdateEvent &&updateEvent,
                          EventList &eventList) {
@@ -404,13 +402,13 @@ class Dispatcher : private boost::noncopyable {
   }
   template <typename EventList>
   static bool QueueEvent(NewBarEvent &&newBarEvent, EventList &eventList) {
-    eventList.emplace_back(std::move(newBarEvent));
+    eventList.emplace_back(newBarEvent);
     return true;
   }
   template <typename EventList>
   static bool QueueEvent(BookUpdateTickEvent &&bookUpdateTickEvent,
                          EventList &eventList) {
-    eventList.emplace_back(std::move(bookUpdateTickEvent));
+    eventList.emplace_back(bookUpdateTickEvent);
     boost::get<2>(eventList.back())
         .Measure(Lib::TimeMeasurement::SM_DISPATCHING_DATA_ENQUEUE);
     return true;
@@ -428,7 +426,7 @@ class Dispatcher : private boost::noncopyable {
       return list.Flush(lock, timeMeasurement);
     } catch (const trdk::Lib::Exception &ex) {
       m_context.GetLog().Error(
-          "Error in dispatcher notification task \"%1%\": \"%2%\".",
+          R"(Error in dispatcher notification task "%1%": "%2%".)",
           list.GetName(), ex);
       throw;
     } catch (...) {

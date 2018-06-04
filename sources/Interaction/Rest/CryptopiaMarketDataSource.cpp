@@ -16,12 +16,11 @@
 #include "Util.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Lib::TimeMeasurement;
-using namespace trdk::TradingLib;
-using namespace trdk::Interaction::Rest;
-
-namespace r = trdk::Interaction::Rest;
+using namespace Lib;
+using namespace TimeMeasurement;
+using namespace TradingLib;
+using namespace Interaction::Rest;
+namespace r = Interaction::Rest;
 namespace pt = boost::posix_time;
 namespace ptr = boost::property_tree;
 
@@ -31,7 +30,7 @@ CryptopiaMarketDataSource::CryptopiaMarketDataSource(
     const App &,
     Context &context,
     const std::string &instanceName,
-    const IniSectionRef &conf)
+    const ptr::ptree &conf)
     : Base(context, instanceName),
       m_settings(conf, GetLog()),
       m_session(CreateSession("www.cryptopia.co.nz", m_settings, false)),
@@ -50,7 +49,7 @@ CryptopiaMarketDataSource::~CryptopiaMarketDataSource() {
   }
 }
 
-void CryptopiaMarketDataSource::Connect(const IniSectionRef &) {
+void CryptopiaMarketDataSource::Connect() {
   GetLog().Debug("Creating connection...");
   try {
     m_products = RequestCryptopiaProductList(m_session, GetContext(), GetLog());
@@ -229,7 +228,7 @@ void CryptopiaMarketDataSource::UpdatePrices(
 boost::shared_ptr<MarketDataSource> CreateCryptopiaMarketDataSource(
     Context &context,
     const std::string &instanceName,
-    const IniSectionRef &configuration) {
+    const ptr::ptree &configuration) {
   return boost::make_shared<CryptopiaMarketDataSource>(
       App::GetInstance(), context, instanceName, configuration);
 }

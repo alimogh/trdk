@@ -15,7 +15,7 @@
 #include "VersionInfo.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
+using namespace Lib;
 
 namespace fs = boost::filesystem;
 

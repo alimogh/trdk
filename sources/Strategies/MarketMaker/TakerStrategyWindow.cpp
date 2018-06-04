@@ -16,8 +16,8 @@ using namespace trdk;
 using namespace Lib;
 using namespace FrontEnd;
 using namespace Strategies::MarketMaker;
-
 namespace pt = boost::posix_time;
+namespace ptr = boost::property_tree;
 
 TakerStrategyWindow::TakerStrategyWindow(Engine& engine,
                                          const QString& symbol,
@@ -286,20 +286,22 @@ TakerStrategy& TakerStrategyWindow ::CreateStrategyInstance(
   static boost::uuids::random_generator generateStrategyId;
   const auto& strategyId = generateStrategyId();
   {
-    const auto& conf = m_engine.GetContext().GetSettings().GetConfig();
-    const IniSectionRef defaults(conf, "Defaults");
-    std::ostringstream os;
-    os << "[Strategy."
-       << m_engine.GenerateNewStrategyName(R"(Market Maker "Taker" )" + symbol)
-       << "]" << std::endl;
-    os << "module = MarketMaker" << std::endl;
-    os << "factory = CreateStrategy" << std::endl;
-    os << "id = " << strategyId << std::endl;
-    os << "is_enabled = true" << std::endl;
-    os << "trading_mode = live" << std::endl;
-    os << "requires = Level 1 Updates[" << symbol.toStdString() << "]"
-       << std::endl;
-    m_engine.GetContext().Add(IniString(os.str()));
+    ptr::ptree config;
+    config.add("module", "MarketMaker");
+    config.add("id", strategyId);
+    config.add("isEnabled", true);
+    config.add("tradingMode", "live");
+    {
+      ptr::ptree symbols;
+      symbols.push_back({"", ptr::ptree().put("", symbol)});
+      config.add_child("requirements.level1Updates.symbols", symbols);
+    }
+    ptr::ptree strategiesConfig;
+    strategiesConfig.add_child(
+        m_engine.GenerateNewStrategyInstanceName(R"(Market Maker "Taker" )" +
+                                                 symbol.toStdString()),
+        config);
+    m_engine.GetContext().Add(strategiesConfig);
   }
   auto& result = *boost::polymorphic_downcast<TakerStrategy*>(
       &m_engine.GetContext().GetSrategy(strategyId));

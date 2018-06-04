@@ -15,9 +15,9 @@
 using namespace trdk;
 using namespace Lib;
 using namespace FrontEnd;
-
 namespace fs = boost::filesystem;
 namespace pt = boost::posix_time;
+namespace ptr = boost::property_tree;
 namespace sig = boost::signals2;
 namespace ids = boost::uuids;
 namespace db = qx::dao;
@@ -95,7 +95,7 @@ class FrontEnd::Engine::Implementation : boost::noncopyable {
   void InitDb() {
     qx::QxSqlDatabase::getSingleton()->setDriverName("QSQLITE");
     qx::QxSqlDatabase::getSingleton()->setDatabaseName(QString::fromStdString(
-        GetStandardFilePath("default.db", QStandardPaths::DataLocation)
+        GetStandardFilePath("trading.db", QStandardPaths::DataLocation)
             .string()));
     qx::QxSqlDatabase::getSingleton()->setHostName("localhost");
     qx::QxSqlDatabase::getSingleton()->setUserName("root");
@@ -542,8 +542,7 @@ void FrontEnd::Engine::Start(
       [this](Context::Log& log) {
         m_pimpl->m_engineLogSubscription = log.Subscribe(boost::bind(
             &Implementation::OnEngineNewLogRecord, &*m_pimpl, _1, _2, _3, _4));
-      },
-      boost::unordered_map<std::string, std::string>());
+      });
 }
 
 void FrontEnd::Engine::Stop() {
@@ -624,15 +623,44 @@ std::vector<boost::shared_ptr<Orm::Operation>> FrontEnd::Engine::GetOperations(
 void FrontEnd::Engine::Test() { m_pimpl->Test(); }
 #endif
 
+ptr::ptree FrontEnd::Engine::LoadConfig() const {
+  std::ifstream file(m_pimpl->m_configFile.c_str());
+  if (!file) {
+    throw Exception(
+        tr("Filed to read configuration file").toStdString().c_str());
+  }
+  ptr::ptree result;
+  try {
+    ptr::json_parser::read_json(file, result);
+  } catch (const ptr::json_parser_error&) {
+    throw Exception(
+        tr("Configuration file has invalid format").toStdString().c_str());
+  }
+  return result;
+}
+
+void FrontEnd::Engine::StoreConfig(const ptr::ptree& config) {
+  std::ofstream file(m_pimpl->m_configFile.c_str());
+  if (!file) {
+    throw Exception(
+        tr("Filed to write configuration file").toStdString().c_str());
+  }
+  ptr::json_parser::write_json(file, config, true);
+}
+
 void FrontEnd::Engine::StoreConfig(const Strategy& strategy,
-                                   QString&& config,
-                                   bool isActive) {
+                                   const ptr::ptree& config,
+                                   const bool isActive) {
   auto strategyOrm = boost::make_shared<Orm::StrategyInstance>(
       ConvertToQUuid(strategy.GetId()));
   db::fetch_by_id(strategyOrm, m_pimpl->m_db);
   strategyOrm->setTypeId(ConvertToQUuid(strategy.GetTypeId()));
   strategyOrm->setName(QString::fromStdString(strategy.GetInstanceName()));
-  strategyOrm->setConfig(std::move(config));
+  {
+    std::ostringstream configStream;
+    ptr::json_parser::write_json(configStream, config, false);
+    strategyOrm->setConfig(QString::fromStdString(configStream.str()));
+  }
   strategyOrm->setIsActive(isActive);
   Verify(!db::save(strategyOrm).isValid());
 }
@@ -641,13 +669,16 @@ void FrontEnd::Engine::ForEachActiveStrategy(
     const boost::function<void(const QUuid& typeId,
                                const QUuid& instanceId,
                                const QString& name,
-                               const QString& config)>& callback) const {
+                               const ptr::ptree& config)>& callback) const {
   const qx::QxSqlQuery query("WHERE is_active != 0");
   std::vector<boost::shared_ptr<Orm::StrategyInstance>> result;
   Verify(!db::fetch_by_query(query, result, m_pimpl->m_db).isValid());
   for (const auto& strategy : result) {
+    std::istringstream configStream(strategy->getConfig().toStdString());
+    ptr::ptree config;
+    ptr::json_parser::read_json(configStream, config);
     callback(strategy->getTypeId(), strategy->getId(), strategy->getName(),
-             strategy->getConfig());
+             config);
   }
 }
 
@@ -662,7 +693,7 @@ std::vector<QString> FrontEnd::Engine::GetStrategyNameList() const {
   return result;
 }
 
-QString FrontEnd::Engine::GenerateNewStrategyName(
-    const QString& nameBase) const {
+std::string FrontEnd::Engine::GenerateNewStrategyInstanceName(
+    const std::string& nameBase) const {
   return nameBase;
 }

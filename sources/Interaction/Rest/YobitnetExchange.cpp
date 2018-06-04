@@ -23,7 +23,6 @@ using namespace TimeMeasurement;
 using namespace TradingLib;
 using namespace Interaction;
 using namespace Rest;
-
 namespace pc = Poco;
 namespace net = pc::Net;
 namespace pt = boost::posix_time;
@@ -40,21 +39,24 @@ struct Settings : Rest::Settings {
     std::string key;
     std::string secret;
 
-    explicit Auth(const IniSectionRef& conf,
-                  const char* apiKeyKey,
-                  const char* apiSecretKey)
-        : key(conf.ReadKey(apiKeyKey)), secret(conf.ReadKey(apiSecretKey)) {}
+    explicit Auth(const ptr::ptree& conf,
+                  const std::string& apiKeyKey,
+                  const std::string& apiSecretKey)
+        : key(conf.get<std::string>(apiKeyKey)),
+          secret(conf.get<std::string>(apiSecretKey)) {}
   };
 
   Auth generalAuth;
   boost::optional<Auth> tradingAuth;
 
-  explicit Settings(const IniSectionRef& conf, ModuleEventsLog& log)
-      : Rest::Settings(conf, log), generalAuth(conf, "api_key", "api_secret") {
+  explicit Settings(const ptr::ptree& conf, ModuleEventsLog& log)
+      : Rest::Settings(conf, log),
+        generalAuth(conf, "config.apiKey", "config.apiSecret") {
     {
-      const char* apiKeyKey = "api_trading_key";
-      const char* apiSecretKey = "api_trading_secret";
-      if (conf.IsKeyExist(apiKeyKey) || conf.IsKeyExist(apiSecretKey)) {
+      const std::string apiKeyKey = "api_trading_key";
+      const std::string apiSecretKey = "api_trading_secret";
+      if (conf.get_optional<std::string>(apiKeyKey) ||
+          conf.get_optional<std::string>(apiSecretKey)) {
         tradingAuth = Auth(conf, apiKeyKey, apiSecretKey);
       }
     }
@@ -329,7 +331,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
                             const TradingMode& mode,
                             Context& context,
                             const std::string& instanceName,
-                            const IniSectionRef& conf)
+                            const ptr::ptree& conf)
       : TradingSystem(mode, context, instanceName),
         MarketDataSource(context, instanceName),
         m_settings(conf, GetTsLog()),
@@ -381,12 +383,12 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   bool IsConnected() const override { return !m_products.empty(); }
 
   //! Makes connection with Market Data Source.
-  void Connect(const IniSectionRef& conf) override {
+  void Connect() override {
     // Implementation for trdk::MarketDataSource.
     if (IsConnected()) {
       return;
     }
-    CreateConnection(conf);
+    CreateConnection();
   }
 
   void SubscribeToSecurities() override {
@@ -457,7 +459,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   }
 
  protected:
-  void CreateConnection(const IniSectionRef&) override {
+  void CreateConnection() override {
     GetTsLog().Debug(
         "Creating connection%1%...",
         !m_settings.tradingAuth ? "" : " with general credentials");
@@ -1168,7 +1170,7 @@ TradingSystemAndMarketDataSourceFactoryResult CreateYobitnet(
     const TradingMode& mode,
     Context& context,
     const std::string& instanceName,
-    const IniSectionRef& configuration) {
+    const ptr::ptree& configuration) {
   const auto& result = boost::make_shared<YobitnetExchange>(
       App::GetInstance(), mode, context, instanceName, configuration);
   return {result, result};
@@ -1177,7 +1179,7 @@ TradingSystemAndMarketDataSourceFactoryResult CreateYobitnet(
 boost::shared_ptr<MarketDataSource> CreateYobitnetMarketDataSource(
     Context& context,
     const std::string& instanceName,
-    const IniSectionRef& configuration) {
+    const ptr::ptree& configuration) {
   return boost::make_shared<YobitnetExchange>(App::GetInstance(),
                                               TRADING_MODE_LIVE, context,
                                               instanceName, configuration);

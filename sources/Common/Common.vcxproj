@@ -266,7 +266,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="HttpStreamClient.cpp" />
-    <ClCompile Include="Ini.cpp" />
     <ClCompile Include="NetworkClientServiceSecureSocketIo.cpp" />
     <ClCompile Include="NetworkStreamClient.cpp" />
     <ClCompile Include="NetworkStreamClientService.cpp" />
@@ -332,7 +331,6 @@
     <ClInclude Include="ExpirationCalendar.hpp" />
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="HttpStreamClient.hpp" />
-    <ClInclude Include="Ini.hpp" />
     <ClInclude Include="NetworkClientServiceIo.hpp" />
     <ClInclude Include="NetworkClientServiceSocketIo.hpp" />
     <ClInclude Include="NetworkClientServiceUnsecureSocketIo.hpp" />

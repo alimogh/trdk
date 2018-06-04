@@ -34,16 +34,17 @@ namespace ptr = boost::property_tree;
 
 namespace {
 
-struct Settings : public Rest::Settings {
+struct Settings : Rest::Settings {
   std::string apiKey;
   std::vector<unsigned char> apiSecret;
   std::string apiPassphrase;
 
-  explicit Settings(const IniSectionRef& conf, ModuleEventsLog& log)
+  explicit Settings(const ptr::ptree& conf, ModuleEventsLog& log)
       : Rest::Settings(conf, log),
-        apiKey(conf.ReadKey("api_key")),
-        apiSecret(Base64::Decode(conf.ReadKey("api_secret"))),
-        apiPassphrase(conf.ReadKey("api_passphrase")) {
+        apiKey(conf.get<std::string>("config.auth.apiKey")),
+        apiSecret(
+            Base64::Decode(conf.get<std::string>("config.auth.apiSecret"))),
+        apiPassphrase(conf.get<std::string>("config.auth.apiPassphrase")) {
     log.Info("API key: \"%1%\". API secret: %2%. API pass phrase: %3%.",
              apiKey,                                         // 1
              apiSecret.empty() ? "not set" : "is set",       // 2
@@ -235,7 +236,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
                         const TradingMode& mode,
                         Context& context,
                         const std::string& instanceName,
-                        const IniSectionRef& conf)
+                        const ptr::ptree& conf)
       : TradingSystem(mode, context, instanceName),
         MarketDataSource(context, instanceName),
         m_settings(conf, GetTsLog()),
@@ -282,13 +283,13 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
   bool IsConnected() const override { return m_isConnected; }
 
   //! Makes connection with Market Data Source.
-  void Connect(const IniSectionRef& conf) override {
+  void Connect() override {
     // Implementation for trdk::MarketDataSource.
     if (IsConnected()) {
       return;
     }
     GetTsLog().Debug("Creating connection...");
-    CreateConnection(conf);
+    CreateConnection();
   }
 
   void SubscribeToSecurities() override {
@@ -367,7 +368,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
   }
 
  protected:
-  void CreateConnection(const IniSectionRef&) override {
+  void CreateConnection() override {
     try {
       UpdateBalances();
       RequestProducts();
@@ -782,7 +783,7 @@ TradingSystemAndMarketDataSourceFactoryResult CreateGdax(
     const TradingMode& mode,
     Context& context,
     const std::string& instanceName,
-    const IniSectionRef& configuration) {
+    const ptr::ptree& configuration) {
   const auto& result = boost::make_shared<GdaxExchange>(
       App::GetInstance(), mode, context, instanceName, configuration);
   return {result, result};
@@ -791,7 +792,7 @@ TradingSystemAndMarketDataSourceFactoryResult CreateGdax(
 boost::shared_ptr<MarketDataSource> CreateGdaxMarketDataSource(
     Context& context,
     const std::string& instanceName,
-    const IniSectionRef& configuration) {
+    const ptr::ptree& configuration) {
   return boost::make_shared<GdaxExchange>(App::GetInstance(), TRADING_MODE_LIVE,
                                           context, instanceName, configuration);
 }

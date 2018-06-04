@@ -19,7 +19,8 @@ namespace Rest {
 struct TRDK_INTERACTION_REST_API Settings {
   PollingSetttings pollingSetttings;
 
-  explicit Settings(const Lib::IniSectionRef &conf, ModuleEventsLog &log)
+  explicit Settings(const boost::property_tree::ptree &conf,
+                    ModuleEventsLog &log)
       : pollingSetttings(conf) {
     Log(log);
     Validate();

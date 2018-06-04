@@ -45,9 +45,9 @@ boost::shared_ptr<trdk::TradingSystem> CreateTradingSystem(
     const TradingMode &mode,
     Context &context,
     const std::string &instanceName,
-    const IniSectionRef &configuration) {
+    const ptr::ptree &conf) {
   const auto &result = boost::make_shared<Exmo::TradingSystem>(
-      App::GetInstance(), mode, context, instanceName, configuration);
+      App::GetInstance(), mode, context, instanceName, conf);
   return result;
 }
 
@@ -55,7 +55,7 @@ Exmo::TradingSystem::TradingSystem(const App &,
                                    const TradingMode &mode,
                                    Context &context,
                                    const std::string &instanceName,
-                                   const IniSectionRef &conf)
+                                   const ptr::ptree &conf)
     : Base(mode, context, instanceName),
       m_settings(conf, GetLog()),
       m_serverTimeDiff(
@@ -70,7 +70,7 @@ Exmo::TradingSystem::TradingSystem(const App &,
 
 bool Exmo::TradingSystem::IsConnected() const { return !m_products.empty(); }
 
-void Exmo::TradingSystem::CreateConnection(const IniSectionRef &) {
+void Exmo::TradingSystem::CreateConnection() {
   Assert(m_products.empty());
 
   try {

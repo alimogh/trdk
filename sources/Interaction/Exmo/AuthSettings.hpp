@@ -18,7 +18,7 @@ struct AuthSettings : Rest::Settings {
   std::string apiKey;
   std::string apiSecret;
 
-  explicit AuthSettings(const Lib::IniSectionRef &, ModuleEventsLog &);
+  explicit AuthSettings(const boost::property_tree::ptree &, ModuleEventsLog &);
 };
 
 }  // namespace Exmo

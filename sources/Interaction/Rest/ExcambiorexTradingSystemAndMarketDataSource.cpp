@@ -13,14 +13,14 @@
 #include "ExcambiorexTradingSystem.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Interaction::Rest;
+using namespace Lib;
+using namespace Interaction::Rest;
 
 trdk::TradingSystemAndMarketDataSourceFactoryResult CreateExcambiorex(
-    const trdk::TradingMode &mode,
-    trdk::Context &context,
+    const TradingMode &mode,
+    Context &context,
     const std::string &instanceName,
-    const trdk::Lib::IniSectionRef &conf) {
+    const boost::property_tree::ptree &conf) {
   return {boost::make_shared<ExcambiorexTradingSystem>(
               App::GetInstance(), mode, context, instanceName, conf),
           boost::make_shared<ExcambiorexMarketDataSource>(

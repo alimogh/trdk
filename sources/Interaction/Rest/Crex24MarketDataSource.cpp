@@ -18,7 +18,6 @@ using namespace trdk;
 using namespace Lib;
 using namespace TimeMeasurement;
 using namespace Interaction::Rest;
-
 namespace r = Interaction::Rest;
 namespace pt = boost::posix_time;
 namespace ptr = boost::property_tree;
@@ -28,7 +27,7 @@ namespace ptr = boost::property_tree;
 Crex24MarketDataSource::Crex24MarketDataSource(const App &,
                                                Context &context,
                                                const std::string &instanceName,
-                                               const IniSectionRef &conf)
+                                               const ptr::ptree &conf)
     : Base(context, instanceName),
       m_settings(conf, GetLog()),
       m_session(CreateCrex24Session(m_settings, false)),
@@ -47,7 +46,7 @@ Crex24MarketDataSource::~Crex24MarketDataSource() {
   GetTradingLog().WaitForFlush();
 }
 
-void Crex24MarketDataSource::Connect(const IniSectionRef &) {
+void Crex24MarketDataSource::Connect() {
   GetLog().Debug("Creating connection...");
   boost::unordered_map<std::string, Crex24Product> products;
   try {
@@ -190,7 +189,7 @@ void Crex24MarketDataSource::UpdatePrices(r::Security &security,
 boost::shared_ptr<MarketDataSource> CreateCrex24MarketDataSource(
     Context &context,
     const std::string &instanceName,
-    const IniSectionRef &configuration) {
+    const ptr::ptree &configuration) {
   return boost::make_shared<Crex24MarketDataSource>(
       App::GetInstance(), context, instanceName, configuration);
 }

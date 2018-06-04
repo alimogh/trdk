@@ -16,6 +16,5 @@
 #include "Api.h"
 #include "App.hpp"
 #include "Fwd.hpp"
-#include <boost/property_tree/ptree.hpp>
 #include <Poco/Net/HTTPMessage.h>
 #include <Poco/Net/HTTPSClientSession.h>

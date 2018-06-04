@@ -11,7 +11,6 @@
 #pragma once
 
 #include "Crex24Util.hpp"
-#include "ExcambiorexUtil.hpp"
 #include "Settings.hpp"
 
 namespace trdk {
@@ -22,20 +21,18 @@ class Crex24MarketDataSource : public MarketDataSource {
  public:
   typedef MarketDataSource Base;
 
- public:
   explicit Crex24MarketDataSource(const App &,
                                   Context &context,
                                   const std::string &instanceName,
-                                  const Lib::IniSectionRef &);
-  virtual ~Crex24MarketDataSource() override;
+                                  const boost::property_tree::ptree &);
+  ~Crex24MarketDataSource() override;
 
- public:
-  virtual void Connect(const Lib::IniSectionRef &conf) override;
+  void Connect() override;
 
-  virtual void SubscribeToSecurities() override;
+  void SubscribeToSecurities() override;
 
  protected:
-  virtual trdk::Security &CreateNewSecurityObject(const Lib::Symbol &) override;
+  trdk::Security &CreateNewSecurityObject(const Lib::Symbol &) override;
 
  private:
   void UpdatePrices(const std::vector<std::pair<boost::shared_ptr<Security>,
@@ -52,6 +49,7 @@ class Crex24MarketDataSource : public MarketDataSource {
 
   std::unique_ptr<PollingTask> m_pollingTask;
 };
+
 }  // namespace Rest
 }  // namespace Interaction
 }  // namespace trdk

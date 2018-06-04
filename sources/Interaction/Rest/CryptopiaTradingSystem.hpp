@@ -30,11 +30,11 @@ class CryptopiaTradingSystem : public TradingSystem {
   typedef boost::mutex CancelOrderMutex;
   typedef OrdersRequestsMutex::scoped_lock CancelOrderLock;
 
-  struct Settings : public Rest::Settings {
+  struct Settings : Rest::Settings {
     std::string apiKey;
     std::vector<unsigned char> apiSecret;
 
-    explicit Settings(const Lib::IniSectionRef &, ModuleEventsLog &);
+    explicit Settings(const boost::property_tree::ptree &, ModuleEventsLog &);
   };
 
   class OrderTransactionRequest;
@@ -43,7 +43,6 @@ class CryptopiaTradingSystem : public TradingSystem {
    public:
     typedef CryptopiaRequest Base;
 
-   public:
     explicit PrivateRequest(const std::string &name,
                             NonceStorage &nonces,
                             const Settings &settings,
@@ -52,17 +51,15 @@ class CryptopiaTradingSystem : public TradingSystem {
                             const Context &,
                             ModuleEventsLog &,
                             ModuleTradingLog * = nullptr);
-    virtual ~PrivateRequest() override = default;
+    ~PrivateRequest() override = default;
 
-   public:
-    virtual Response Send(
-        std::unique_ptr<Poco::Net::HTTPSClientSession> &) override;
+    Response Send(std::unique_ptr<Poco::Net::HTTPSClientSession> &) override;
 
    protected:
-    virtual void PrepareRequest(const Poco::Net::HTTPClientSession &,
-                                const std::string &,
-                                Poco::Net::HTTPRequest &) const override;
-    virtual bool IsPriority() const override { return m_isPriority; }
+    void PrepareRequest(const Poco::Net::HTTPClientSession &,
+                        const std::string &,
+                        Poco::Net::HTTPRequest &) const override;
+    bool IsPriority() const override { return m_isPriority; }
 
    private:
     const Settings &m_settings;
@@ -130,44 +127,41 @@ class CryptopiaTradingSystem : public TradingSystem {
                                   const TradingMode &,
                                   Context &,
                                   const std::string &instanceName,
-                                  const Lib::IniSectionRef &);
-  virtual ~CryptopiaTradingSystem() override = default;
+                                  const boost::property_tree::ptree &);
+  ~CryptopiaTradingSystem() override = default;
 
- public:
-  virtual bool IsConnected() const override { return !m_products.empty(); }
+  bool IsConnected() const override { return !m_products.empty(); }
 
-  virtual Balances &GetBalancesStorage() override { return m_balances; }
+  Balances &GetBalancesStorage() override { return m_balances; }
 
-  virtual Volume CalcCommission(const trdk::Qty &,
-                                const trdk::Price &,
-                                const trdk::OrderSide &,
-                                const trdk::Security &) const override;
+  Volume CalcCommission(const Qty &,
+                        const Price &,
+                        const OrderSide &,
+                        const trdk::Security &) const override;
 
-  virtual boost::optional<OrderCheckError> CheckOrder(
-      const trdk::Security &,
-      const Lib::Currency &,
-      const Qty &,
-      const boost::optional<Price> &,
-      const OrderSide &) const override;
+  boost::optional<OrderCheckError> CheckOrder(const trdk::Security &,
+                                              const Lib::Currency &,
+                                              const Qty &,
+                                              const boost::optional<Price> &,
+                                              const OrderSide &) const override;
 
   bool CheckSymbol(const std::string &) const override;
 
  protected:
-  virtual void CreateConnection(const trdk::Lib::IniSectionRef &) override;
+  void CreateConnection() override;
 
-  virtual std::unique_ptr<trdk::OrderTransactionContext> SendOrderTransaction(
+  std::unique_ptr<OrderTransactionContext> SendOrderTransaction(
       trdk::Security &,
-      const trdk::Lib::Currency &,
-      const trdk::Qty &,
-      const boost::optional<trdk::Price> &,
-      const trdk::OrderParams &,
-      const trdk::OrderSide &,
-      const trdk::TimeInForce &) override;
+      const Lib::Currency &,
+      const Qty &,
+      const boost::optional<Price> &,
+      const OrderParams &,
+      const OrderSide &,
+      const TimeInForce &) override;
 
-  virtual void SendCancelOrderTransaction(
-      const OrderTransactionContext &) override;
+  void SendCancelOrderTransaction(const OrderTransactionContext &) override;
 
-  virtual void OnTransactionSent(const OrderTransactionContext &) override;
+  void OnTransactionSent(const OrderTransactionContext &) override;
 
  private:
   void UpdateBalances();
@@ -188,7 +182,6 @@ class CryptopiaTradingSystem : public TradingSystem {
   void RegisterLastOrder(const boost::posix_time::ptime &, const OrderId &);
   bool IsIdRegisterInLastOrders(const OrderId &) const;
 
- private:
   Settings m_settings;
   const boost::posix_time::time_duration m_serverTimeDiff;
   mutable NonceStorage m_nonces;
@@ -215,6 +208,7 @@ class CryptopiaTradingSystem : public TradingSystem {
 
   Timer::Scope m_timerScope;
 };
+
 }  // namespace Rest
 }  // namespace Interaction
 }  // namespace trdk

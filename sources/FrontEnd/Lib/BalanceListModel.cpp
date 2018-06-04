@@ -120,15 +120,21 @@ class BalanceListModel::Implementation : boost::noncopyable {
 
 BalanceListModel::BalanceListModel(const front::Engine& engine, QWidget* parent)
     : Base(parent), m_pimpl(boost::make_unique<Implementation>(*this)) {
-  for (const auto& symbol :
-       IniSectionRef(engine.GetContext().GetSettings().GetConfig(), "Defaults")
-           .ReadList("symbol_list", ",", true)) {
-    for (auto it = boost::make_split_iterator(
-             symbol, boost::first_finder("_", boost::is_iequal()));
-         !it.eof(); ++it) {
-      auto subSymbol = boost::copy_range<std::string>(*it);
-      if (!subSymbol.empty()) {
-        m_pimpl->m_defaultSymbols.emplace(std::move(subSymbol));
+  {
+    const auto& symbols =
+        engine.GetContext().GetSettings().GetConfig().get_child_optional(
+            "defaults.symbols");
+    if (symbols) {
+      for (const auto& node : *symbols) {
+        const auto& symbol = node.second.get_value<std::string>();
+        for (auto it = boost::make_split_iterator(
+                 symbol, boost::first_finder("_", boost::is_iequal()));
+             !it.eof(); ++it) {
+          auto subSymbol = boost::copy_range<std::string>(*it);
+          if (!subSymbol.empty()) {
+            m_pimpl->m_defaultSymbols.emplace(std::move(subSymbol));
+          }
+        }
       }
     }
   }

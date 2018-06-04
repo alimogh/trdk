@@ -14,8 +14,9 @@ namespace trdk {
 namespace Engine {
 
 class Context;
-
 class Dispatcher;
 class SubscriberPtrWrapper;
-}
-}
+class SubscriptionsManager;
+
+}  // namespace Engine
+}  // namespace trdk

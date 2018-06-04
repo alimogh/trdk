@@ -130,7 +130,7 @@ boost::tuple<pt::ptime, ptr::ptree, TimeMeasurement::Milestones> Request::Send(
 
     try {
       net::HTTPResponse response;
-      std::istream& responseStream = session->receiveResponse(response);
+      auto& responseStream = session->receiveResponse(response);
       std::string responseBuffer;
       if (m_tradingLog) {
         m_tradingLog->Write(
