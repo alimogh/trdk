@@ -54,7 +54,8 @@ CryptopiaTradingSystem::Settings::Settings(const ptr::ptree &conf,
                                            ModuleEventsLog &log)
     : Rest::Settings(conf, log),
       apiKey(conf.get<std::string>("config.auth.apiKey")),
-      apiSecret(Base64::Decode(conf.get<std::string>("auth.apiSecret"))) {
+      apiSecret(
+          Base64::Decode(conf.get<std::string>("config.auth.apiSecret"))) {
   log.Info("API key: \"%1%\". API secret: %2%.",
            apiKey,                                     // 1
            apiSecret.empty() ? "not set" : "is set");  // 2

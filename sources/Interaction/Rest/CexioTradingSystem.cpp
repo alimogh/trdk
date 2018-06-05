@@ -26,10 +26,10 @@ namespace gr = boost::gregorian;
 CexioTradingSystem::Settings::Settings(const ptr::ptree &conf,
                                        ModuleEventsLog &log)
     : Rest::Settings(conf, log),
-      username(conf.get<std::string>("config.auth.username")),
+      username(conf.get<std::string>("config.auth.userId")),
       apiKey(conf.get<std::string>("config.auth.apiKey")),
-      apiSecret(conf.get<std::string>("auth.apiSecret")) {
-  log.Info("Username: \"%1%\". API key: \"%2%\". API secret: %3%.",
+      apiSecret(conf.get<std::string>("config.auth.apiSecret")) {
+  log.Info(R"(User ID: "%1%". API key: "%2%". API secret: %3%.)",
            username,                                   // 1
            apiKey,                                     // 2
            apiSecret.empty() ? "not set" : "is set");  // 3

@@ -35,8 +35,8 @@ class SourcePropertiesDialog::Implementation {
       }
       const auto &addExchange = [&currentImpl, &disabledImplementations, this](
                                     const char *title, const char *impl) {
-        if ((!currentImpl.empty() && currentImpl != impl) ||
-            disabledImplementations.count(impl)) {
+        if (currentImpl.empty() ? disabledImplementations.count(impl)
+                                : currentImpl != impl) {
           return;
         }
         m_ui.exchange->addItem(title, impl);
@@ -52,31 +52,42 @@ class SourcePropertiesDialog::Implementation {
       addExchange("CREX24", "Crex24");
       addExchange("ExcambioRex", "Excambiorex");
     }
-    CheckApiPassphrase();
+    CheckFieldList();
 
     if (config) {
       m_ui.exchange->setEnabled(false);
+      if (m_ui.userId->isEnabled()) {
+        m_ui.userId->setText(QString::fromStdString(
+            config->get<std::string>("config.auth.userId", "")));
+      }
       m_ui.apiKey->setText(QString::fromStdString(
-          config->get<std::string>("config.auth.apiKey")));
+          config->get<std::string>("config.auth.apiKey", "")));
       m_ui.apiSecret->setText(QString::fromStdString(
-          config->get<std::string>("config.auth.apiSecret")));
+          config->get<std::string>("config.auth.apiSecret", "")));
       if (m_ui.apiPassphrase->isEnabled()) {
         m_ui.apiPassphrase->setText(QString::fromStdString(
-            config->get<std::string>("config.auth.apiPassphrase")));
+            config->get<std::string>("config.auth.apiPassphrase", "")));
       }
     }
 
     Verify(connect(
         m_ui.exchange,
         static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
-        [this](int) { CheckApiPassphrase(); }));
+        [this](int) { CheckFieldList(); }));
   }
 
-  void CheckApiPassphrase() {
-    const auto hasPassphrase =
-        m_ui.exchange->currentData().toString() == "Gdax";
-    m_ui.apiPassphraseLabel->setEnabled(hasPassphrase);
-    m_ui.apiPassphrase->setEnabled(hasPassphrase);
+  void CheckFieldList() {
+    {
+      const auto hasUserId = m_ui.exchange->currentData().toString() == "Cexio";
+      m_ui.userId->setEnabled(hasUserId);
+      m_ui.userId->setEnabled(hasUserId);
+    }
+    {
+      const auto hasPassphrase =
+          m_ui.exchange->currentData().toString() == "Gdax";
+      m_ui.apiPassphraseLabel->setEnabled(hasPassphrase);
+      m_ui.apiPassphrase->setEnabled(hasPassphrase);
+    }
   }
 
   ptr::ptree Dump() const {
@@ -90,6 +101,9 @@ class SourcePropertiesDialog::Implementation {
       result.add("factory", "Create" + impl);
     } else {
       result.add("module", impl);
+    }
+    if (m_ui.userId->isEnabled()) {
+      result.add("config.auth.userId", m_ui.userId->text().toStdString());
     }
     result.add("config.auth.apiKey", m_ui.apiKey->text().toStdString());
     result.add("config.auth.apiSecret", m_ui.apiSecret->text().toStdString());

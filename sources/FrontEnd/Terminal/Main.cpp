@@ -18,6 +18,7 @@ using namespace trdk::Lib;
 using namespace trdk::FrontEnd;
 using namespace Terminal;
 namespace fs = boost::filesystem;
+namespace ptr = boost::property_tree;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -149,6 +150,11 @@ int main(int argc, char *argv[]) {
             "Impossible to continue to use application with the "
             "current configuration. To configure, run the application again."),
         QMessageBox::Close);
+  } catch (const ptr::ptree_error &ex) {
+    QMessageBox::critical(
+        nullptr, application.tr("Application fatal error"),
+        QString(R"(Configuration format error: "%1".)").arg(ex.what()),
+        QMessageBox::Abort);
   } catch (const std::exception &ex) {
     QMessageBox::critical(nullptr, application.tr("Application fatal error"),
                           QString("%1.").arg(ex.what()), QMessageBox::Abort);
