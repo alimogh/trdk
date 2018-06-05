@@ -267,11 +267,6 @@ void Engine::Context::Start(
         AssertEq(m_pimpl->m_marketDataSources.size(),
                  m_pimpl->m_tradingSystems.size());
 
-        if (m_pimpl->m_tradingSystems.empty() ||
-            m_pimpl->m_marketDataSources.empty()) {
-          throw ConnectError("Failed to start: All sources failed to connect.");
-        }
-
         m_pimpl->m_tradingSystems.shrink_to_fit();
         m_pimpl->m_marketDataSources.shrink_to_fit();
       }

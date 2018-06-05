@@ -1,9 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Scripts">
-      <UniqueIdentifier>{219439a9-9d42-4590-8f2f-1931b744a039}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Config">
       <UniqueIdentifier>{98981aaa-75f5-4434-8297-51fa1e184102}</UniqueIdentifier>
     </Filter>
@@ -26,14 +23,14 @@
     </Xml>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="Compile.js" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="config\Controller.qs">
       <Filter>Config</Filter>
     </None>
     <None Include="packages\com.robotdk.trdk\meta\Component.qs">
       <Filter>Packages\com.robotdk.trdk\meta</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="Compile.js" />
   </ItemGroup>
 </Project>
