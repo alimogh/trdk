@@ -136,18 +136,15 @@ Engine::LoadSources(trdk::Context &context) {
       result.first.emplace_back(std::move(modules.first));
       result.second.emplace_back(std::move(modules.second));
     } catch (const ptr::ptree_error &ex) {
-#ifndef DEV_VER
-      UseUnused(ex);
-      boost::format error(
-          R"(Source instance "%1%" configuration has an invalid format)");
-      error % instanceName;
-#else
-      boost::format error(
-          R"(Source instance "%1%" configuration has an invalid format: "%2%")");
-      error % instanceName  // 1
-          % ex.what();      // 2
-#endif
-      throw Exception(error.str().c_str());
+      context.GetLog().Error(
+          R"(Source instance "%1%" configuration has an invalid format: "%2%".)",
+          instanceName,  // 1
+          ex.what());    // 2
+    } catch (const std::exception &ex) {
+      context.GetLog().Error(
+          R"(Failed to create source instance "%1%": "%2%".)",
+          instanceName,  // 1
+          ex.what());    // 2
     }
   }
 
