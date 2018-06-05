@@ -118,10 +118,14 @@ function CompileConfig(file) {
 		var now = new Date();
 		var mm = now.getMonth() + 1;
 		if (mm < 10) {
-			mm = '0' + mm
+			mm = '0' + mm;
+		}
+		var dd = now.getDate();
+		if (dd < 10) {
+			dd = '0' + dd;
 		}
 		result = result.replace(/%{ReleaseDate}/g, now.getFullYear()
-			+ '-' + mm + '-' + now.getDate());
+			+ '-' + mm + '-' + dd);
 	}
 	result = result.replace(/%{Domain}/g, branch.domain);
 	result = result.replace(/%{SuffixConfig}/g, suffixConfig);
