@@ -100,11 +100,46 @@ class FrontEnd::Engine::Implementation : boost::noncopyable {
     qx::QxSqlDatabase::getSingleton()->setHostName("localhost");
     qx::QxSqlDatabase::getSingleton()->setUserName("root");
     qx::QxSqlDatabase::getSingleton()->setPassword("");
+  }
 
-    db::create_table<Orm::StrategyInstance>(m_db);
-    db::create_table<Orm::Operation>(m_db);
-    db::create_table<Orm::Order>(m_db);
-    db::create_table<Orm::Pnl>(m_db);
+  std::vector<std::string> StartDb() {
+    std::vector<std::string> result;
+    {
+      const auto& error = db::create_table<Orm::StrategyInstance>(m_db);
+      if (error.isValid()) {
+        result.emplace_back(
+            (QString(R"(Failed to create strategy instances DB table: "%1".)")
+                 .arg(error.text()))
+                .toStdString());
+      }
+    }
+    {
+      const auto& error = db::create_table<Orm::Operation>(m_db);
+      if (error.isValid()) {
+        result.emplace_back(
+            (QString(R"(Failed to create operations DB table: "%1".)")
+                 .arg(error.text())
+                 .toStdString()));
+      }
+    }
+    {
+      const auto& error = db::create_table<Orm::Order>(m_db);
+      if (error.isValid()) {
+        result.emplace_back(
+            (QString(R"(Failed to create orders DB table: "%1".)")
+                 .arg(error.text())
+                 .toStdString()));
+      }
+    }
+    {
+      const auto& error = db::create_table<Orm::Pnl>(m_db);
+      if (error.isValid()) {
+        result.emplace_back((QString(R"(Failed to create P&L DB table: "%1".)")
+                                 .arg(error.text())
+                                 .toStdString()));
+      }
+    }
+    return result;
   }
 
   void ConnectSignals() {
@@ -265,7 +300,15 @@ class FrontEnd::Engine::Implementation : boost::noncopyable {
       {
         auto operation = boost::make_shared<Orm::Operation>(
             ConvertToQUuid(operationIdSuboperationId->first));
-        Verify(!db::fetch_by_id(operation, m_db).isValid());
+        const auto& error = db::fetch_by_id(operation, m_db);
+        if (error.isValid()) {
+          m_engine->GetContext().GetLog().Error(
+              (QString("Failed to fetch operation from DB to insert order: \"%1\".)")
+                   .arg(error.text())
+                   .toStdString())
+                  .c_str());
+          Assert(!error.isValid());
+        }
         order.setOperation(operation);
       }
       order.setSubOperationId(operationIdSuboperationId->second);
@@ -283,7 +326,17 @@ class FrontEnd::Engine::Implementation : boost::noncopyable {
     order.setTimeInForce(CovertToTimeInForce(timeInForce));
     order.setStatus(status);
     order.setAdditionalInfo(additionalInfo);
-    Verify(!db::insert(order, m_db).isValid());
+    {
+      const auto& error = db::insert(order, m_db);
+      if (error.isValid()) {
+        m_engine->GetContext().GetLog().Error(
+            (QString(R"(Failed to insert order into DB: "%1".)")
+                 .arg(error.text())
+                 .toStdString())
+                .c_str());
+        Assert(!error.isValid());
+      }
+    }
     emit m_self.OrderUpdate(order);
   }
 
@@ -333,10 +386,19 @@ class FrontEnd::Engine::Implementation : boost::noncopyable {
     query.bind(":tradingSystem",
                QString::fromStdString(tradingSystem->GetInstanceName()));
     std::vector<Orm::Order> records;
-    if (db::fetch_by_query_with_relation("Operation", query, records, m_db)
-            .isValid()) {
-      Assert(false);
-      return;
+    {
+      const auto& error =
+          db::fetch_by_query_with_relation("Operation", query, records, m_db);
+      if (error.isValid()) {
+        m_engine->GetContext().GetLog().Error(
+            (QString(
+                 R"(Failed to fetch operation from DB to update order: "%1".)")
+                 .arg(error.text())
+                 .toStdString())
+                .c_str());
+        Assert(!error.isValid());
+        return;
+      }
     }
     if (records.size() != 1) {
       AssertEq(1, records.size());
@@ -346,9 +408,18 @@ class FrontEnd::Engine::Implementation : boost::noncopyable {
     order.setUpdateTime(ConvertToDbDateTime(time));
     order.setStatus(status);
     order.setRemainingQty(remainingQty);
-    if (db::update(order, m_db).isValid()) {
-      Assert(false);
-      return;
+    {
+      const auto& error = db::update(order, m_db);
+      if (error.isValid()) {
+        m_engine->GetContext().GetLog().Error(
+            (QString(
+                 R"(Failed to update order in DB: "%1".)")
+                 .arg(error.text())
+                 .toStdString())
+                .c_str());
+        Assert(!error.isValid());
+        return;
+      }
     }
     emit m_self.OrderUpdate(order);
   }
@@ -361,22 +432,77 @@ class FrontEnd::Engine::Implementation : boost::noncopyable {
     {
       auto strategyOrm = boost::make_shared<Orm::StrategyInstance>(
           ConvertToQUuid(strategySource->GetId()));
-      db::fetch_by_id(strategyOrm, m_db);
+      {
+        const auto& error = db::fetch_by_id(strategyOrm, m_db);
+        if (error.isValid()) {
+          m_engine->GetContext().GetLog().Error(
+              (QString(
+                   R"(Failed to fetch strategy instance from DB: "%1".)")
+                   .arg(error.text())
+                   .toStdString())
+                  .c_str());
+          Assert(!error.isValid());
+        }
+      }
       strategyOrm->setName(
           QString::fromStdString(strategySource->GetInstanceName()));
       strategyOrm->setTypeId(ConvertToQUuid(strategySource->GetTypeId()));
-      Verify(!db::save(strategyOrm).isValid());
+      {
+        const auto& error = db::save(strategyOrm);
+        if (error.isValid()) {
+          m_engine->GetContext().GetLog().Error(
+              (QString(
+                   R"(Failed to save strategy instance into DB: "%1".)")
+                   .arg(error.text())
+                   .toStdString())
+                  .c_str());
+          Assert(!error.isValid());
+        }
+      }
       operation->setStrategyInstance(strategyOrm);
     }
-    Verify(!db::insert(operation, m_db).isValid());
+    {
+      const auto& error = db::insert(operation, m_db);
+      if (error.isValid()) {
+        m_engine->GetContext().GetLog().Error(
+            (QString(
+                 R"(Failed to insert operation into from DB: "%1".)")
+                 .arg(error.text())
+                 .toStdString())
+                .c_str());
+        Assert(!error.isValid());
+      }
+    }
     emit m_self.OperationUpdate(*operation);
   }
 
   void OnOperationUpdate(const ids::uuid& id, const Pnl::Data& pnl) {
     auto operation = boost::make_shared<Orm::Operation>(ConvertToQUuid(id));
-    Verify(!db::fetch_by_id_with_relation("Pnl", operation, m_db).isValid());
+    {
+      const auto& error = db::fetch_by_id_with_relation("Pnl", operation, m_db);
+      if (error.isValid()) {
+        m_engine->GetContext().GetLog().Error(
+            (QString(
+                 R"(Failed to fetch P&L from DB: "%1".)")
+                 .arg(error.text())
+                 .toStdString())
+                .c_str());
+        Assert(!error.isValid());
+      }
+    }
     UpdatePnl(operation, pnl);
-    Verify(!db::update_with_relation("Pnl", operation, m_db).isValid());
+    {
+      const auto& error = db::update_with_relation("Pnl", operation, m_db);
+      if (error.isValid()) {
+        m_engine->GetContext().GetLog().Error(
+            (QString(
+                 R"(Failed to update P&L in DB: "%1".)")
+                 .arg(error.text())
+                 .toStdString())
+                .c_str());
+        Assert(!error.isValid());
+      }
+    }
     emit m_self.OperationUpdate(*operation);
   }
 
@@ -384,11 +510,33 @@ class FrontEnd::Engine::Implementation : boost::noncopyable {
                       const pt::ptime& time,
                       const boost::shared_ptr<const Pnl>& pnl) {
     auto operation = boost::make_shared<Orm::Operation>(ConvertToQUuid(id));
-    Verify(!db::fetch_by_id_with_relation("Pnl", operation, m_db).isValid());
+    {
+      const auto& error = db::fetch_by_id_with_relation("Pnl", operation, m_db);
+      if (error.isValid()) {
+        m_engine->GetContext().GetLog().Error(
+            (QString(
+                 R"(Failed to fetch operation from DB to update P&L: "%1".)")
+                 .arg(error.text())
+                 .toStdString())
+                .c_str());
+        Assert(!error.isValid());
+      }
+    }
     operation->setEndTime(ConvertToDbDateTime(time));
     operation->setStatus(CovertToOperationStatus(pnl->GetResult()));
     UpdatePnl(operation, pnl->GetData());
-    Verify(!db::update_with_relation("Pnl", operation, m_db).isValid());
+    {
+      const auto& error = db::update_with_relation("Pnl", operation, m_db);
+      if (error.isValid()) {
+        m_engine->GetContext().GetLog().Error(
+            (QString(
+                 R"(Failed to update P&L in DB: "%1".)")
+                 .arg(error.text())
+                 .toStdString())
+                .c_str());
+        Assert(!error.isValid());
+      }
+    }
     emit m_self.OperationUpdate(*operation);
   }
 
@@ -399,7 +547,16 @@ class FrontEnd::Engine::Implementation : boost::noncopyable {
       const auto& symbol = pnl->getSymbol().toStdString();
       const auto& source = pnlSource.find(symbol);
       if (source == pnlSource.cend()) {
-        Verify(!db::delete_by_id(pnl, m_db).isValid());
+        const auto& error = db::delete_by_id(pnl, m_db);
+        if (error.isValid()) {
+          m_engine->GetContext().GetLog().Error(
+              (QString(
+                   R"(Failed to delete P&L from DB: "%1".)")
+                   .arg(error.text())
+                   .toStdString())
+                  .c_str());
+          Assert(!error.isValid());
+        }
       } else {
         index.emplace(symbol, pnl);
       }
@@ -528,6 +685,7 @@ void FrontEnd::Engine::Start(
   if (m_pimpl->m_engine) {
     throw Exception(tr("Engine already started").toLocal8Bit().constData());
   }
+  const auto& startDbErrors = m_pimpl->StartDb();
   m_pimpl->m_engine = boost::make_unique<trdk::Engine::Engine>(
       m_pimpl->m_configFile, m_pimpl->m_logsDir,
       boost::bind(&Implementation::OnContextStateChanged, &*m_pimpl, _1, _2),
@@ -543,6 +701,9 @@ void FrontEnd::Engine::Start(
         m_pimpl->m_engineLogSubscription = log.Subscribe(boost::bind(
             &Implementation::OnEngineNewLogRecord, &*m_pimpl, _1, _2, _3, _4));
       });
+  for (const auto& error : startDbErrors) {
+    m_pimpl->m_engine->GetContext().GetLog().Error(error.c_str());
+  }
 }
 
 void FrontEnd::Engine::Stop() {
@@ -614,8 +775,19 @@ std::vector<boost::shared_ptr<Orm::Operation>> FrontEnd::Engine::GetOperations(
     query.bind(":strategy", *strategy);
   }
 
-  Verify(!db::fetch_by_query_with_all_relation(query, result, m_pimpl->m_db)
-              .isValid());
+  {
+    const auto& error =
+        db::fetch_by_query_with_all_relation(query, result, m_pimpl->m_db);
+    if (error.isValid()) {
+      m_pimpl->m_engine->GetContext().GetLog().Error(
+          (QString(
+               R"(Failed to query operations from DB: "%1".)")
+               .arg(error.text())
+               .toStdString())
+              .c_str());
+      Assert(!error.isValid());
+    }
+  }
   return result;
 }
 
@@ -653,7 +825,18 @@ void FrontEnd::Engine::StoreConfig(const Strategy& strategy,
                                    const bool isActive) {
   auto strategyOrm = boost::make_shared<Orm::StrategyInstance>(
       ConvertToQUuid(strategy.GetId()));
-  db::fetch_by_id(strategyOrm, m_pimpl->m_db);
+  {
+    const auto& error = db::fetch_by_id(strategyOrm, m_pimpl->m_db);
+    if (error.isValid()) {
+      m_pimpl->m_engine->GetContext().GetLog().Error(
+          (QString("Failed to fetch strategy instance from DB to store "
+                   "strategy config: \"%1\".")
+               .arg(error.text())
+               .toStdString())
+              .c_str());
+      Assert(!error.isValid());
+    }
+  }
   strategyOrm->setTypeId(ConvertToQUuid(strategy.GetTypeId()));
   strategyOrm->setName(QString::fromStdString(strategy.GetInstanceName()));
   {
@@ -662,7 +845,18 @@ void FrontEnd::Engine::StoreConfig(const Strategy& strategy,
     strategyOrm->setConfig(QString::fromStdString(configStream.str()));
   }
   strategyOrm->setIsActive(isActive);
-  Verify(!db::save(strategyOrm).isValid());
+  {
+    const auto& error = db::save(strategyOrm);
+    if (error.isValid()) {
+      m_pimpl->m_engine->GetContext().GetLog().Error(
+          (QString(
+               R"(Failed to store strategy config into DB: "%1".)")
+               .arg(error.text())
+               .toStdString())
+              .c_str());
+      Assert(!error.isValid());
+    }
+  }
 }
 
 void FrontEnd::Engine::ForEachActiveStrategy(
@@ -672,7 +866,18 @@ void FrontEnd::Engine::ForEachActiveStrategy(
                                const ptr::ptree& config)>& callback) const {
   const qx::QxSqlQuery query("WHERE is_active != 0");
   std::vector<boost::shared_ptr<Orm::StrategyInstance>> result;
-  Verify(!db::fetch_by_query(query, result, m_pimpl->m_db).isValid());
+  {
+    const auto& error = db::fetch_by_query(query, result, m_pimpl->m_db);
+    if (error.isValid()) {
+      m_pimpl->m_engine->GetContext().GetLog().Error(
+          (QString(
+               R"(Failed to fetch active strategy instances from DB: "%1".)")
+               .arg(error.text())
+               .toStdString())
+              .c_str());
+      Assert(!error.isValid());
+    }
+  }
   for (const auto& strategy : result) {
     std::istringstream configStream(strategy->getConfig().toStdString());
     ptr::ptree config;
