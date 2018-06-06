@@ -51,10 +51,10 @@ struct Settings : Rest::Settings {
 
   explicit Settings(const ptr::ptree& conf, ModuleEventsLog& log)
       : Rest::Settings(conf, log),
-        generalAuth(conf, "config.apiKey", "config.apiSecret") {
+        generalAuth(conf, "config.auth.apiKey", "config.auth.apiSecret") {
     {
-      const std::string apiKeyKey = "api_trading_key";
-      const std::string apiSecretKey = "api_trading_secret";
+      const std::string apiKeyKey = "config.trading.apiKey";
+      const std::string apiSecretKey = "config.trading.apiSecret";
       if (conf.get_optional<std::string>(apiKeyKey) ||
           conf.get_optional<std::string>(apiSecretKey)) {
         tradingAuth = Auth(conf, apiKeyKey, apiSecretKey);
