@@ -156,6 +156,7 @@ function CopyContent() {
 
 	var isQtCoreRequired = true;
 	var isQtSqlRequired = false;
+	var isQtSqlLiteRequired = false;
 	var isQtChartsRequired = false;
 	var isPocoRequired = false;
 	var isOpenSslRequired = false;
@@ -169,6 +170,7 @@ function CopyContent() {
 		if (module == 'FrontEnd') {
 			isQtCoreRequired = true;
 			isQtSqlRequired = true;
+			isQtSqlLiteRequired = true;
 			isQxOrmRequired = true;
 		} else if (module == 'Shell') {
 			isQtCoreRequired = true;
@@ -199,6 +201,11 @@ function CopyContent() {
 	if (isQtSqlRequired) {
 		stdout.WriteLine('Adding Qt SQL DLLs...');
 		fileSystem.CopyFile(qtLibsSourceDir + 'Qt' + qtMajorVersion + 'Sql' + qtSuffix + '.dll', destination, true);
+	}
+	if (isQtSqlLiteRequired) {
+		stdout.WriteLine('Adding Qt SQLLite Driver DLLs...');
+		fileSystem.CreateFolder(destination + 'sqldrivers');
+		fileSystem.CopyFile(qtPluginsSourceDir + 'sqldrivers/qsqlite' + qtSuffix + '.dll', destination + 'sqldrivers/', true);
 	}
 	if (isQtChartsRequired) {
 		stdout.WriteLine('Adding Qt Charts DLLs...');
