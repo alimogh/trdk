@@ -76,13 +76,13 @@
     <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">
-    <TargetName>Brutus_dbg</TargetName>
+    <TargetName>Punisher_dbg</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">
-    <TargetName>Brutus_test</TargetName>
+    <TargetName>Punisher_test</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">
-    <TargetName>Brutus</TargetName>
+    <TargetName>Punisher</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">
     <ClCompile>

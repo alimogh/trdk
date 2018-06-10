@@ -1,7 +1,7 @@
 {
-  "name": "brutus",
-  "productName": "Brutus",
-  "productNameFile": "Brutus",
+  "name": "punisher",
+  "productName": "Punisher",
+  "productNameFile": "Punisher",
   "vendorName": "Eugene V. Palchukovsky",
   "domain": "robotdk.com",
   "licenseServiceSubdomain": "licensing",
@@ -19,8 +19,6 @@
     "Charts",
     "Rest",
     "Exmo",
-    "ArbitrationAdvisor",
-    "MarketMaker",
-    "PingPong"
+    "ArbitrationAdvisor"
   ]
 }
