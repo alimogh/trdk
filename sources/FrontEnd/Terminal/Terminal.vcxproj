@@ -138,6 +138,7 @@
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="GeneratedFiles\ui_MainWindow.h" />
     <ClInclude Include="Prec.hpp" />
+    <ClInclude Include="Resources\Resource.h" />
     <CustomBuild Include="MainWindow.hpp">
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Moc%27ing MainWindow.hpp...</Message>
@@ -207,6 +208,10 @@
     <ProjectReference Include="..\Charts\FrontEndCharts.vcxproj">
       <Project>{66A7D906-8469-47E5-AA1C-283819474377}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Resources\App.ico" />
+    <Image Include="Resources\App.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
