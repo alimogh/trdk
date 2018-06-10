@@ -93,6 +93,9 @@
     <ClInclude Include="Config.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Resources\Resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="Terminal.qrc">
@@ -109,5 +112,13 @@
     <ResourceCompile Include="Resources\Terminal.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Resources\App.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="Resources\App.png">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

@@ -26,7 +26,7 @@ namespace {
 
 class SplashScreen : public QSplashScreen {
  public:
-  SplashScreen() : QSplashScreen(QPixmap(":/Terminal/Resources/splash.png")) {}
+  SplashScreen() : QSplashScreen(QPixmap{":/Terminal/Resources/Splash.png"}) {}
   SplashScreen(SplashScreen &&) = default;
   SplashScreen(const SplashScreen &) = delete;
   SplashScreen &operator=(SplashScreen &&) = delete;
