@@ -516,9 +516,9 @@ class Security::Implementation : private boost::noncopyable {
   bool AddLevel1Tick(const pt::ptime& time,
                      const Level1TickValue& tick,
                      const Milestones& delayMeasurement,
-                     bool flush,
-                     bool isPreviouslyChanged) {
-    const bool isChanged =
+                     const bool flush,
+                     const bool isPreviouslyChanged) {
+    const auto isChanged =
         SetLevel1(time, tick, delayMeasurement, flush, isPreviouslyChanged);
     CheckMarketDataUpdate(time);
     if (CheckLevel1Start()) {

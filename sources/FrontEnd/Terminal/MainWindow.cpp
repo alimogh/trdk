@@ -20,6 +20,8 @@
 #include "Lib/OperationListView.hpp"
 #include "Lib/OrderListModel.hpp"
 #include "Lib/OrderListView.hpp"
+#include "Lib/SecurityListModel.hpp"
+#include "Lib/SecurityListView.hpp"
 #include "Lib/SortFilterProxyModel.hpp"
 #include "Lib/SourcePropertiesDialog.hpp"
 #include "Lib/SourcesListWidget.hpp"
@@ -47,14 +49,16 @@ MainWindow::MainWindow(Engine &engine,
   m_ui.setupUi(this);
   setWindowTitle(QCoreApplication::applicationName());
 
-  ConnectSignals();
+  InitBalanceListWindow();
+  InitSecurityListWindow();
 
-  CreateNewBalanceListWindow();
   CreateNewStrategyOperationsWindow();
   CreateNewStandaloneOrderListWindow();
   CreateNewTotalResultsReportWindow();
 
   m_ui.centalTabs->setCurrentIndex(0);
+
+  ConnectSignals();
 }
 
 MainWindow::~MainWindow() = default;
@@ -99,6 +103,15 @@ void MainWindow::ConnectSignals() {
 
   Verify(connect(m_ui.showAbout, &QAction::triggered,
                  [this]() { ShowAbout(*this); }));
+
+  Verify(connect(m_ui.showBalancesWindow, &QAction::triggered,
+                 [this](bool isChecked) {
+                   isChecked ? m_ui.balances->show() : m_ui.balances->hide();
+                 }));
+  Verify(connect(
+      m_ui.showSecuritiesWindow, &QAction::triggered, [this](bool isChecked) {
+        isChecked ? m_ui.securities->show() : m_ui.securities->hide();
+      }));
 
   Verify(connect(m_ui.createNewChartWindows, &QAction::triggered, this,
                  &MainWindow::CreateNewChartWindows));
@@ -211,6 +224,13 @@ void MainWindow::RestoreModules() {
 }
 
 void MainWindow::CreateNewChartWindows() {
+  for (const auto &symbol :
+       SymbolSelectionDialog(m_engine, this).RequestSymbols()) {
+    CreateNewChartWindow(symbol);
+  }
+}
+
+void MainWindow::CreateNewChartWindow(const QString &symbol) {
   class ChartMainWindow : public QMainWindow {
    public:
     explicit ChartMainWindow(const QString &symbol,
@@ -267,53 +287,48 @@ void MainWindow::CreateNewChartWindows() {
     pt::time_duration m_period;
   };
 
-  for (const auto &symbol :
-       SymbolSelectionDialog(m_engine, this).RequestSymbols()) {
-    auto window =
-        boost::make_unique<ChartMainWindow>(symbol, GetEngine(), this);
-    window->setWindowTitle(tr("%1 Candlestick Chart").arg(symbol));
+  auto window = boost::make_unique<ChartMainWindow>(symbol, GetEngine(), this);
+  window->setWindowTitle(tr("%1 Candlestick Chart").arg(symbol));
+  {
+    auto &centralWidget = *new QWidget(&*window);
+    auto &layout = *new QVBoxLayout(&centralWidget);
+    centralWidget.setLayout(&layout);
+    auto &toolbar = *new ChartToolbarWidget(&centralWidget);
+    layout.addWidget(&toolbar);
     {
-      auto &centralWidget = *new QWidget(&*window);
-      auto &layout = *new QVBoxLayout(&centralWidget);
-      centralWidget.setLayout(&layout);
-      auto &toolbar = *new ChartToolbarWidget(&centralWidget);
-      layout.addWidget(&toolbar);
+      const auto numberOfFrames = 100;
+      auto &chart = *new CandlestickChartWidget(
+          toolbar.GetNumberOfSecondsInFrame(), numberOfFrames, &centralWidget);
+      auto &windowRef = *window;
+      Verify(connect(
+          &toolbar, &ChartToolbarWidget::NumberOfSecondsInFrameChange, &chart,
+          [&windowRef, &chart,
+           numberOfFrames](size_t newNumberOfSecondsInFrame) {
+            windowRef.StopBars();
+            windowRef.StartBars(numberOfFrames, newNumberOfSecondsInFrame);
+            chart.SetNumberOfSecondsInFrame(newNumberOfSecondsInFrame);
+          }));
       {
-        const auto numberOfFrames = 100;
-        auto &chart =
-            *new CandlestickChartWidget(toolbar.GetNumberOfSecondsInFrame(),
-                                        numberOfFrames, &centralWidget);
-        auto &windowRef = *window;
-        Verify(connect(
-            &toolbar, &ChartToolbarWidget::NumberOfSecondsInFrameChange, &chart,
-            [&windowRef, &chart,
-             numberOfFrames](size_t newNumberOfSecondsInFrame) {
-              windowRef.StopBars();
-              windowRef.StartBars(numberOfFrames, newNumberOfSecondsInFrame);
-              chart.SetNumberOfSecondsInFrame(newNumberOfSecondsInFrame);
-            }));
-        {
-          const auto symbolStr = symbol.toStdString();
-          Verify(connect(&m_engine, &Engine::BarUpdate, &chart,
-                         [&windowRef, &chart, symbolStr](
-                             const Security *security, const Bar &bar) {
-                           if (!windowRef.HasSecurity(*security)) {
-                             return;
-                           }
-                           chart.Update(bar);
-                         }));
-          window->StartBars(numberOfFrames, chart.GetNumberOfSecondsInFrame());
-        }
-        layout.addWidget(&chart);
+        const auto symbolStr = symbol.toStdString();
+        Verify(connect(&m_engine, &Engine::BarUpdate, &chart,
+                       [&windowRef, &chart, symbolStr](const Security *security,
+                                                       const Bar &bar) {
+                         if (!windowRef.HasSecurity(*security)) {
+                           return;
+                         }
+                         chart.Update(bar);
+                       }));
+        window->StartBars(numberOfFrames, chart.GetNumberOfSecondsInFrame());
       }
-      window->setCentralWidget(&centralWidget);
+      layout.addWidget(&chart);
     }
-    window->setContentsMargins(0, 0, 0, 0);
-    window->resize(600, 450);
-    window->show();
-    window->setAttribute(Qt::WA_DeleteOnClose);
-    window.release();
+    window->setCentralWidget(&centralWidget);
   }
+  window->setContentsMargins(0, 0, 0, 0);
+  window->resize(600, 450);
+  window->show();
+  window->setAttribute(Qt::WA_DeleteOnClose);
+  window.release();
 }
 
 void MainWindow::CreateNewStrategyOperationsWindow() {
@@ -353,14 +368,42 @@ void MainWindow::CreateNewStandaloneOrderListWindow() {
       m_ui.centalTabs->addTab(&view, tr("Standalone orders")));
 }
 
-void MainWindow::CreateNewBalanceListWindow() {
-  auto &view = *new BalanceListView(this);
+void MainWindow::InitBalanceListWindow() {
   {
-    auto &model = *new SortFilterProxyModel(&view);
-    model.setSourceModel(new BalanceListModel(m_engine, &view));
-    view.setModel(&model);
+    auto &view = *new BalanceListView(this);
+    {
+      auto &model = *new SortFilterProxyModel(&view);
+      model.setSourceModel(new BalanceListModel(m_engine, &view));
+      view.setModel(&model);
+    }
+    m_ui.balances->setWidget(&view);
+    m_ui.balances->setWindowTitle(view.windowTitle());
   }
-  m_ui.balances->setWidget(&view);
+  Verify(connect(m_ui.balances, &QDockWidget::visibilityChanged,
+                 [this](bool isVisible) {
+                   const QSignalBlocker blocker(m_ui.showBalancesWindow);
+                   m_ui.showBalancesWindow->setChecked(isVisible);
+                 }));
+}
+
+void MainWindow::InitSecurityListWindow() {
+  {
+    auto &view = *new SecurityListView(this);
+    {
+      auto &model = *new SortFilterProxyModel(&view);
+      model.setSourceModel(new SecurityListModel(m_engine, &view));
+      view.setModel(&model);
+    }
+    m_ui.securities->setWidget(&view);
+    m_ui.securities->setWindowTitle(view.windowTitle());
+    Verify(connect(&view, &SecurityListView::ChartRequested, this,
+                   &MainWindow::CreateNewChartWindow));
+  }
+  Verify(connect(m_ui.securities, &QDockWidget::visibilityChanged,
+                 [this](bool isVisible) {
+                   const QSignalBlocker blocker(m_ui.showSecuritiesWindow);
+                   m_ui.showSecuritiesWindow->setChecked(isVisible);
+                 }));
 }
 
 void MainWindow::CreateNewTotalResultsReportWindow() {

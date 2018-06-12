@@ -78,6 +78,9 @@ QString front::ConvertQtyToText(const Qty& source) {
 }
 
 QDateTime front::ConvertToQDateTime(const pt::ptime& source) {
+  if (source == pt::not_a_date_time) {
+    return {};
+  }
   const auto& date = source.date();
   const auto& time = source.time_of_day();
   const auto& ms =

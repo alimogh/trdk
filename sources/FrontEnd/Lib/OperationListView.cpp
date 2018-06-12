@@ -31,7 +31,7 @@ OperationListView::OperationListView(QWidget *parent)
 void OperationListView::InitContextMenu() {
   setContextMenuPolicy(Qt::ActionsContextMenu);
   {
-    auto *action = new QAction(tr("&Copy\tCtrl+C"), this);
+    auto *action = new QAction(tr("Copy\tCtrl+C"), this);
     action->setShortcut(QKeySequence::Copy);
     action->setShortcutContext(Qt::WidgetWithChildrenShortcut);
     Verify(connect(action, &QAction::triggered, this,
@@ -44,7 +44,7 @@ void OperationListView::InitContextMenu() {
     addAction(separator);
   }
   {
-    auto *action = new QAction(tr("&Follow New Operations\tF"), this);
+    auto *action = new QAction(tr("Follow New Operations\tF"), this);
     action->setShortcut(QKeySequence(Qt::Key_F));
     action->setShortcutContext(Qt::WidgetWithChildrenShortcut);
     action->setCheckable(true);
@@ -54,7 +54,7 @@ void OperationListView::InitContextMenu() {
     addAction(action);
   }
   {
-    auto *action = new QAction(tr("&Expand New Operations"), this);
+    auto *action = new QAction(tr("Expand New Operations"), this);
     action->setCheckable(true);
     action->setChecked(m_isExpandingEnabled);
     Verify(connect(action, &QAction::toggled, this, [this](bool isEnabled) {
@@ -68,13 +68,13 @@ void OperationListView::InitContextMenu() {
     addAction(separator);
   }
   {
-    auto *action = new QAction(tr("C&ollapse All"), this);
+    auto *action = new QAction(tr("Collapse All"), this);
     Verify(connect(action, &QAction::triggered, this,
                    &OperationListView::collapseAll));
     addAction(action);
   }
   {
-    auto *action = new QAction(tr("E&xpand All"), this);
+    auto *action = new QAction(tr("Expand All"), this);
     Verify(connect(action, &QAction::triggered, this,
                    &OperationListView::expandAll));
     addAction(action);
