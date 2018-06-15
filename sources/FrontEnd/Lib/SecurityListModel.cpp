@@ -138,7 +138,7 @@ QVariant SecurityListModel::data(const QModelIndex &index, int role) const {
         case COLUMN_SYMBOL:
           return QString::fromStdString(security.GetSymbol().GetSymbol());
         case COLUMN_SOURCE:
-          return QString::fromStdString(security.GetSource().GetInstanceName());
+          return QString::fromStdString(security.GetSource().GetTitle());
         case COLUMN_BID_PRICE:
           return ConvertPriceToText(security.GetBidPriceValue());
         case COLUMN_BID_QTY:
@@ -167,7 +167,7 @@ QVariant SecurityListModel::data(const QModelIndex &index, int role) const {
     case Qt::ToolTipRole:
       return QString("%1 from %2")
           .arg(QString::fromStdString(security.GetSymbol().GetAsString()),
-               QString::fromStdString(security.GetSource().GetInstanceName()));
+               QString::fromStdString(security.GetSource().GetTitle()));
 
     case Qt::TextAlignmentRole:
       return Qt::AlignLeft + Qt::AlignVCenter;

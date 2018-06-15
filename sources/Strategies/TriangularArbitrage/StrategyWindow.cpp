@@ -54,7 +54,7 @@ StrategyWindow::StrategyWindow(Engine &engine,
   {
     m_strategy.GetContext().ForEachMarketDataSource(
         [&](const MarketDataSource &source) {
-          const auto name = QString::fromStdString(source.GetInstanceName());
+          const auto name = QString::fromStdString(source.GetTitle());
           const auto &addItem = [&](QListWidget &control) {
             auto &item = *new QListWidgetItem(name);
             control.addItem(&item);
@@ -288,8 +288,8 @@ ta::Strategy &StrategyWindow::CreateStrategyInstance(const LegsConf &legSet) {
     strategyConfig.add_child("requirements.level1Updates.symbols", symbols);
     ptr::ptree strategyTagedConfig;
     strategyTagedConfig.add_child(m_engine.GenerateNewStrategyInstanceName(
-                                          "Triangular Arbitrage " + legsStr),
-                                      strategyConfig);
+                                      "Triangular Arbitrage " + legsStr),
+                                  strategyConfig);
     m_engine.GetContext().Add(strategyTagedConfig);
   }
   auto &result = *boost::polymorphic_downcast<ta::Strategy *>(
@@ -321,7 +321,7 @@ void StrategyWindow::OnOpportunityUpdate(
       for (const auto &target : bestOpportunity.targets) {
         m_legs[i].price->setText(ConvertPriceToText(target.price));
         m_legs[i].exchange->setText(
-            QString::fromStdString(target.tradingSystem->GetInstanceName()));
+            QString::fromStdString(target.tradingSystem->GetTitle()));
         ++i;
       }
     }
@@ -376,10 +376,9 @@ void StrategyWindow::OnOpportunityUpdate(
         m_ui.opportunities->setItem(
             row, column++,
             new QTableWidgetItem(ConvertPriceToText(target.price)));
-        m_ui.opportunities->setItem(
-            row, column++,
-            new QTableWidgetItem(QString::fromStdString(
-                target.tradingSystem->GetInstanceName())));
+        m_ui.opportunities->setItem(row, column++,
+                                    new QTableWidgetItem(QString::fromStdString(
+                                        target.tradingSystem->GetTitle())));
       }
       m_ui.opportunities->setItem(
           row, column++,
@@ -396,7 +395,7 @@ void StrategyWindow::OnOpportunityUpdate(
                   : QString::fromStdString(
                         opportunity
                             .targets[opportunity.reducedByAccountBalanceLeg]
-                            .tradingSystem->GetInstanceName())));
+                            .tradingSystem->GetTitle())));
       m_ui.opportunities->setItem(
           row, column++,
           new QTableWidgetItem(
@@ -411,11 +410,10 @@ void StrategyWindow::OnOpportunityUpdate(
         if (opportunity.checkError) {
           signalState += ", " + QString::fromStdString(*opportunity.checkError);
           if (opportunity.errorTradingSystem) {
-            signalState +=
-                " (" +
-                QString::fromStdString(
-                    opportunity.errorTradingSystem->GetInstanceName()) +
-                ')';
+            signalState += " (" +
+                           QString::fromStdString(
+                               opportunity.errorTradingSystem->GetTitle()) +
+                           ')';
           }
         } else {
           Assert(!opportunity.errorTradingSystem);

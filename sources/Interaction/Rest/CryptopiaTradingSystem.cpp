@@ -161,9 +161,10 @@ class CryptopiaTradingSystem::OrderTransactionRequest : public PrivateRequest {
 CryptopiaTradingSystem::CryptopiaTradingSystem(const App &,
                                                const TradingMode &mode,
                                                Context &context,
-                                               const std::string &instanceName,
+                                               std::string instanceName,
+                                               std::string title,
                                                const ptr::ptree &conf)
-    : Base(mode, context, instanceName),
+    : Base(mode, context, std::move(instanceName), std::move(title)),
       m_settings(conf, GetLog()),
       m_serverTimeDiff(
           GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),
@@ -613,10 +614,12 @@ bool CryptopiaTradingSystem::IsIdRegisterInLastOrders(const OrderId &id) const {
 boost::shared_ptr<trdk::TradingSystem> CreateCryptopiaTradingSystem(
     const TradingMode &mode,
     Context &context,
-    const std::string &instanceName,
+    std::string instanceName,
+    std::string title,
     const ptr::ptree &configuration) {
   const auto &result = boost::make_shared<CryptopiaTradingSystem>(
-      App::GetInstance(), mode, context, instanceName, configuration);
+      App::GetInstance(), mode, context, std::move(instanceName),
+      std::move(title), configuration);
   return result;
 }
 

@@ -28,9 +28,11 @@ class CsvContinuousContractMarketDataSource : public Test::MarketDataSource {
   typedef Test::MarketDataSource Base;
 
  public:
-  explicit CsvContinuousContractMarketDataSource(
-      Context &context, const std::string &instanceName, const ptr::ptree &conf)
-      : Base(context, instanceName, conf) {}
+  explicit CsvContinuousContractMarketDataSource(Context &context,
+                                                 std::string instanceName,
+                                                 std::string title,
+                                                 const ptr::ptree &conf)
+      : Base(context, std::move(instanceName), std::move(title), conf) {}
 
   virtual ~CsvContinuousContractMarketDataSource() override {
     try {
@@ -228,10 +230,11 @@ class CsvContinuousContractMarketDataSource : public Test::MarketDataSource {
 TRDK_INTERACTION_TEST_API
 boost::shared_ptr<trdk::MarketDataSource>
 CreateCsvContinuousContractMarketDataSource(Context &context,
-                                            const std::string &instanceName,
+                                            std::string instanceName,
+                                            std::string title,
                                             const ptr::ptree &configuration) {
   return boost::make_shared<CsvContinuousContractMarketDataSource>(
-      context, instanceName, configuration);
+      context, std::move(instanceName), std::move(title), configuration);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

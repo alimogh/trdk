@@ -19,10 +19,13 @@ using namespace Interaction::Rest;
 TradingSystemAndMarketDataSourceFactoryResult CreateCexio(
     const TradingMode &mode,
     Context &context,
-    const std::string &instanceName,
+    std::string instanceName,
+    std::string title,
     const boost::property_tree::ptree &conf) {
-  return {boost::make_shared<CexioTradingSystem>(App::GetInstance(), mode,
-                                                 context, instanceName, conf),
+  auto tradingSystem = boost::make_shared<CexioTradingSystem>(
+      App::GetInstance(), mode, context, instanceName, title, conf);
+  return {std::move(tradingSystem),
           boost::make_shared<CexioMarketDataSource>(App::GetInstance(), context,
-                                                    instanceName, conf)};
+                                                    std::move(instanceName),
+                                                    std::move(title), conf)};
 }

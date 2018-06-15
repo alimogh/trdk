@@ -20,9 +20,11 @@ using namespace Test;
 namespace ptr = boost::property_tree;
 
 Test::MarketDataSource::MarketDataSource(Context &context,
-                                         const std::string &instanceName,
+                                         std::string instanceName,
+                                         std::string title,
                                          const ptr::ptree &)
-    : Base(context, instanceName), m_stopFlag(false) {
+    : Base(context, std::move(instanceName), std::move(title)),
+      m_stopFlag(false) {
   if (!GetContext().GetSettings().IsReplayMode()) {
     throw Exception("Failed to start without Replay Mode");
   }

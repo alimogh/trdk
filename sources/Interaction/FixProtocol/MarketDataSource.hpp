@@ -20,7 +20,8 @@ namespace FixProtocol {
 class MarketDataSource : public trdk::MarketDataSource, public Handler {
  public:
   explicit MarketDataSource(Context&,
-                            const std::string& instanceName,
+                            std::string instanceName,
+                            std::string title,
                             const boost::property_tree::ptree&);
   ~MarketDataSource() override;
 

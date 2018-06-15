@@ -21,7 +21,8 @@ class MarketDataSource : public trdk::MarketDataSource {
   typedef trdk::MarketDataSource Base;
 
   MarketDataSource(Context &context,
-                   const std::string &instanceName,
+                   std::string instanceName,
+                   std::string title,
                    const boost::property_tree::ptree &);
   ~MarketDataSource() override = default;
 

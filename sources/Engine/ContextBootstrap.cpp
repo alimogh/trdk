@@ -56,7 +56,8 @@ std::pair<boost::function<Factory>, boost::shared_ptr<Dll>> LoadModuleFactory(
 namespace {
 std::pair<DllObjectPtr<TradingSystem>, DllObjectPtr<MarketDataSource>>
 LoadTradingSystemAndMarketDataSourceModule(const ptr::ptree &config,
-                                           const std::string &instanceName,
+                                           std::string instanceName,
+                                           std::string title,
                                            const TradingMode &mode,
                                            Context &context) {
   const auto factory =
@@ -65,7 +66,8 @@ LoadTradingSystemAndMarketDataSourceModule(const ptr::ptree &config,
 
   TradingSystemAndMarketDataSourceFactoryResult result;
   try {
-    result = factory.first(mode, context, instanceName, config);
+    result = factory.first(mode, context, std::move(instanceName),
+                           std::move(title), config);
   } catch (...) {
     EventsLog::BroadcastUnhandledException(__FUNCTION__, __FILE__, __LINE__);
     throw Exception(
@@ -128,7 +130,8 @@ Engine::LoadSources(trdk::Context &context) {
       }
 
       auto modules = LoadTradingSystemAndMarketDataSourceModule(
-          config, instanceName, mode, context);
+          config, instanceName, config.get<std::string>("title"), mode,
+          context);
       context.GetLog().Debug("Using Trading System as Market Data Source.");
       Assert(modules.first);
       Assert(modules.second);

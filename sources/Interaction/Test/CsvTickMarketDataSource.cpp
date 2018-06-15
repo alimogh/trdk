@@ -130,13 +130,15 @@ class CsvTickMarketDataSource : public Test::MarketDataSource {
 
  public:
   explicit CsvTickMarketDataSource(Context &context,
-                                   const std::string &instanceName,
+                                   std::string instanceName,
+                                   std::string title,
                                    const ptr::ptree &conf)
-      : Base(context, instanceName, conf), m_settings(conf) {
+      : Base(context, std::move(instanceName), std::move(title), conf),
+        m_settings(conf) {
     m_settings.Log(GetLog());
   }
 
-  virtual ~CsvTickMarketDataSource() override {
+  ~CsvTickMarketDataSource() override {
     try {
       Stop();
     } catch (...) {
@@ -146,11 +148,11 @@ class CsvTickMarketDataSource : public Test::MarketDataSource {
   }
 
  protected:
-  virtual trdk::Security &CreateNewSecurityObject(
-      const Symbol &symbol) override {
+  trdk::Security &CreateNewSecurityObject(const Symbol &symbol) override {
     if (!symbol.IsExplicit()) {
       throw Exception("Source works only with explicit symbols");
-    } else if (m_security) {
+    }
+    if (m_security) {
       throw Exception("Source works only with one security");
     }
 
@@ -168,7 +170,7 @@ class CsvTickMarketDataSource : public Test::MarketDataSource {
     return *result;
   }
 
-  virtual void Run() override {
+  void Run() override {
     if (!m_security) {
       throw Exception("Security is not set");
     }
@@ -178,9 +180,8 @@ class CsvTickMarketDataSource : public Test::MarketDataSource {
       GetLog().Error("Failed to open market data source file %1%.",
                      m_settings.filePath);
       throw ConnectError("Failed to open market data source file");
-    } else {
-      GetLog().Info("Opened market data source file %1%.", m_settings.filePath);
     }
+    GetLog().Info("Opened market data source file %1%.", m_settings.filePath);
 
     std::vector<Level1TickValue> values;
     std::vector<std::string> fields;
@@ -303,11 +304,10 @@ AssertEq(numberOfLevel1TickTypes,
           GetLog().Error("Unknown time field format at line %1%.", lineNo);
           throw Exception("Wrong file format");
       }
-    } else {
-      return pt::duration_from_string(field.substr(9, 2) + ":" +
-                                      field.substr(11, 2) + ":" +
-                                      field.substr(13, 2));
     }
+    return pt::duration_from_string(field.substr(9, 2) + ":" +
+                                    field.substr(11, 2) + ":" +
+                                    field.substr(13, 2));
   }
 
   template <typename Field>
@@ -321,7 +321,6 @@ AssertEq(numberOfLevel1TickTypes,
     }
   }
 
- private:
   const Settings m_settings;
   boost::shared_ptr<Test::Security> m_security;
 };
@@ -331,10 +330,11 @@ AssertEq(numberOfLevel1TickTypes,
 
 TRDK_INTERACTION_TEST_API boost::shared_ptr<trdk::MarketDataSource>
 CreateCsvTickMarketDataSource(Context &context,
-                              const std::string &instanceName,
+                              std::string instanceName,
+                              std::string title,
                               const ptr::ptree &configuration) {
-  return boost::make_shared<CsvTickMarketDataSource>(context, instanceName,
-                                                     configuration);
+  return boost::make_shared<CsvTickMarketDataSource>(
+      context, std::move(instanceName), std::move(title), configuration);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

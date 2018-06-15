@@ -17,12 +17,6 @@ namespace trdk {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-typedef boost::shared_ptr<TradingSystem>(TradingSystemFactory)(
-    const TradingMode &,
-    Context &,
-    const std::string &instanceName,
-    const boost::property_tree::ptree &);
-
 struct TradingSystemAndMarketDataSourceFactoryResult {
   boost::shared_ptr<TradingSystem> tradingSystem;
   boost::shared_ptr<MarketDataSource> marketDataSource;
@@ -31,7 +25,8 @@ typedef TradingSystemAndMarketDataSourceFactoryResult(
     TradingSystemAndMarketDataSourceFactory)(
     const TradingMode &,
     Context &,
-    const std::string &instanceName,
+    std::string instanceName,
+    std::string title,
     const boost::property_tree::ptree &);
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -105,7 +100,8 @@ class TRDK_CORE_API TradingSystem : virtual public Interactor {
  public:
   explicit TradingSystem(const TradingMode &,
                          Context &,
-                         const std::string &instanceName);
+                         std::string instanceName,
+                         std::string title);
   TradingSystem(TradingSystem &&);
   TradingSystem(const TradingSystem &) = delete;
   TradingSystem &operator=(TradingSystem &&) = delete;
@@ -128,12 +124,12 @@ class TRDK_CORE_API TradingSystem : virtual public Interactor {
   Log &GetLog() const noexcept;
   TradingLog &GetTradingLog() const noexcept;
 
-  const boost::property_tree::ptree &GetConfig() const;
-
   //! Identifies Trading System object by verbose name.
   /** Trading System instance name is unique, but can be empty.
    */
   const std::string &GetInstanceName() const;
+
+  const std::string &GetTitle() const;
 
   const std::string &GetStringId() const noexcept;
 

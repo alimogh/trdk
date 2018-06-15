@@ -23,7 +23,8 @@ class TradingSystem : public trdk::TradingSystem {
 
   explicit TradingSystem(const TradingMode &,
                          Context &context,
-                         const std::string &instanceName,
+                         std::string instanceName,
+                         std::string title,
                          const boost::property_tree::ptree &);
   ~TradingSystem() override;
 

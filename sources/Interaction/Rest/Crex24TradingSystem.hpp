@@ -79,7 +79,8 @@ class Crex24TradingSystem : public TradingSystem {
   explicit Crex24TradingSystem(const App &,
                                const TradingMode &,
                                Context &,
-                               const std::string &instanceName,
+                               std::string instanceName,
+                               std::string title,
                                const boost::property_tree::ptree &);
   ~Crex24TradingSystem() override = default;
 

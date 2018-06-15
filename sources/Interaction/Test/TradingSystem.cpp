@@ -44,7 +44,7 @@ typedef boost::unique_lock<SettingsMutex> SettingsWriteLock;
 
 //////////////////////////////////////////////////////////////////////////
 
-class Test::TradingSystem::Implementation : private boost::noncopyable {
+class Test::TradingSystem::Implementation : boost::noncopyable {
  public:
   TradingSystem *m_self;
 
@@ -397,9 +397,10 @@ class Test::TradingSystem::Implementation : private boost::noncopyable {
 
 Test::TradingSystem::TradingSystem(const TradingMode &mode,
                                    Context &context,
-                                   const std::string &instanceName,
+                                   std::string instanceName,
+                                   std::string title,
                                    const ptr::ptree &conf)
-    : Base(mode, context, instanceName),
+    : Base(mode, context, std::move(instanceName), std::move(title)),
       m_pimpl(std::make_unique<Implementation>(*this, conf)) {
   m_pimpl->m_delayGenerator.Report(GetLog());
 }
@@ -447,10 +448,11 @@ TRDK_INTERACTION_TEST_API
 boost::shared_ptr<trdk::TradingSystem> CreateTradingSystem(
     const trdk::TradingMode &mode,
     Context &context,
-    const std::string &instanceName,
+    std::string instanceName,
+    std::string title,
     const ptr::ptree &configuration) {
-  return boost::make_shared<Test::TradingSystem>(mode, context, instanceName,
-                                                 configuration);
+  return boost::make_shared<Test::TradingSystem>(
+      mode, context, std::move(instanceName), std::move(title), configuration);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

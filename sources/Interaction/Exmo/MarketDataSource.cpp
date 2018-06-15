@@ -24,9 +24,10 @@ namespace ptr = boost::property_tree;
 
 Exmo::MarketDataSource::MarketDataSource(const App &,
                                          Context &context,
-                                         const std::string &instanceName,
+                                         std::string instanceName,
+                                         std::string title,
                                          const ptr::ptree &conf)
-    : Base(context, instanceName),
+    : Base(context, std::move(instanceName), std::move(title)),
       m_settings(conf, GetLog()),
       m_session(CreateSession(m_settings, false)),
       m_pollingTask(boost::make_unique<PollingTask>(m_settings.pollingSetttings,
@@ -45,9 +46,13 @@ Exmo::MarketDataSource::~MarketDataSource() {
 }
 
 boost::shared_ptr<trdk::MarketDataSource> CreateMarketDataSource(
-    Context &context, const std::string &instanceName, const ptr::ptree &conf) {
+    Context &context,
+    std::string instanceName,
+    std::string title,
+    const ptr::ptree &conf) {
   return boost::make_shared<Exmo::MarketDataSource>(App::GetInstance(), context,
-                                                    instanceName, conf);
+                                                    std::move(instanceName),
+                                                    std::move(title), conf);
 }
 
 void Exmo::MarketDataSource::Connect() {

@@ -237,10 +237,11 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
   explicit CcexExchange(const App &,
                         const TradingMode &mode,
                         Context &context,
-                        const std::string &instanceName,
+                        std::string instanceName,
+                        std::string title,
                         const ptr::ptree &conf)
-      : TradingSystem(mode, context, instanceName),
-        MarketDataSource(context, instanceName),
+      : TradingSystem(mode, context, instanceName, title),
+        MarketDataSource(context, std::move(instanceName), std::move(title)),
         m_settings(conf, GetTsLog()),
         m_isConnected(false),
         m_endpoint(GetEndpoint()),
@@ -729,19 +730,23 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
 TradingSystemAndMarketDataSourceFactoryResult CreateCcex(
     const TradingMode &mode,
     Context &context,
-    const std::string &instanceName,
+    std::string instanceName,
+    std::string title,
     const ptr::ptree &configuration) {
   const auto &result = boost::make_shared<CcexExchange>(
-      App::GetInstance(), mode, context, instanceName, configuration);
+      App::GetInstance(), mode, context, std::move(instanceName),
+      std::move(title), configuration);
   return {result, result};
 }
 
 boost::shared_ptr<MarketDataSource> CreateCcexMarketDataSource(
     Context &context,
-    const std::string &instanceName,
+    std::string instanceName,
+    std::string title,
     const ptr::ptree &configuration) {
   return boost::make_shared<CcexExchange>(App::GetInstance(), TRADING_MODE_LIVE,
-                                          context, instanceName, configuration);
+                                          context, std::move(instanceName),
+                                          std::move(title), configuration);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

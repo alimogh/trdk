@@ -22,9 +22,11 @@ using namespace Interaction;
 using namespace Test;
 
 RandomMarketDataSource::RandomMarketDataSource(Context &context,
-                                               const std::string &instanceName,
+                                               std::string instanceName,
+                                               std::string title,
                                                const ptr::ptree &)
-    : Base(context, instanceName), m_stopFlag(false) {}
+    : Base(context, std::move(instanceName), std::move(title)),
+      m_stopFlag(false) {}
 
 RandomMarketDataSource::~RandomMarketDataSource() {
   m_stopFlag = true;
@@ -172,10 +174,11 @@ trdk::Security &RandomMarketDataSource::CreateNewSecurityObject(
 TRDK_INTERACTION_TEST_API
 boost::shared_ptr<MarketDataSource> CreateRandomMarketDataSource(
     Context &context,
-    const std::string &instanceName,
+    std::string instanceName,
+    std::string title,
     const ptr::ptree &configuration) {
-  return boost::make_shared<RandomMarketDataSource>(context, instanceName,
-                                                    configuration);
+  return boost::make_shared<RandomMarketDataSource>(
+      context, std::move(instanceName), std::move(title), configuration);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

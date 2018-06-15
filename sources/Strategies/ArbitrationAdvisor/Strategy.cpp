@@ -524,24 +524,24 @@ class aa::Strategy::Implementation : private boost::noncopyable {
 
   void ReportSignalCheckErrors(const SignalSession &session) const {
     std::vector<std::string> report;
-    session.ForEachCheckError(
-        [this, &report](const Security &sellTarget, const Security &buyTarget,
-                        const std::string &error, const Security *checkTarget) {
-          std::ostringstream os;
-          os << m_self.GetTradingSystem(sellTarget.GetSource().GetIndex())
-                    .GetInstanceName()
-             << " > "
-             << m_self.GetTradingSystem(buyTarget.GetSource().GetIndex())
-                    .GetInstanceName()
-             << ": " << error;
-          if (checkTarget) {
-            os << " ("
-               << m_self.GetTradingSystem(checkTarget->GetSource().GetIndex())
-                      .GetInstanceName()
-               << ")";
-          }
-          report.emplace_back(os.str());
-        });
+    session.ForEachCheckError([this, &report](const Security &sellTarget,
+                                              const Security &buyTarget,
+                                              const std::string &error,
+                                              const Security *checkTarget) {
+      std::ostringstream os;
+      os << m_self.GetTradingSystem(sellTarget.GetSource().GetIndex())
+                .GetTitle()
+         << " > "
+         << m_self.GetTradingSystem(buyTarget.GetSource().GetIndex()).GetTitle()
+         << ": " << error;
+      if (checkTarget) {
+        os << " ("
+           << m_self.GetTradingSystem(checkTarget->GetSource().GetIndex())
+                  .GetTitle()
+           << ")";
+      }
+      report.emplace_back(os.str());
+    });
     if (report == m_lastTradingSignalCheckErrors) {
       return;
     }

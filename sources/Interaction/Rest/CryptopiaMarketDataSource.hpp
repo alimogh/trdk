@@ -26,7 +26,8 @@ class CryptopiaMarketDataSource : public MarketDataSource {
 
   explicit CryptopiaMarketDataSource(const App &,
                                      Context &context,
-                                     const std::string &instanceName,
+                                     std::string instanceName,
+                                     std::string title,
                                      const boost::property_tree::ptree &);
   ~CryptopiaMarketDataSource() override;
 

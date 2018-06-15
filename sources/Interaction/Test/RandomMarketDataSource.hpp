@@ -23,7 +23,8 @@ class RandomMarketDataSource : public MarketDataSource {
   typedef MarketDataSource Base;
 
   explicit RandomMarketDataSource(Context &context,
-                                  const std::string &instanceName,
+                                  std::string instanceName,
+                                  std::string title,
                                   const boost::property_tree::ptree &);
   ~RandomMarketDataSource() override;
 

@@ -65,7 +65,7 @@ Position *Controller::Open(const boost::shared_ptr<Operation> &operation,
       const auto &tradingSystem =
           operation->GetStrategy()
               .GetTradingSystem(security.GetSource().GetIndex())
-              .GetInstanceName();
+              .GetTitle();
       boost::polymorphic_downcast<Strategy *>(&operation->GetStrategy())
           ->RaiseEvent("Got signal from " + tradingSystem + " to open \"" +
                        std::string(isLong ? "long" : "short") +
@@ -102,8 +102,7 @@ void Controller::Close(Position &position) {
       position.MarkAsCompleted();
       boost::polymorphic_downcast<Strategy *>(&position.GetStrategy())
           ->RaiseEvent("Got signal from " +
-                       position.GetTradingSystem().GetInstanceName() +
-                       " to close \"" +
+                       position.GetTradingSystem().GetTitle() + " to close \"" +
                        std::string(position.IsLong() ? "long" : "short") +
                        "\", but can't close position: " + *checkError + ".");
       return;

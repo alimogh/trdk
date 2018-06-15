@@ -26,9 +26,10 @@ namespace ptr = boost::property_tree;
 
 Crex24MarketDataSource::Crex24MarketDataSource(const App &,
                                                Context &context,
-                                               const std::string &instanceName,
+                                               std::string instanceName,
+                                               std::string title,
                                                const ptr::ptree &conf)
-    : Base(context, instanceName),
+    : Base(context, std::move(instanceName), std::move(title)),
       m_settings(conf, GetLog()),
       m_session(CreateCrex24Session(m_settings, false)),
       m_pollingTask(boost::make_unique<PollingTask>(m_settings.pollingSetttings,
@@ -188,10 +189,12 @@ void Crex24MarketDataSource::UpdatePrices(r::Security &security,
 
 boost::shared_ptr<MarketDataSource> CreateCrex24MarketDataSource(
     Context &context,
-    const std::string &instanceName,
+    std::string instanceName,
+    std::string title,
     const ptr::ptree &configuration) {
   return boost::make_shared<Crex24MarketDataSource>(
-      App::GetInstance(), context, instanceName, configuration);
+      App::GetInstance(), context, std::move(instanceName), std::move(title),
+      configuration);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

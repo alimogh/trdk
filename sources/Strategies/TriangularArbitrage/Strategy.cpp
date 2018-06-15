@@ -696,9 +696,8 @@ class ta::Strategy::Implementation : private boost::noncopyable {
             std::vector<std::string> names;
             names.reserve(source.size());
             for (const auto &index : source) {
-              names.emplace_back(m_self.GetContext()
-                                     .GetMarketDataSource(index)
-                                     .GetInstanceName());
+              names.emplace_back(
+                  m_self.GetContext().GetMarketDataSource(index).GetTitle());
             }
             record % boost::join(names, ", ");  // 2
           }

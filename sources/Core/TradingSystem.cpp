@@ -92,7 +92,7 @@ TradingSystem::Order::Order(Security &security,
       numberOfTrades(0),
       sumOfTradePrices(0) {}
 
-class TradingSystem::Implementation : private boost::noncopyable {
+class TradingSystem::Implementation {
  public:
   typedef ConcurrencyPolicy::SharedMutex ActiveOrderMutex;
   typedef ConcurrencyPolicy::ReadLock ActiveOrderReadLock;
@@ -102,18 +102,17 @@ class TradingSystem::Implementation : private boost::noncopyable {
 
   class LockedOrder {
    public:
-    LockedOrder(const boost::shared_ptr<Order> &order)
+    explicit LockedOrder(const boost::shared_ptr<Order> &order)
         : m_order(order), m_lock(order->mutex) {}
     LockedOrder(LockedOrder &&) = default;
+    LockedOrder(const LockedOrder &) = delete;
+    LockedOrder &operator=(LockedOrder &&) = delete;
+    LockedOrder &operator=(const LockedOrder &) = delete;
+    ~LockedOrder() = default;
 
-   private:
-    const LockedOrder &operator=(const LockedOrder &);
-
-   public:
     Order *operator->() const { return &*m_order; }
     Order &operator*() const { return *m_order; }
 
-   public:
     void Unlock() { m_lock.unlock(); }
 
    private:
@@ -130,6 +129,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
   Context &m_context;
 
   const std::string m_instanceName;
+  const std::string m_title;
   const std::string m_stringId;
 
   Log m_log;
@@ -142,16 +142,23 @@ class TradingSystem::Implementation : private boost::noncopyable {
   explicit Implementation(TradingSystem &self,
                           const TradingMode &mode,
                           Context &context,
-                          const std::string &instanceName)
+                          std::string instanceName,
+                          std::string title)
       : m_self(self),
         m_mode(mode),
         m_index(std::numeric_limits<size_t>::max()),
         m_context(context),
-        m_instanceName(instanceName),
+        m_instanceName(std::move(instanceName)),
+        m_title(std::move(title)),
         m_stringId(FormatStringId(m_instanceName, m_mode)),
         m_log(m_stringId, m_context.GetLog()),
-        m_tradingLog(instanceName, m_context.GetTradingLog()) {}
-
+        m_tradingLog(m_instanceName, m_context.GetTradingLog()) {
+    m_log.Info(R"(Loaded trading system instance whith name "%1%".)", m_title);
+  }
+  Implementation(Implementation &&) = default;
+  Implementation(const Implementation &) = delete;
+  Implementation &operator=(Implementation &&) = delete;
+  Implementation &operator=(const Implementation &) = delete;
   ~Implementation() {
     try {
       if (!m_activeOrders.empty()) {
@@ -315,7 +322,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
       error % orderId;
       throw OrderIsUnknownException(error.str().c_str());
     }
-    return {result->second};
+    return LockedOrder{result->second};
   }
   boost::shared_ptr<Order> TakeOrder(const OrderId &orderId) {
     boost::shared_ptr<Order> result;
@@ -532,9 +539,10 @@ class TradingSystem::Implementation : private boost::noncopyable {
 
 TradingSystem::TradingSystem(const TradingMode &mode,
                              Context &context,
-                             const std::string &instanceName)
+                             std::string instanceName,
+                             std::string title)
     : m_pimpl(boost::make_unique<Implementation>(
-          *this, mode, context, instanceName)) {}
+          *this, mode, context, std::move(instanceName), std::move(title))) {}
 TradingSystem::TradingSystem(TradingSystem &&) = default;
 TradingSystem::~TradingSystem() = default;
 
@@ -568,6 +576,8 @@ TradingSystem::TradingLog &TradingSystem::GetTradingLog() const noexcept {
 const std::string &TradingSystem::GetInstanceName() const {
   return m_pimpl->m_instanceName;
 }
+
+const std::string &TradingSystem::GetTitle() const { return m_pimpl->m_title; }
 
 const std::string &TradingSystem::GetStringId() const noexcept {
   return m_pimpl->m_stringId;

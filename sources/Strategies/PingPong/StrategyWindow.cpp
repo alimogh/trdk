@@ -120,7 +120,7 @@ bool StrategyWindow::LoadExchanges() {
     const boost::tribool& isEnabled = m_strategy.IsTradingSystemEnabled(i);
     auto* const checkBox = new QCheckBox(
         QString::fromStdString(
-            context.GetTradingSystem(i, TRADING_MODE_LIVE).GetInstanceName()),
+            context.GetTradingSystem(i, TRADING_MODE_LIVE).GetTitle()),
         this);
     if (!boost::indeterminate(isEnabled)) {
       ++numberOfExchanges;

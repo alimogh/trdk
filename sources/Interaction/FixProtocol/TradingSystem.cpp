@@ -27,9 +27,11 @@ namespace ptr = boost::property_tree;
 
 fix::TradingSystem::TradingSystem(const TradingMode& mode,
                                   Context& context,
-                                  const std::string& instanceName,
+                                  std::string instanceName,
+                                  std::string title,
                                   const ptr::ptree& conf)
-    : trdk::TradingSystem(mode, context, instanceName),
+    : trdk::TradingSystem(
+          mode, context, std::move(instanceName), std::move(title)),
       Handler(context, conf, trdk::TradingSystem::GetLog()),
       m_client("Trade", *this) {}
 
@@ -290,10 +292,11 @@ void fix::TradingSystem::OnOrderCancelReject(
 boost::shared_ptr<trdk::TradingSystem> CreateTradingSystem(
     const TradingMode& mode,
     Context& context,
-    const std::string& instanceName,
+    std::string instanceName,
+    std::string title,
     const ptr::ptree& configuration) {
   const auto& result = boost::make_shared<fix::TradingSystem>(
-      mode, context, instanceName, configuration);
+      mode, context, std::move(instanceName), std::move(title), configuration);
   return result;
 }
 

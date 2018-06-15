@@ -31,9 +31,10 @@ class TrdkMarketDataLogSource : public Test::MarketDataSource {
 
  public:
   explicit TrdkMarketDataLogSource(Context &context,
-                                   const std::string &instanceName,
+                                   std::string instanceName,
+                                   std::string title,
                                    const ptr::ptree &conf)
-      : Base(context, instanceName, conf),
+      : Base(context, std::move(instanceName), std::move(title), conf),
         m_filePath(Normalize(conf.get<fs::path>("source"))) {
     GetLog().Info("Source is %1%.", m_filePath);
   }
@@ -171,10 +172,11 @@ class TrdkMarketDataLogSource : public Test::MarketDataSource {
 TRDK_INTERACTION_TEST_API
 boost::shared_ptr<trdk::MarketDataSource> CreateTrdkMarketDataLogSource(
     Context &context,
-    const std::string &instanceName,
+    std::string instanceName,
+    std::string title,
     const ptr::ptree &configuration) {
-  return boost::make_shared<TrdkMarketDataLogSource>(context, instanceName,
-                                                     configuration);
+  return boost::make_shared<TrdkMarketDataLogSource>(
+      context, std::move(instanceName), std::move(title), configuration);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

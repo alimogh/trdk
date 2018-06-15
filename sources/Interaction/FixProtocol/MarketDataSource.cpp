@@ -26,9 +26,11 @@ namespace pt = boost::posix_time;
 namespace ptr = boost::property_tree;
 
 fix::MarketDataSource::MarketDataSource(Context& context,
-                                        const std::string& instanceName,
+                                        std::string instanceName,
+                                        std::string title,
                                         const ptr::ptree& conf)
-    : trdk::MarketDataSource(context, instanceName),
+    : trdk::MarketDataSource(
+          context, std::move(instanceName), std::move(title)),
       Handler(context, conf, trdk::MarketDataSource::GetLog()),
       m_client("Prices", *this) {}
 
@@ -137,10 +139,11 @@ void fix::MarketDataSource::OnMarketDataSnapshotFullRefresh(
 
 boost::shared_ptr<trdk::MarketDataSource> CreateMarketDataSource(
     Context& context,
-    const std::string& instanceName,
+    std::string instanceName,
+    std::string title,
     const ptr::ptree& configuration) {
-  return boost::make_shared<fix::MarketDataSource>(context, instanceName,
-                                                   configuration);
+  return boost::make_shared<fix::MarketDataSource>(
+      context, std::move(instanceName), std::move(title), configuration);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -21,8 +21,8 @@ OperationListView::OperationListView(QWidget *parent)
       m_numberOfResizesForOperations(),
       m_numberOfResizesForOrder(0) {
   setAlternatingRowColors(true);
-  setSelectionBehavior(QAbstractItemView::SelectItems);
-  setSelectionMode(QAbstractItemView::ExtendedSelection);
+  setSelectionBehavior(SelectItems);
+  setSelectionMode(ExtendedSelection);
   setItemDelegate(new OperationItemDelegate(this));
   setIndentation(10);
   InitContextMenu();
