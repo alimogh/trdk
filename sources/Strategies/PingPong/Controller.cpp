@@ -51,17 +51,17 @@ Position *Controller::Open(const boost::shared_ptr<Operation> &operation,
     return nullptr;
   }
   {
-    const auto *const checkError =
+    const auto &checkError =
         OrderBestSecurityChecker::Create(operation->GetStrategy(), isLong, qty)
             ->Check(security);
     if (checkError) {
       operation->GetStrategy().GetLog().Warn(
           "%1% is not suitable target to open %2%-position with qty %3%: "
           "\"%4%\"",
-          security,                   // 1
-          isLong ? "long" : "short",  // 2
-          qty,                        // 3
-          *checkError);               // 4
+          security,                       // 1
+          isLong ? "long" : "short",      // 2
+          qty,                            // 3
+          checkError->GetRuleNameRef());  // 4
       const auto &tradingSystem =
           operation->GetStrategy()
               .GetTradingSystem(security.GetSource().GetIndex())
@@ -69,7 +69,8 @@ Position *Controller::Open(const boost::shared_ptr<Operation> &operation,
       boost::polymorphic_downcast<Strategy *>(&operation->GetStrategy())
           ->RaiseEvent("Got signal from " + tradingSystem + " to open \"" +
                        std::string(isLong ? "long" : "short") +
-                       "\", but can't open position: " + *checkError + ".");
+                       "\", but can't open position: " +
+                       checkError->GetRuleNameRef() + ".");
       return nullptr;
     }
   }
@@ -89,7 +90,7 @@ void Controller::Close(Position &position) {
     return;
   }
   {
-    const auto *const checkError =
+    const auto &checkError =
         PositionBestSecurityChecker::Create(position)->Check(
             position.GetSecurity());
     if (checkError) {
@@ -98,13 +99,14 @@ void Controller::Close(Position &position) {
           position.GetSecurity(),            // 1
           position.GetOperation()->GetId(),  // 2
           position.GetSubOperationId(),      // 3
-          *checkError);                      // 4
+          checkError->GetRuleNameRef());     // 4
       position.MarkAsCompleted();
       boost::polymorphic_downcast<Strategy *>(&position.GetStrategy())
           ->RaiseEvent("Got signal from " +
                        position.GetTradingSystem().GetTitle() + " to close \"" +
                        std::string(position.IsLong() ? "long" : "short") +
-                       "\", but can't close position: " + *checkError + ".");
+                       "\", but can't close position: " +
+                       checkError->GetRuleNameRef() + ".");
       return;
     }
   }

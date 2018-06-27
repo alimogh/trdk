@@ -33,7 +33,9 @@ bool ChooseBestExchange(Position &position,
         exchanges->count(security->GetSource().GetIndex()) == 0) {
       continue;
     }
-    checks.emplace_back(security, checker->Check(*security));
+    const auto checkResult = checker->Check(*security);
+    checks.emplace_back(security,
+                        checkResult ? &checkResult->GetRuleNameRef() : nullptr);
   }
   if (!checker->HasSuitableSecurity()) {
     std::ostringstream checksStr;

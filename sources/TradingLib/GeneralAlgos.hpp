@@ -16,19 +16,22 @@ namespace TradingLib {
 //! Check the position unopened/unclosed rest to minimum order requirements for
 //! the current trading system as if this rest will be sent as a separated
 //! order.
-/** @sa trdk::TradingSystem::CheckOrder
- *  @return True, if trading system may accept order, false otherwise.
+/**
+ * @sa trdk::TradingSystem::CheckOrder
+ * @return None if trading system may accept order, error describtion object
+ *         otherwise.
  */
-bool CheckPositionRestAsOrder(const trdk::Position &);
+boost::optional<OrderCheckError> CheckPositionRestAsOrder(const Position &);
 
 //! Check the position unopened/unclosed rest to minimum order requirements for
 //! the passed trading system as if this rest will be sent as a separated order.
-/** @sa trdk::TradingSystem::CheckOrder
- *  @return True, if trading system may accept order, false otherwise.
+/**
+ * @sa trdk::TradingSystem::CheckOrder
+ * @return None if trading system may accept order, error describtion object
+ *         otherwise.
  */
-bool CheckPositionRestAsOrder(const trdk::Position &,
-                              const trdk::Security &,
-                              const trdk::TradingSystem &);
+boost::optional<OrderCheckError> CheckPositionRestAsOrder(
+    const Position &, const Security &, const TradingSystem &);
 
 }  // namespace TradingLib
 }  // namespace trdk

@@ -96,8 +96,11 @@ bool ChooseBestExchange(Position &position) {
   boost::polymorphic_cast<aa::Strategy *>(&position.GetStrategy())
       ->ForEachSecurity(position.GetSecurity().GetSymbol(),
                         [&checker, &checks](Security &security) {
-                          checks.emplace_back(&security,
-                                              checker->Check(security));
+                          const auto &checkResult = checker->Check(security);
+                          checks.emplace_back(
+                              &security, checkResult
+                                             ? &checkResult->GetRuleNameRef()
+                                             : nullptr);
                         });
   if (!checker->HasSuitableSecurity()) {
     std::ostringstream checksStr;

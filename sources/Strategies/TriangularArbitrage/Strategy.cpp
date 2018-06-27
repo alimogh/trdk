@@ -666,13 +666,12 @@ class ta::Strategy::Implementation : private boost::noncopyable {
       Opportunity::Targets &targets) {
     size_t leg = 0;
     for (auto target : targets) {
-      const auto *const result =
-          OrderBestSecurityChecker::Create(
-              m_self, m_legs[leg]->GetSide() == ORDER_SIDE_BUY, target.qty,
-              target.price)
-              ->Check(*target.security);
+      const auto &result = OrderBestSecurityChecker::Create(
+                               m_self, m_legs[leg]->GetSide() == ORDER_SIDE_BUY,
+                               target.qty, target.price)
+                               ->Check(*target.security);
       if (result) {
-        return {result, target.tradingSystem};
+        return {&result->GetRuleNameRef(), target.tradingSystem};
       }
       ++leg;
     }
