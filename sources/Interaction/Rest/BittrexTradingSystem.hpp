@@ -87,7 +87,8 @@ class BittrexTradingSystem : public TradingSystem {
   explicit BittrexTradingSystem(const App &,
                                 const TradingMode &,
                                 Context &,
-                                const std::string &instanceName,
+                                std::string instanceName,
+                                std::string title,
                                 const boost::property_tree::ptree &);
   ~BittrexTradingSystem() override = default;
 

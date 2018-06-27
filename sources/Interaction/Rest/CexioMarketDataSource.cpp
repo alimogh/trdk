@@ -27,9 +27,10 @@ namespace ptr = boost::property_tree;
 
 CexioMarketDataSource::CexioMarketDataSource(const App &,
                                              Context &context,
-                                             const std::string &instanceName,
+                                             std::string instanceName,
+                                             std::string title,
                                              const ptr::ptree &conf)
-    : Base(context, instanceName),
+    : Base(context, std::move(instanceName), std::move(title)),
       m_settings(conf, GetLog()),
       m_serverTimeDiff(
           GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),
@@ -235,10 +236,12 @@ pt::ptime CexioMarketDataSource::ParseTimeStamp(const ptr::ptree &source) {
 
 boost::shared_ptr<MarketDataSource> CreateCexioMarketDataSource(
     Context &context,
-    const std::string &instanceName,
+    std::string instanceName,
+    std::string title,
     const ptr::ptree &configuration) {
-  return boost::make_shared<CexioMarketDataSource>(App::GetInstance(), context,
-                                                   instanceName, configuration);
+  return boost::make_shared<CexioMarketDataSource>(
+      App::GetInstance(), context, std::move(instanceName), std::move(title),
+      configuration);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

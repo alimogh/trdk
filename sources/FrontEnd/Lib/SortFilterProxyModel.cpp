@@ -14,10 +14,10 @@
 using namespace trdk::Lib;
 using namespace trdk::FrontEnd;
 
-bool SortFilterProxyModel::lessThan(const QModelIndex &left,
-                                    const QModelIndex &right) const {
-  const QVariant &leftData = sourceModel()->data(left);
-  const QVariant &rightData = sourceModel()->data(right);
+bool SortFilterProxyModel::lessThan(const QModelIndex& left,
+                                    const QModelIndex& right) const {
+  const auto& leftData = sourceModel()->data(left);
+  const auto& rightData = sourceModel()->data(right);
   switch (leftData.type()) {
     case QVariant::DateTime:
       return leftData.toDateTime() < rightData.toDateTime();

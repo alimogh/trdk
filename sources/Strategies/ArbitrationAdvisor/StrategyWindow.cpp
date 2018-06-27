@@ -102,7 +102,7 @@ void StrategyWindow::Init() {
       QMessageBox::warning(
           this, tr("Configuration warning"),
           tr("Trading system \"%1\" does not have market data source.")
-              .arg(QString::fromStdString(tradingSystem.GetInstanceName())),
+              .arg(QString::fromStdString(tradingSystem.GetTitle())),
           QMessageBox::Ignore);
       continue;
     } else if (!*securityPtr) {
@@ -118,8 +118,7 @@ void StrategyWindow::Init() {
               .emplace(
                   &tradingSystem,
                   boost::make_unique<TargetWidgets>(
-                      QString::fromStdString(tradingSystem.GetInstanceName()),
-                      this))
+                      QString::fromStdString(tradingSystem.GetTitle()), this))
               .first;
       AddTargetWidgets(*widgets->second);
     }

@@ -189,9 +189,10 @@ LivecoinTradingSystem::BalancesRequest::BalancesRequest(
 LivecoinTradingSystem::LivecoinTradingSystem(const App &,
                                              const TradingMode &mode,
                                              Context &context,
-                                             const std::string &instanceName,
+                                             std::string instanceName,
+                                             std::string title,
                                              const ptr::ptree &conf)
-    : Base(mode, context, instanceName),
+    : Base(mode, context, std::move(instanceName), std::move(title)),
       m_settings(conf, GetLog()),
       m_balances(*this, GetLog(), GetTradingLog()),
       m_balancesRequest(m_settings, GetContext(), GetLog()),
@@ -489,10 +490,12 @@ void LivecoinTradingSystem::OnTransactionSent(
 boost::shared_ptr<trdk::TradingSystem> CreateLivecoinTradingSystem(
     const TradingMode &mode,
     Context &context,
-    const std::string &instanceName,
+    std::string instanceName,
+    std::string title,
     const ptr::ptree &configuration) {
   const auto &result = boost::make_shared<LivecoinTradingSystem>(
-      App::GetInstance(), mode, context, instanceName, configuration);
+      App::GetInstance(), mode, context, std::move(instanceName),
+      std::move(title), configuration);
   return result;
 }
 

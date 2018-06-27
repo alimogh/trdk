@@ -39,17 +39,22 @@ TRDK_FRONTEND_LIB_API QUuid ConvertToQUuid(const boost::uuids::uuid&);
 TRDK_FRONTEND_LIB_API boost::uuids::uuid ConvertToBoostUuid(const QUuid&);
 
 template <typename Result>
-const Result& ResolveModelIndexItem(const QModelIndex& source) {
+Result& ResolveModelIndexItem(QModelIndex& source) {
   Assert(source.isValid());
   const auto* const proxy =
       dynamic_cast<const QAbstractProxyModel*>(source.model());
   if (!proxy) {
     Assert(source.internalPointer());
-    return *static_cast<const Result*>(source.internalPointer());
+    return *static_cast<Result*>(source.internalPointer());
   }
   const auto& index = proxy->mapToSource(source);
   Assert(index.internalPointer());
-  return *static_cast<const Result*>(index.internalPointer());
+  return *static_cast<Result*>(index.internalPointer());
+}
+
+template <typename Result>
+const Result& ResolveModelIndexItem(const QModelIndex& source) {
+  return ResolveModelIndexItem<Result>(const_cast<QModelIndex&>(source));
 }
 
 void ScrollToLastChild(QAbstractItemView&, const QModelIndex&);

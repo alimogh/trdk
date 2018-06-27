@@ -23,7 +23,8 @@ class BittrexMarketDataSource : public MarketDataSource {
 
   explicit BittrexMarketDataSource(const App &,
                                    Context &context,
-                                   const std::string &instanceName,
+                                   std::string instanceName,
+                                   std::string title,
                                    const boost::property_tree::ptree &);
   ~BittrexMarketDataSource() override;
 

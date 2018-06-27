@@ -22,7 +22,8 @@ class MarketDataSource : public trdk::MarketDataSource {
 
   explicit MarketDataSource(const Rest::App &,
                             Context &context,
-                            const std::string &instanceName,
+                            std::string instanceName,
+                            std::string title,
                             const boost::property_tree::ptree &conf);
   MarketDataSource(MarketDataSource &&) = default;
   MarketDataSource(const MarketDataSource &) = delete;

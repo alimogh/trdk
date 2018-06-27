@@ -85,7 +85,8 @@ class CexioTradingSystem : public TradingSystem {
   explicit CexioTradingSystem(const App &,
                               const TradingMode &,
                               Context &,
-                              const std::string &instanceName,
+                              std::string instanceName,
+                              std::string title,
                               const boost::property_tree::ptree &);
   ~CexioTradingSystem() override = default;
 

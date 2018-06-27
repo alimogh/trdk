@@ -97,15 +97,16 @@ bool BalanceItem::IsUsed() const {
 
 BalanceTradingSystemItem::BalanceTradingSystemItem(
     const TradingSystem &tradingSystem)
-    : m_data(QString::fromStdString(tradingSystem.GetInstanceName())) {}
+    : m_data(QString::fromStdString(tradingSystem.GetTitle())) {}
 
-QVariant BalanceTradingSystemItem::GetData(int column) const {
+QVariant BalanceTradingSystemItem::GetData(const int column) const {
   static_assert(numberOfBalanceColumns == 6, "List changed.");
   switch (column) {
     case BALANCE_COLUMN_EXCHANGE_OR_SYMBOL:
       return m_data;
+    default:
+      return QVariant();
   }
-  return QVariant();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

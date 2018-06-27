@@ -16,5 +16,7 @@ using namespace trdk;
 using namespace trdk::Tests;
 
 Mocks::TradingSystem::TradingSystem()
-    : trdk::TradingSystem(
-          numberOfTradingModes, Dummies::Context::GetInstance(), "Mock") {}
+    : trdk::TradingSystem(numberOfTradingModes,
+                          Dummies::Context::GetInstance(),
+                          "Mock",
+                          "Mock") {}

@@ -22,33 +22,30 @@ class TRDK_FRONTEND_LIB_API BalanceListModel : public QAbstractItemModel {
  public:
   typedef QAbstractItemModel Base;
 
- public:
   explicit BalanceListModel(const Engine &, QWidget *parent);
-  virtual ~BalanceListModel() override;
+  ~BalanceListModel() override;
 
- public:
-  virtual QVariant headerData(int section,
-                              Qt::Orientation,
-                              int role) const override;
-  virtual QVariant data(const QModelIndex &index, int role) const override;
-  virtual QModelIndex index(int row,
-                            int column,
-                            const QModelIndex &parent) const override;
-  virtual QModelIndex parent(const QModelIndex &index) const override;
-  virtual int rowCount(const QModelIndex &parent) const override;
-  virtual int columnCount(const QModelIndex &parent) const override;
+  QVariant headerData(int section, Qt::Orientation, int role) const override;
+  QVariant data(const QModelIndex &index, int role) const override;
+  QModelIndex index(int row,
+                    int column,
+                    const QModelIndex &parent) const override;
+  QModelIndex parent(const QModelIndex &index) const override;
+  int rowCount(const QModelIndex &parent) const override;
+  int columnCount(const QModelIndex &parent) const override;
 
-  virtual Qt::ItemFlags flags(const QModelIndex &) const override;
+  Qt::ItemFlags flags(const QModelIndex &) const override;
 
  private slots:
-  void OnUpdate(const trdk::TradingSystem *,
+  void OnUpdate(const TradingSystem *,
                 const std::string &symbol,
-                const trdk::Volume &available,
-                const trdk::Volume &locked);
+                const Volume &available,
+                const Volume &locked);
 
  private:
   class Implementation;
   std::unique_ptr<Implementation> m_pimpl;
 };
+
 }  // namespace FrontEnd
 }  // namespace trdk

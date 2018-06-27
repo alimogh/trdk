@@ -19,10 +19,13 @@ using namespace Interaction::Rest;
 trdk::TradingSystemAndMarketDataSourceFactoryResult CreateLivecoin(
     const trdk::TradingMode &mode,
     trdk::Context &context,
-    const std::string &instanceName,
+    std::string instanceName,
+    std::string title,
     const boost::property_tree::ptree &conf) {
-  return {boost::make_shared<LivecoinTradingSystem>(
-              App::GetInstance(), mode, context, instanceName, conf),
+  auto tradingSystem = boost::make_shared<LivecoinTradingSystem>(
+      App::GetInstance(), mode, context, instanceName, title, conf);
+  return {std::move(tradingSystem),
           boost::make_shared<LivecoinMarketDataSource>(
-              App::GetInstance(), context, instanceName, conf)};
+              App::GetInstance(), context, std::move(instanceName),
+              std::move(title), conf)};
 }

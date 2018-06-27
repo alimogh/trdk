@@ -22,7 +22,6 @@ class TRDK_FRONTEND_LIB_API OrderListView : public QTableView {
  public:
   typedef QTableView Base;
 
- public:
   explicit OrderListView(Engine &, QWidget *parent);
 
  public slots:
@@ -32,9 +31,9 @@ class TRDK_FRONTEND_LIB_API OrderListView : public QTableView {
   void CancelSelectedOrders();
   bool CancelOrder(const QModelIndex &);
 
- private:
   Engine &m_engine;
   QMenu m_contextMenu;
 };
+
 }  // namespace FrontEnd
 }  // namespace trdk

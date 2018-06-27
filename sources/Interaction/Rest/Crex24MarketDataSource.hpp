@@ -23,7 +23,8 @@ class Crex24MarketDataSource : public MarketDataSource {
 
   explicit Crex24MarketDataSource(const App &,
                                   Context &context,
-                                  const std::string &instanceName,
+                                  std::string instanceName,
+                                  std::string title,
                                   const boost::property_tree::ptree &);
   ~Crex24MarketDataSource() override;
 

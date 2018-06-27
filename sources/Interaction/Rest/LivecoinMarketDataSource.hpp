@@ -27,7 +27,8 @@ class LivecoinMarketDataSource : public MarketDataSource {
 
   explicit LivecoinMarketDataSource(const App &,
                                     Context &context,
-                                    const std::string &instanceName,
+                                    std::string instanceName,
+                                    std::string title,
                                     const boost::property_tree::ptree &);
   ~LivecoinMarketDataSource() override;
 

@@ -49,7 +49,8 @@ class ExcambiorexMarketDataSource : public MarketDataSource {
  public:
   explicit ExcambiorexMarketDataSource(const App&,
                                        Context& context,
-                                       const std::string& instanceName,
+                                       std::string instanceName,
+                                       std::string title,
                                        const boost::property_tree::ptree&);
   ~ExcambiorexMarketDataSource() override;
 

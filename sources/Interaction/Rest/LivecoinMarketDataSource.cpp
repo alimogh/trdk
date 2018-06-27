@@ -25,12 +25,12 @@ namespace ptr = boost::property_tree;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-LivecoinMarketDataSource::LivecoinMarketDataSource(
-    const App &,
-    Context &context,
-    const std::string &instanceName,
-    const ptr::ptree &conf)
-    : Base(context, instanceName),
+LivecoinMarketDataSource::LivecoinMarketDataSource(const App &,
+                                                   Context &context,
+                                                   std::string instanceName,
+                                                   std::string title,
+                                                   const ptr::ptree &conf)
+    : Base(context, std::move(instanceName), std::move(title)),
       m_settings(conf, GetLog()),
       m_serverTimeDiff(
           GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),
@@ -221,10 +221,12 @@ void LivecoinMarketDataSource::UpdatePrices(
 
 boost::shared_ptr<MarketDataSource> CreateLivecoinMarketDataSource(
     Context &context,
-    const std::string &instanceName,
+    std::string instanceName,
+    std::string title,
     const ptr::ptree &configuration) {
   return boost::make_shared<LivecoinMarketDataSource>(
-      App::GetInstance(), context, instanceName, configuration);
+      App::GetInstance(), context, std::move(instanceName), std::move(title),
+      configuration);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

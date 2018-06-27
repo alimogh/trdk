@@ -19,8 +19,8 @@ OrderListView::OrderListView(Engine &engine, QWidget *parent)
   setSortingEnabled(true);
   sortByColumn(0, Qt::AscendingOrder);
   setAlternatingRowColors(true);
-  setSelectionBehavior(QAbstractItemView::SelectRows);
-  setSelectionMode(QAbstractItemView::ExtendedSelection);
+  setSelectionBehavior(SelectRows);
+  setSelectionMode(ExtendedSelection);
   verticalHeader()->setVisible(false);
 
   m_contextMenu.addAction(tr("&Cancel"), this,
@@ -46,20 +46,19 @@ void OrderListView::CancelSelectedOrders() {
 bool OrderListView::CancelOrder(const QModelIndex &item) {
   const OrderId orderId(
       item.data(ITEM_DATA_ROLE_ITEM_ID).toString().toStdString());
-  const size_t tradingSystemIndex =
+  const auto tradingSystemIndex =
       item.data(ITEM_DATA_ROLE_TRADING_SYSTEM_INDEX).toULongLong();
-  const TradingMode mode =
+  const auto mode =
       static_cast<TradingMode>(item.data(ITEM_DATA_ROLE_TRADING_MODE).toInt());
-  TradingSystem &tradingSystem =
+  auto &tradingSystem =
       m_engine.GetContext().GetTradingSystem(tradingSystemIndex, mode);
   try {
     if (!tradingSystem.CancelOrder(orderId)) {
       QMessageBox::warning(
           this, tr("Order cancel"),
           tr("%1 does not have order in the active list.")
-              .arg(
-                  QString::fromStdString(tradingSystem.GetInstanceName()),  // 1
-                  QString::fromStdString(orderId.GetValue())),              // 2
+              .arg(QString::fromStdString(tradingSystem.GetTitle()),  // 1
+                   QString::fromStdString(orderId.GetValue())),       // 2
           QMessageBox::Cancel);
       return false;
     }
@@ -67,9 +66,9 @@ bool OrderListView::CancelOrder(const QModelIndex &item) {
     QMessageBox::critical(
         this, tr("Order cancel"),
         tr("Failed to cancel order %1 at the exchange %2: \"%3\".")
-            .arg(QString::fromStdString(orderId.GetValue()),               // 1
-                 QString::fromStdString(tradingSystem.GetInstanceName()),  // 2
-                 ex.what()),                                               // 3
+            .arg(QString::fromStdString(orderId.GetValue()),        // 1
+                 QString::fromStdString(tradingSystem.GetTitle()),  // 2
+                 ex.what()),                                        // 3
         QMessageBox::Cancel);
     return false;
   }

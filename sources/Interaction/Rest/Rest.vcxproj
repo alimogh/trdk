@@ -314,6 +314,7 @@
     <ClCompile Include="CexioTradingSystem.cpp" />
     <ClCompile Include="CexioTradingSystemAndMarketDataSource.cpp" />
     <ClCompile Include="CexioUtil.cpp" />
+    <ClCompile Include="CoinbaseExchange.cpp" />
     <ClCompile Include="Crex24MarketDataSource.cpp" />
     <ClCompile Include="Crex24Request.cpp" />
     <ClCompile Include="Crex24TradingSystem.cpp" />
@@ -330,7 +331,6 @@
     <ClCompile Include="ExcambiorexTradingSystemAndMarketDataSource.cpp" />
     <ClCompile Include="ExcambiorexUtil.cpp" />
     <ClCompile Include="FloodControl.cpp" />
-    <ClCompile Include="GdaxExchange.cpp" />
     <ClCompile Include="BittrexMarketDataSource.cpp" />
     <ClCompile Include="LivecoinMarketDataSource.cpp" />
     <ClCompile Include="LivecoinRequest.cpp" />

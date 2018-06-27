@@ -64,7 +64,7 @@ std::string FormatStringId(const std::string &instanceName) {
 }
 }  // namespace
 
-class MarketDataSource::Implementation : private boost::noncopyable {
+class MarketDataSource::Implementation {
  public:
   MarketDataSource &m_self;
 
@@ -73,6 +73,7 @@ class MarketDataSource::Implementation : private boost::noncopyable {
   Context &m_context;
 
   const std::string m_instanceName;
+  const std::string m_title;
   const std::string m_stringId;
 
   TradingSystem::Log m_log;
@@ -93,17 +94,25 @@ class MarketDataSource::Implementation : private boost::noncopyable {
     std::vector<boost::unique_future<void>> list;
   } m_asyncTasks;
 
- public:
   explicit Implementation(MarketDataSource &self,
                           Context &context,
-                          const std::string &instanceName)
+                          std::string instanceName,
+                          std::string title)
       : m_self(self),
         m_index(std::numeric_limits<size_t>::max()),
         m_context(context),
-        m_instanceName(instanceName),
+        m_instanceName(std::move(instanceName)),
+        m_title(std::move(title)),
         m_stringId(FormatStringId(m_instanceName)),
         m_log(m_stringId, m_context.GetLog()),
-        m_tradingLog(m_instanceName, m_context.GetTradingLog()) {}
+        m_tradingLog(m_instanceName, m_context.GetTradingLog()) {
+    m_log.Info(R"(Loaded market data source with name "%1%".)", m_title);
+  }
+  Implementation(Implementation &&) = default;
+  Implementation(const Implementation &) = delete;
+  Implementation &operator=(Implementation &&) = delete;
+  Implementation &operator=(const Implementation &) = delete;
+  ~Implementation() = default;
 
   template <typename Securities, typename Callback>
   static void ForEachSecurity(const Securities &securities,
@@ -159,8 +168,10 @@ class MarketDataSource::Implementation : private boost::noncopyable {
 //////////////////////////////////////////////////////////////////////////
 
 MarketDataSource::MarketDataSource(Context &context,
-                                   const std::string &instanceName)
-    : m_pimpl(std::make_unique<Implementation>(*this, context, instanceName)) {}
+                                   std::string instanceName,
+                                   std::string title)
+    : m_pimpl(std::make_unique<Implementation>(
+          *this, context, std::move(instanceName), std::move(title))) {}
 MarketDataSource::MarketDataSource(MarketDataSource &&) = default;
 MarketDataSource::~MarketDataSource() {
   try {
@@ -205,6 +216,10 @@ MarketDataSource::TradingLog &MarketDataSource::GetTradingLog() const noexcept {
 
 const std::string &MarketDataSource::GetInstanceName() const {
   return m_pimpl->m_instanceName;
+}
+
+const std::string &MarketDataSource::GetTitle() const {
+  return m_pimpl->m_title;
 }
 
 const std::string &MarketDataSource::GetStringId() const noexcept {
