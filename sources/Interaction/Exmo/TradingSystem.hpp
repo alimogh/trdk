@@ -30,7 +30,8 @@ class TradingSystem : public trdk::TradingSystem {
   explicit TradingSystem(const Rest::App &,
                          const TradingMode &,
                          Context &,
-                         const std::string &instanceName,
+                         std::string instanceName,
+                         std::string title,
                          const boost::property_tree::ptree &);
   TradingSystem(TradingSystem &&) = default;
   TradingSystem(const TradingSystem &) = delete;

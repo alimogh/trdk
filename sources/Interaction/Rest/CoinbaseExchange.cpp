@@ -171,7 +171,7 @@ class PrivateRequest : public Request {
   explicit PrivateRequest(const std::string& request,
                           const std::string& method,
                           const Settings& settings,
-                          bool isPriority,
+                          const bool isPriority,
                           const std::string& uriParams,
                           const Context& context,
                           ModuleEventsLog& log,
@@ -220,7 +220,7 @@ std::string RestoreSymbol(const std::string& source) {
 
 namespace {
 
-class GdaxExchange : public TradingSystem, public MarketDataSource {
+class CoinbaseExchange : public TradingSystem, public MarketDataSource {
   typedef boost::mutex SecuritiesMutex;
   typedef SecuritiesMutex::scoped_lock SecuritiesLock;
 
@@ -232,29 +232,32 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
   };
 
  public:
-  explicit GdaxExchange(const App&,
-                        const TradingMode& mode,
-                        Context& context,
-                        const std::string& instanceName,
-                        const ptr::ptree& conf)
-      : TradingSystem(mode, context, instanceName),
-        MarketDataSource(context, instanceName),
+  explicit CoinbaseExchange(const App&,
+                            const TradingMode& mode,
+                            Context& context,
+                            std::string instanceName,
+                            std::string title,
+                            const ptr::ptree& conf)
+      : TradingSystem(mode, context, instanceName, title),
+        MarketDataSource(context, std::move(instanceName), std::move(title)),
         m_settings(conf, GetTsLog()),
         m_serverTimeDiff(
             GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),
         m_isConnected(false),
-        m_marketDataSession(CreateSession("api.gdax.com", m_settings, false)),
-        m_tradingSession(CreateSession("api.gdax.com", m_settings, true)),
+        m_marketDataSession(
+            CreateSession("api.pro.coinbase.com", m_settings, false)),
+        m_tradingSession(
+            CreateSession("api.pro.coinbase.com", m_settings, true)),
         m_balances(*this, GetTsLog(), GetTsTradingLog()),
         m_pollingTask(boost::make_unique<PollingTask>(
             m_settings.pollingSetttings, GetMdsLog())) {}
 
-  GdaxExchange(GdaxExchange&&) = default;
-  GdaxExchange(const GdaxExchange&) = delete;
-  GdaxExchange& operator=(GdaxExchange&&) = delete;
-  GdaxExchange& operator=(const GdaxExchange&) = delete;
+  CoinbaseExchange(CoinbaseExchange&&) = default;
+  CoinbaseExchange(const CoinbaseExchange&) = delete;
+  CoinbaseExchange& operator=(CoinbaseExchange&&) = delete;
+  CoinbaseExchange& operator=(const CoinbaseExchange&) = delete;
 
-  ~GdaxExchange() override {
+  ~CoinbaseExchange() override {
     try {
       m_pollingTask.reset();
       // Each object, that implements CreateNewSecurityObject should wait for
@@ -779,22 +782,28 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TradingSystemAndMarketDataSourceFactoryResult CreateGdax(
+TradingSystemAndMarketDataSourceFactoryResult CreateCoinbase(
     const TradingMode& mode,
     Context& context,
-    const std::string& instanceName,
+    std::string instanceName,
+    std::string title,
     const ptr::ptree& configuration) {
-  const auto& result = boost::make_shared<GdaxExchange>(
-      App::GetInstance(), mode, context, instanceName, configuration);
+#pragma comment(linker, "/EXPORT:" __FUNCTION__ "=" __FUNCDNAME__)
+  const auto& result = boost::make_shared<CoinbaseExchange>(
+      App::GetInstance(), mode, context, std::move(instanceName),
+      std::move(title), configuration);
   return {result, result};
 }
 
-boost::shared_ptr<MarketDataSource> CreateGdaxMarketDataSource(
+boost::shared_ptr<MarketDataSource> CreateCoinbaseMarketDataSource(
     Context& context,
-    const std::string& instanceName,
+    std::string instanceName,
+    std::string title,
     const ptr::ptree& configuration) {
-  return boost::make_shared<GdaxExchange>(App::GetInstance(), TRADING_MODE_LIVE,
-                                          context, instanceName, configuration);
+#pragma comment(linker, "/EXPORT:" __FUNCTION__ "=" __FUNCDNAME__)
+  return boost::make_shared<CoinbaseExchange>(
+      App::GetInstance(), TRADING_MODE_LIVE, context, std::move(instanceName),
+      std::move(title), configuration);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -29,7 +29,7 @@ BalanceListView::BalanceListView(QWidget *parent) : Base(parent) {
 void BalanceListView::InitContextMenu() {
   setContextMenuPolicy(Qt::ActionsContextMenu);
   {
-    auto *action = new QAction(tr("&Copy\tCtrl+C"), this);
+    auto *action = new QAction(tr("Copy\tCtrl+C"), this);
     action->setShortcut(QKeySequence::Copy);
     action->setShortcutContext(Qt::WidgetWithChildrenShortcut);
     Verify(connect(action, &QAction::triggered, this,
@@ -42,13 +42,13 @@ void BalanceListView::InitContextMenu() {
     addAction(separator);
   }
   {
-    auto *action = new QAction(tr("C&ollapse All"), this);
+    auto *action = new QAction(tr("Collapse All"), this);
     Verify(connect(action, &QAction::triggered, this,
                    &BalanceListView::collapseAll));
     addAction(action);
   }
   {
-    auto *action = new QAction(tr("&Expand All"), this);
+    auto *action = new QAction(tr("Expand All"), this);
     Verify(connect(action, &QAction::triggered, this,
                    &BalanceListView::expandAll));
     addAction(action);

@@ -28,7 +28,6 @@ class RootItem : public OperationItem {
   explicit RootItem() {}
   ~RootItem() override = default;
 
- public:
   QVariant GetData(int) const override { return QVariant(); }
 };
 }  // namespace

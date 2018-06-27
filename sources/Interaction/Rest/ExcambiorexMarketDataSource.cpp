@@ -41,9 +41,10 @@ const std::string& ExcambiorexMarketDataSource::Subscribtion::GetProductId()
 ExcambiorexMarketDataSource::ExcambiorexMarketDataSource(
     const App&,
     Context& context,
-    const std::string& instanceName,
+    std::string instanceName,
+    std::string title,
     const ptr::ptree& conf)
-    : Base(context, instanceName),
+    : Base(context, std::move(instanceName), std::move(title)),
       m_settings(conf, GetLog()),
       m_session(CreateExcambiorexSession(m_settings, false)),
       m_pollingTask(boost::make_unique<PollingTask>(m_settings.pollingSetttings,
@@ -110,10 +111,10 @@ trdk::Security& ExcambiorexMarketDataSource::CreateNewSecurityObject(
   const auto& result =
       boost::make_shared<r::Security>(GetContext(), symbol, *this,
                                       r::Security::SupportedLevel1Types()
-                                       .set(LEVEL1_TICK_BID_PRICE)
-                                       .set(LEVEL1_TICK_BID_QTY)
-                                       .set(LEVEL1_TICK_ASK_PRICE)
-                                       .set(LEVEL1_TICK_BID_QTY));
+                                          .set(LEVEL1_TICK_BID_PRICE)
+                                          .set(LEVEL1_TICK_BID_QTY)
+                                          .set(LEVEL1_TICK_ASK_PRICE)
+                                          .set(LEVEL1_TICK_BID_QTY));
   result->SetTradingSessionState(pt::not_a_date_time, true);
 
   {
@@ -176,7 +177,7 @@ boost::optional<std::pair<Level1TickValue, Level1TickValue>> ReadTopPrice(
   boost::optional<Level1TickValue> qty;
   for (const auto& level : *source) {
     for (const auto& node : level.second) {
-      const auto &value = node.second.get_value<Double>();
+      const auto& value = node.second.get_value<Double>();
       Assert(!qty);
       if (!price) {
         price = Level1TickValue::Create<priceType>(value);
@@ -199,7 +200,7 @@ boost::optional<std::pair<Level1TickValue, Level1TickValue>> ReadTopPrice(
 void ExcambiorexMarketDataSource::UpdatePrices(
     const pt::ptime& time,
     const ptr::ptree& source,
-    r::Security &security,
+    r::Security& security,
     const Milestones& delayMeasurement) {
   try {
     const auto& bid = ReadTopPrice<LEVEL1_TICK_BID_PRICE, LEVEL1_TICK_BID_QTY>(
@@ -231,10 +232,12 @@ void ExcambiorexMarketDataSource::UpdatePrices(
 
 boost::shared_ptr<MarketDataSource> CreateExcambiorexMarketDataSource(
     Context& context,
-    const std::string& instanceName,
+    std::string instanceName,
+    std::string title,
     const ptr::ptree& configuration) {
   return boost::make_shared<ExcambiorexMarketDataSource>(
-      App::GetInstance(), context, instanceName, configuration);
+      App::GetInstance(), context, std::move(instanceName), std::move(title),
+      configuration);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

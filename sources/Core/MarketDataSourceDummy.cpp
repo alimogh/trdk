@@ -19,7 +19,9 @@ using namespace trdk::Tests;
 
 Dummies::MarketDataSource::MarketDataSource(trdk::Context *context)
     : trdk::MarketDataSource(
-          context ? *context : Dummies::Context::GetInstance(), "Test") {}
+          context ? *context : Dummies::Context::GetInstance(),
+          "Test",
+          "Test") {}
 
 Dummies::MarketDataSource &Dummies::MarketDataSource::GetInstance() {
   static Dummies::MarketDataSource result;

@@ -41,7 +41,7 @@ class SourcePropertiesDialog::Implementation {
         }
         m_ui.exchange->addItem(title, impl);
       };
-      addExchange("GDAX", "Gdax");
+      addExchange("Coinbase Pro", "Coinbase");
       addExchange("CEX.IO", "Cexio");
       addExchange("Bittrex", "Bittrex");
       addExchange("EXMO", "Exmo");
@@ -84,7 +84,7 @@ class SourcePropertiesDialog::Implementation {
     }
     {
       const auto hasPassphrase =
-          m_ui.exchange->currentData().toString() == "Gdax";
+          m_ui.exchange->currentData().toString() == "Coinbase";
       m_ui.apiPassphraseLabel->setEnabled(hasPassphrase);
       m_ui.apiPassphrase->setEnabled(hasPassphrase);
     }

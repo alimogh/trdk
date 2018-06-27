@@ -16,14 +16,6 @@
 
 namespace trdk {
 
-//! Market data source factory.
-/** Result can't be nullptr.
- */
-typedef boost::shared_ptr<MarketDataSource>(MarketDataSourceFactory)(
-    Context&,
-    const std::string& instanceName,
-    const boost::property_tree::ptree&);
-
 class TRDK_CORE_API MarketDataSource : virtual public Interactor {
  public:
   typedef Interactor Base;
@@ -31,7 +23,9 @@ class TRDK_CORE_API MarketDataSource : virtual public Interactor {
   typedef ModuleEventsLog Log;
   typedef ModuleTradingLog TradingLog;
 
-  explicit MarketDataSource(Context&, const std::string& instanceName);
+  explicit MarketDataSource(Context&,
+                            std::string instanceName,
+                            std::string title);
   MarketDataSource(MarketDataSource&&);
   MarketDataSource(const MarketDataSource&) = delete;
   MarketDataSource& operator=(MarketDataSource&&) = delete;
@@ -60,9 +54,10 @@ class TRDK_CORE_API MarketDataSource : virtual public Interactor {
   /** Market Data Source instance name is unique, but can be empty.
    */
   const std::string& GetInstanceName() const;
-  const std::string& GetStringId() const noexcept;
 
-  const boost::property_tree::ptree& GetConfig() const;
+  const std::string& GetTitle() const;
+
+  const std::string& GetStringId() const noexcept;
 
   //! Makes connection with Market Data Source.
   virtual void Connect() = 0;

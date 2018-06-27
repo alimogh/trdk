@@ -26,12 +26,12 @@ namespace ptr = boost::property_tree;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-CryptopiaMarketDataSource::CryptopiaMarketDataSource(
-    const App &,
-    Context &context,
-    const std::string &instanceName,
-    const ptr::ptree &conf)
-    : Base(context, instanceName),
+CryptopiaMarketDataSource::CryptopiaMarketDataSource(const App &,
+                                                     Context &context,
+                                                     std::string instanceName,
+                                                     std::string title,
+                                                     const ptr::ptree &conf)
+    : Base(context, std::move(instanceName), std::move(title)),
       m_settings(conf, GetLog()),
       m_session(CreateSession("www.cryptopia.co.nz", m_settings, false)),
       m_pollingTask(boost::make_unique<PollingTask>(m_settings.pollingSetttings,
@@ -227,10 +227,12 @@ void CryptopiaMarketDataSource::UpdatePrices(
 
 boost::shared_ptr<MarketDataSource> CreateCryptopiaMarketDataSource(
     Context &context,
-    const std::string &instanceName,
+    std::string instanceName,
+    std::string title,
     const ptr::ptree &configuration) {
   return boost::make_shared<CryptopiaMarketDataSource>(
-      App::GetInstance(), context, instanceName, configuration);
+      App::GetInstance(), context, std::move(instanceName), std::move(title),
+      configuration);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -25,12 +25,12 @@ namespace ptr = boost::property_tree;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-BittrexMarketDataSource::BittrexMarketDataSource(
-    const App &,
-    Context &context,
-    const std::string &instanceName,
-    const ptr::ptree &conf)
-    : Base(context, instanceName),
+BittrexMarketDataSource::BittrexMarketDataSource(const App &,
+                                                 Context &context,
+                                                 std::string instanceName,
+                                                 std::string title,
+                                                 const ptr::ptree &conf)
+    : Base(context, std::move(instanceName), std::move(title)),
       m_settings(conf, GetLog()),
       m_session(CreateSession("bittrex.com", m_settings, false)),
       m_pollingTask(boost::make_unique<PollingTask>(m_settings.pollingSetttings,
@@ -179,10 +179,12 @@ void BittrexMarketDataSource::UpdatePrices(const pt::ptime &time,
 
 boost::shared_ptr<MarketDataSource> CreateBittrexMarketDataSource(
     Context &context,
-    const std::string &instanceName,
+    std::string instanceName,
+    std::string title,
     const ptr::ptree &configuration) {
   return boost::make_shared<BittrexMarketDataSource>(
-      App::GetInstance(), context, instanceName, configuration);
+      App::GetInstance(), context, std::move(instanceName), std::move(title),
+      configuration);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

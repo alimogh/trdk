@@ -44,19 +44,22 @@ class OrderTransactionContext : public trdk::OrderTransactionContext {
 boost::shared_ptr<trdk::TradingSystem> CreateTradingSystem(
     const TradingMode &mode,
     Context &context,
-    const std::string &instanceName,
+    std::string instanceName,
+    std::string title,
     const ptr::ptree &conf) {
   const auto &result = boost::make_shared<Exmo::TradingSystem>(
-      App::GetInstance(), mode, context, instanceName, conf);
+      App::GetInstance(), mode, context, std::move(instanceName),
+      std::move(title), conf);
   return result;
 }
 
 Exmo::TradingSystem::TradingSystem(const App &,
                                    const TradingMode &mode,
                                    Context &context,
-                                   const std::string &instanceName,
+                                   std::string instanceName,
+                                   std::string title,
                                    const ptr::ptree &conf)
-    : Base(mode, context, instanceName),
+    : Base(mode, context, std::move(instanceName), std::move(title)),
       m_settings(conf, GetLog()),
       m_serverTimeDiff(
           GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),

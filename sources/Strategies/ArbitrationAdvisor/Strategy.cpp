@@ -78,32 +78,38 @@ class SignalSession : private boost::noncopyable {
     it->second -= takenQty - usedQty;
   }
 
-  void RegisterCheckError(const Security &sellTarget,
-                          const Security &buyTarget,
-                          const Security &checkTarget,
-                          const std::string &error) {
-    Verify(m_checkErrors
-               .emplace(std::make_pair(&sellTarget, &buyTarget),
-                        std::make_pair(&error, &checkTarget))
-               .second);
+  void RegisterCheckError(
+      const Security &sellTarget,
+      const Security &buyTarget,
+      const Security &checkTarget,
+      const std::string &error,
+      const boost::optional<const OrderCheckError> &orderCheckError) {
+    Verify(
+        m_checkErrors
+            .emplace(std::make_pair(&sellTarget, &buyTarget),
+                     boost::make_tuple(&error, &checkTarget, orderCheckError))
+            .second);
   }
   void RegisterCheckError(const Security &sellTarget,
                           const Security &buyTarget,
                           const std::string &error) {
     Verify(m_checkErrors
                .emplace(std::make_pair(&sellTarget, &buyTarget),
-                        std::make_pair(&error, nullptr))
+                        boost::make_tuple(&error, nullptr, boost::none))
                .second);
   }
   void ForEachCheckError(
       const boost::function<void(const Security &sellTarget,
                                  const Security &buyTarget,
                                  const std::string &error,
-                                 const Security *checkTarget)> &callback)
-      const {
+                                 const Security *checkTarget,
+                                 const boost::optional<const OrderCheckError>
+                                     &orderCheckError)> &callback) const {
     for (const auto &targetSet : m_checkErrors) {
       callback(*targetSet.first.first, *targetSet.first.second,
-               *targetSet.second.first, targetSet.second.second);
+               *boost::get<0>(targetSet.second),
+               boost::get<1>(targetSet.second),
+               boost::get<2>(targetSet.second));
     }
   }
 
@@ -112,7 +118,9 @@ class SignalSession : private boost::noncopyable {
   boost::unordered_map<const Security *, Qty> m_usedQtyToSell;
 
   std::map<std::pair<const Security *, const Security *>,
-           std::pair<const std::string *, const Security *>>
+           boost::tuple<const std::string *,
+                        const Security *,
+                        boost::optional<const OrderCheckError>>>
       m_checkErrors;
 };
 }  // namespace
@@ -353,7 +361,6 @@ class aa::Strategy::Implementation : private boost::noncopyable {
              const Milestones &delayMeasurement) {
     auto sellPrice = sellTarget.GetBidPrice();
     auto buyPrice = buyTarget.GetAskPrice();
-    AssertGt(sellPrice, buyPrice);
     const auto spreadRatio = m_isLowestSpreadEnabled
                                  ? m_lowestSpreadRatio
                                  : m_tradingSettings.minPriceDifferenceRatio;
@@ -362,12 +369,9 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       const auto middle = buyPrice + ((sellPrice - buyPrice) / 2);
       const auto newBuyPrice =
           middle - ((middle * spreadHalfPercent) / (100 + spreadHalfPercent));
-      AssertLe(buyPrice, newBuyPrice);
       buyPrice = std::move(newBuyPrice);
       const auto newSellPrice = buyPrice * (spreadRatio + 1);
-      AssertGe(sellPrice, newSellPrice);
       sellPrice = std::move(newSellPrice);
-      AssertEq(spreadRatio, CaclSpreadAndRatio(sellPrice, buyPrice).second);
     }
 
     struct Qtys : private boost::noncopyable {
@@ -414,14 +418,16 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     {
       const auto &checkTarget = [&](Security &target, bool isBuy,
                                     const Price &price) -> bool {
-        const auto *const result =
+        const auto &result =
             OrderBestSecurityChecker::Create(m_self, isBuy, qty, price)
                 ->Check(target);
-        if (result) {
-          signalSession.RegisterCheckError(sellTarget, buyTarget, target,
-                                           *result);
+        if (!result) {
+          return true;
         }
-        return result ? false : true;
+        signalSession.RegisterCheckError(sellTarget, buyTarget, target,
+                                         result->GetRuleNameRef(),
+                                         result->GetOrderError());
+        return false;
       };
       if (!checkTarget(sellTarget, false, sellPrice) ||
           !checkTarget(buyTarget, true, buyPrice)) {
@@ -525,20 +531,45 @@ class aa::Strategy::Implementation : private boost::noncopyable {
   void ReportSignalCheckErrors(const SignalSession &session) const {
     std::vector<std::string> report;
     session.ForEachCheckError(
-        [this, &report](const Security &sellTarget, const Security &buyTarget,
-                        const std::string &error, const Security *checkTarget) {
+        [this, &report](
+            const Security &sellTarget, const Security &buyTarget,
+            const std::string &ruleName, const Security *checkTarget,
+            const boost::optional<const OrderCheckError> &orderError) {
           std::ostringstream os;
           os << m_self.GetTradingSystem(sellTarget.GetSource().GetIndex())
-                    .GetInstanceName()
+                    .GetTitle()
              << " > "
              << m_self.GetTradingSystem(buyTarget.GetSource().GetIndex())
-                    .GetInstanceName()
-             << ": " << error;
+                    .GetTitle()
+             << ": " << ruleName;
+          Assert(checkTarget || !orderError);
           if (checkTarget) {
             os << " ("
                << m_self.GetTradingSystem(checkTarget->GetSource().GetIndex())
-                      .GetInstanceName()
-               << ")";
+                      .GetTitle();
+            if (orderError) {
+              os << " requires: ";
+              auto has = false;
+              if (orderError->qty) {
+                os << " qty. >= " << *orderError->qty;
+                has = true;
+              }
+              if (orderError->price) {
+                if (has) {
+                  os << ',';
+                }
+                os << " price >= " << *orderError->price;
+                has = true;
+              }
+              if (orderError->volume) {
+                if (has) {
+                  os << ',';
+                }
+                os << " volume >= " << *orderError->volume;
+                has = true;
+              }
+            }
+            os << ")";
           }
           report.emplace_back(os.str());
         });

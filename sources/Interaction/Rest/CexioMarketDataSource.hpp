@@ -34,7 +34,8 @@ class CexioMarketDataSource : public MarketDataSource {
  public:
   explicit CexioMarketDataSource(const App &,
                                  Context &context,
-                                 const std::string &instanceName,
+                                 std::string instanceName,
+                                 std::string title,
                                  const boost::property_tree::ptree &);
   ~CexioMarketDataSource() override;
 

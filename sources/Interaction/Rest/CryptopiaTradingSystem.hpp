@@ -126,7 +126,8 @@ class CryptopiaTradingSystem : public TradingSystem {
   explicit CryptopiaTradingSystem(const App &,
                                   const TradingMode &,
                                   Context &,
-                                  const std::string &instanceName,
+                                  std::string instanceName,
+                                  std::string title,
                                   const boost::property_tree::ptree &);
   ~CryptopiaTradingSystem() override = default;
 

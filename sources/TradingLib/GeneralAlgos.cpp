@@ -12,18 +12,19 @@
 #include "GeneralAlgos.hpp"
 
 using namespace trdk;
-using namespace trdk::TradingLib;
+using namespace TradingLib;
+namespace tl = TradingLib;
 
-namespace tl = trdk::TradingLib;
-
-bool tl::CheckPositionRestAsOrder(const Position &position) {
+boost::optional<OrderCheckError> tl::CheckPositionRestAsOrder(
+    const Position &position) {
   return CheckPositionRestAsOrder(position, position.GetSecurity(),
                                   position.GetTradingSystem());
 }
 
-bool tl::CheckPositionRestAsOrder(const Position &position,
-                                  const Security &security,
-                                  const TradingSystem &tradingSystem) {
+boost::optional<OrderCheckError> tl::CheckPositionRestAsOrder(
+    const Position &position,
+    const Security &security,
+    const TradingSystem &tradingSystem) {
   Price price;
   OrderSide side;
   if (position.GetNumberOfCloseOrders() || position.IsFullyOpened()) {
@@ -33,6 +34,6 @@ bool tl::CheckPositionRestAsOrder(const Position &position,
     price = position.GetMarketOpenPrice();
     side = position.GetOpenOrderSide();
   }
-  return !tradingSystem.CheckOrder(security, position.GetCurrency(),
-                                   position.GetActiveQty(), price, side);
+  return tradingSystem.CheckOrder(security, position.GetCurrency(),
+                                  position.GetActiveQty(), price, side);
 }

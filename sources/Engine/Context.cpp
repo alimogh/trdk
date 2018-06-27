@@ -186,64 +186,75 @@ void Engine::Context::Start(
 
       // Market data system should be connected before booting as sometimes
       // security objects can be created without market data source.
-      for (size_t i = 0; i < m_pimpl->m_marketDataSources.size(); ++i) {
+      for (size_t i = 0; i < m_pimpl->m_marketDataSources.size();) {
         auto &source = m_pimpl->m_marketDataSources[i];
         if (startProgressCallback) {
-          startProgressCallback("Connecting to " + source->GetInstanceName() +
+          startProgressCallback("Connecting to " + source->GetTitle() +
                                 " market data source...");
         }
         try {
           source->Connect();
         } catch (const ConnectError &ex) {
-          boost::format message(
+          boost::format error(
               R"(Failed to connect to market data source "%1%": "%2%")");
-          message % source->GetInstanceName()  // 1
-              % ex;                            // 2
-          if (startErrorCallback && startErrorCallback(message.str() + ".")) {
-            GetLog().Warn("Ignoring error: \"%1%\"...", message);
-            Verify(errors.emplace(i).second);
+          error % source->GetInstanceName()  // 1
+              % ex;                          // 2
+          if (!startErrorCallback) {
+            throw ConnectError(error.str().c_str());
+          }
+          boost::format message(
+              R"(Failed to connect to market data source %1%: %2%.)");
+          message % source->GetTitle()  // 1
+              % ex;                     // 2
+          if (!startErrorCallback(message.str())) {
             continue;
           }
-          throw ConnectError(message.str().c_str());
+          GetLog().Warn("Ignoring error: \"%1%\"...", error);
+          Verify(errors.emplace(i).second);
         } catch (const Lib::Exception &ex) {
           GetLog().Error("Failed to make market data connection: \"%1%\".", ex);
           throw Exception("Failed to make market data connection");
         }
+        ++i;
       }
 
-      for (size_t i = 0; i < m_pimpl->m_tradingSystems.size(); ++i) {
+      for (size_t i = 0; i < m_pimpl->m_tradingSystems.size();) {
         if (errors.count(i)) {
           continue;
         }
-
         auto &tradingSystem = m_pimpl->m_tradingSystems[i];
         if (!tradingSystem) {
           continue;
         }
         if (startProgressCallback) {
-          startProgressCallback("Connecting to " +
-                                tradingSystem->GetInstanceName() +
+          startProgressCallback("Connecting to " + tradingSystem->GetTitle() +
                                 " trading system...");
         }
-
         try {
           tradingSystem->Connect();
         } catch (const ConnectError &ex) {
-          boost::format message(
-              "Failed to connect to trading system \"%1%\": \"%2%\"");
-          message % tradingSystem->GetInstanceName()  // 1
-              % ex;                                   // 2
-          if (startErrorCallback && startErrorCallback(message.str() + ".")) {
-            GetLog().Warn("Ignoring error: \"%1%\"...", message);
-            Verify(errors.emplace(i).second);
-          } else {
-            throw ConnectError(message.str().c_str());
+          boost::format error(
+              R"(Failed to connect to trading system "%1%": "%2%")");
+          error % tradingSystem->GetInstanceName()  // 1
+              % ex;                                 // 2
+          if (!startErrorCallback) {
+            throw ConnectError(error.str().c_str());
           }
+          boost::format message(
+              R"(Failed to connect to trading system %1%: %2%)");
+          message % tradingSystem->GetTitle()  // 1
+              % ex;                            // 2
+          if (!startErrorCallback(message.str())) {
+            continue;
+          }
+          GetLog().Warn("Ignoring error: \"%1%\"...", error);
+          Verify(errors.emplace(i).second);
         } catch (const Lib::Exception &ex) {
           GetLog().Error("Failed to make trading system connection: \"%1%\".",
                          ex);
           throw Exception("Failed to make trading system connection");
         }
+        ++i;
       }
 
       if (!errors.empty()) {

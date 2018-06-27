@@ -4,8 +4,6 @@ EXPORTS
 	CreateYobitnetMarketDataSource
 	CreateCcex
 	CreateCcexMarketDataSource
-	CreateGdax
-	CreateGdaxMarketDataSource
 	CreateBittrexTradingSystem
 	CreateBittrexMarketDataSource
 	CreateBittrex

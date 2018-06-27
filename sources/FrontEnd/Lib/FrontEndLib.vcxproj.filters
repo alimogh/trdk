@@ -342,6 +342,18 @@
     <ClCompile Include="GeneratedFiles\Release Standalone\moc_SymbolDialog.cpp">
       <Filter>Generated Files\Release Standalone</Filter>
     </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_SecurityListView.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_SecurityListView.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_SecurityListView.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="SecurityListView.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp">
@@ -627,6 +639,9 @@
       <Filter>Form Files</Filter>
     </CustomBuild>
     <CustomBuild Include="SymbolDialog.hpp">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="SecurityListView.hpp">
       <Filter>Header Files</Filter>
     </CustomBuild>
   </ItemGroup>

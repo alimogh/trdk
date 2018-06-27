@@ -24,9 +24,6 @@
       <UniqueIdentifier>{f11e9a2b-c979-44ef-81db-3c7c15635631}</UniqueIdentifier>
       <Extensions>Cryptopia</Extensions>
     </Filter>
-    <Filter Include="GDAX">
-      <UniqueIdentifier>{510c3443-c472-4d68-a48a-4d244724fd12}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Yobit.net">
       <UniqueIdentifier>{d7468aca-8e21-4be5-8316-dd66cebda89d}</UniqueIdentifier>
     </Filter>
@@ -92,6 +89,9 @@
       <UniqueIdentifier>{095e0295-c145-4730-9490-dde29d90c828}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
+    <Filter Include="Coinbase">
+      <UniqueIdentifier>{510c3443-c472-4d68-a48a-4d244724fd12}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Prec.cpp">
@@ -141,9 +141,6 @@
     </ClCompile>
     <ClCompile Include="YobitnetExchange.cpp">
       <Filter>Yobit.net</Filter>
-    </ClCompile>
-    <ClCompile Include="GdaxExchange.cpp">
-      <Filter>GDAX</Filter>
     </ClCompile>
     <ClCompile Include="BittrexUtil.cpp">
       <Filter>Bittrex\Source Files</Filter>
@@ -222,6 +219,9 @@
     </ClCompile>
     <ClCompile Include="Crex24TradingSystemAndMarketDataSource.cpp">
       <Filter>CREX24\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CoinbaseExchange.cpp">
+      <Filter>Coinbase</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

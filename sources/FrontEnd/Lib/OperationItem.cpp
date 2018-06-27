@@ -78,7 +78,7 @@ OperationNodeItem::OperationNodeItem(OperationRecord &&record)
 OperationRecord &OperationNodeItem::GetRecord() { return m_record; }
 const OperationRecord &OperationNodeItem::GetRecord() const { return m_record; }
 
-QVariant OperationNodeItem::GetData(int column) const {
+QVariant OperationNodeItem::GetData(const int column) const {
   static_assert(numberOfOperationColumns == 14, "List changed.");
   switch (column) {
     case OPERATION_COLUMN_OPERATION_NUMBER_OR_ORDER_LEG:
@@ -101,13 +101,14 @@ QVariant OperationNodeItem::GetData(int column) const {
       return GetRecord().strategyParams;
     case OPERATION_COLUMN_OPERATION_ID_OR_ORDER_ID:
       return GetRecord().id;
+    default:
+      return QVariant();
   }
-  return QVariant();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-QVariant OperationOrderHeadItem::GetData(int column) const {
+QVariant OperationOrderHeadItem::GetData(const int column) const {
   static_assert(numberOfOperationColumns == 14, "List changed.");
   switch (column) {
     case OPERATION_COLUMN_OPERATION_NUMBER_OR_ORDER_LEG:
