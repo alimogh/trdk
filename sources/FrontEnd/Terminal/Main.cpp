@@ -94,20 +94,14 @@ int main(int argc, char *argv[]) {
 
     std::vector<std::unique_ptr<Dll>> moduleDlls;
 
-    for (;;) {
-      try {
-        engine.Start([&splash](const std::string &message) {
-          splash->ShowMessage(message);
-        });
-        break;
-      } catch (const std::exception &ex) {
-        if (QMessageBox::critical(nullptr, application.tr("Failed to start"),
-                                  QString("%1.").arg(ex.what()),
-                                  QMessageBox::Abort | QMessageBox::Retry) !=
-            QMessageBox::Retry) {
-          return 1;
-        }
-      }
+    try {
+      engine.Start([&splash](const std::string &message) {
+        splash->ShowMessage(message);
+      });
+    } catch (const std::exception &ex) {
+      QMessageBox::critical(nullptr, application.tr("Failed to start"),
+                            QString("%1.").arg(ex.what()), QMessageBox::Abort);
+      return 1;
     }
 
     MainWindow mainWindow(engine, moduleDlls, nullptr);
