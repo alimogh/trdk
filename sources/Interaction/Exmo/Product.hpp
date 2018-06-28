@@ -22,8 +22,8 @@ struct Product {
   Qty maxQty;
   Price minPrice;
   Price maxPrice;
-  Volume maxVolume;
   Volume minVolume;
+  Volume maxVolume;
 };
 
 boost::unordered_map<std::string, Product> RequestProductList(

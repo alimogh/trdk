@@ -165,10 +165,12 @@ boost::optional<OrderCheckError> Exmo::TradingSystem::CheckOrder(
 
     const auto volume = *price * qty;
     if (volume < product->second.minVolume) {
-      return OrderCheckError{boost::none, product->second.minVolume};
+      return OrderCheckError{boost::none, boost::none,
+                             product->second.minVolume};
     }
     if (volume > product->second.maxVolume) {
-      return OrderCheckError{boost::none, product->second.maxVolume};
+      return OrderCheckError{boost::none, boost::none,
+                             product->second.maxVolume};
     }
   }
 
