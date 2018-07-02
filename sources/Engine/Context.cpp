@@ -220,10 +220,12 @@ void Engine::Context::Start(
 
       for (size_t i = 0; i < m_pimpl->m_tradingSystems.size();) {
         if (errors.count(i)) {
+          ++i;
           continue;
         }
         auto &tradingSystem = m_pimpl->m_tradingSystems[i];
         if (!tradingSystem) {
+          ++i;
           continue;
         }
         if (startProgressCallback) {
