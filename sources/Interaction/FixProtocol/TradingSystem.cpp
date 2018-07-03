@@ -201,7 +201,7 @@ void fix::TradingSystem::OnExecutionReport(const in::ExecutionReport& message,
         return true;
       };
   try {
-    static_assert(numberOfOrderStatuses == 7, "List changed.");
+    static_assert(OrderStatus::_size_constant == 7, "List changed.");
     switch (execType) {
       default:
         GetLog().Warn(
@@ -224,11 +224,11 @@ void fix::TradingSystem::OnExecutionReport(const in::ExecutionReport& message,
         OnOrderRejected(message.GetTime(), orderId, boost::none, boost::none);
         break;
       case EXEC_TYPE_TRADE: {
-        Assert(orderStatus == ORDER_STATUS_FILLED_PARTIALLY ||
-               orderStatus == ORDER_STATUS_FILLED_FULLY);
+        Assert(orderStatus == +OrderStatus::FulledPartially ||
+               orderStatus == +OrderStatus::FilledFully);
         message.ResetReadingState();
         Trade trade = {message.ReadAvgPx()};
-        if (orderStatus == ORDER_STATUS_FILLED_FULLY) {
+        if (orderStatus == +OrderStatus::FilledFully) {
           OnOrderFilled(message.GetTime(), orderId, std::move(trade),
                         boost::none, setPositionId);
         } else {
@@ -238,18 +238,18 @@ void fix::TradingSystem::OnExecutionReport(const in::ExecutionReport& message,
       }
       case EXEC_TYPE_ORDER_STATUS:
         switch (orderStatus) {
-          case ORDER_STATUS_OPENED:
+          case OrderStatus::Opened:
             OnOrderOpened(message.GetTime(), orderId, setPositionId);
             break;
-          case ORDER_STATUS_CANCELED:
+          case OrderStatus::Canceled:
             OnOrderCanceled(message.GetTime(), orderId, message.ReadLeavesQty(),
                             boost::none);
             break;
-          case ORDER_STATUS_FILLED_FULLY:
-          case ORDER_STATUS_FILLED_PARTIALLY: {
+          case OrderStatus::FilledFully:
+          case OrderStatus::FulledPartially: {
             message.ResetReadingState();
             Trade trade = {message.ReadAvgPx()};
-            if (orderStatus == ORDER_STATUS_FILLED_FULLY) {
+            if (orderStatus == +OrderStatus::FilledFully) {
               OnOrderFilled(message.GetTime(), orderId, std::move(trade),
                             message.ReadLeavesQty(), setPositionId);
             } else {
@@ -258,12 +258,12 @@ void fix::TradingSystem::OnExecutionReport(const in::ExecutionReport& message,
             }
             break;
           }
-          case ORDER_STATUS_REJECTED:
+          case OrderStatus::Rejected:
             message.ResetReadingState();
             OnOrderRejected(message.GetTime(), orderId, boost::none,
                             boost::none);
             break;
-          case ORDER_STATUS_ERROR:
+          case OrderStatus::Error:
             message.ResetReadingState();
             OnOrderError(message.GetTime(), orderId, boost::none, boost::none,
                          message.ReadText());

@@ -1,3 +1,4 @@
 Open SSL: http://www.npcglib.org/~stathis/blog/precompiled-openssl/ (openssl-1.0.1t-vs2015.7z for MSVC 2015)
-POCO C++ Libraries: https://pocoproject.org/download/index.html (version 1.7.9; components: Foundation, XML, JSON, Util, Net, Crypto, NetSSL_OpenSSL; Runtime: Multi-threaded DLL).
-QxOrm: https://www.qxorm.com/
+POCO C++ Libraries: https://pocoproject.org/download/index.html (version 1.7.9; Components: Foundation, XML, JSON, Util, Net, Crypto, NetSSL_OpenSSL; Runtime: Multi-threaded DLL;).
+ODB: https://www.codesynthesis.com/products/odb/download.xhtml (version 2.4.0; Components: ODB Compiler, Common Runtime Library, libodb-sqlite; Must be built as a static library for MSVC 2015).
+SQLite: https://www.sqlite.org/download.html (version: 3.24.0; Components: win64 binnaries, C source code as an amalgamation).

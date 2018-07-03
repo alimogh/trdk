@@ -94,11 +94,11 @@ StrategyWindow::StrategyWindow(Engine &engine,
           QString("%1 %2").arg(ConvertToUiString(leg.side), leg.symbol);
 
       m_legs[legIndex].symbol->setText(name);
-      m_legs[legIndex].price->setStyleSheet(leg.side == ORDER_SIDE_SELL
+      m_legs[legIndex].price->setStyleSheet(leg.side != +OrderSide::Buy
                                                 ? "color:rgb(230,59,1);"
                                                 : "color:rgb(0,195,91);");
       m_legs[legIndex].frame->setStyleSheet(
-          leg.side == ORDER_SIDE_SELL ? "border-color:rgb(230,59,1);"
+          leg.side != +OrderSide::Buy ? "border-color:rgb(230,59,1);"
                                       : "border-color:rgb(0,195,91);");
 
       m_ui.opportunities->setHorizontalHeaderItem(
@@ -268,7 +268,7 @@ ta::Strategy &StrategyWindow::CreateStrategyInstance(const LegsConf &legSet) {
         isFirst = false;
       }
       const auto &legStr =
-          (leg.side == ORDER_SIDE_BUY ? '+' : '-') + leg.symbol.toStdString();
+          (leg.side == +OrderSide::Buy ? '+' : '-') + leg.symbol.toStdString();
       legsStr += legStr;
       legs.push_back({"", ptr::ptree().put("", legStr)});
       symbols.push_back({"", ptr::ptree().put("", leg.symbol)});

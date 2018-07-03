@@ -16,12 +16,14 @@
 
 #include "Exception.hpp"
 #include "SysError.hpp"
+#ifndef DEV_VER
 #include "UseUnused.hpp"
+#endif
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>
-#if defined(BOOST_MSVC)
+#ifdef BOOST_WINDOWS
 #include <Windows.h>
-#elif defined(BOOST_GCC)
+#else
 #include <dlfcn.h>
 #endif
 

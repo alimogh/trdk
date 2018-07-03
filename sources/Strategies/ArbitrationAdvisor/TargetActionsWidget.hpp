@@ -8,6 +8,8 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
+#pragma once
+
 #include "ui_TargetActionsWidget.h"
 
 namespace trdk {
@@ -20,15 +22,15 @@ class TargetActionsWidget : public QWidget {
  public:
   typedef QWidget Base;
 
- public:
   explicit TargetActionsWidget(QWidget *parent);
 
  signals:
-  void Order(const OrderSide &);
+  void Buy();
+  void Sell();
 
  private:
   Ui::TargetActionsWidget m_ui;
 };
-}
-}
-}
+}  // namespace ArbitrageAdvisor
+}  // namespace Strategies
+}  // namespace trdk

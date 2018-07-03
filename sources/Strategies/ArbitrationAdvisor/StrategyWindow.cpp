@@ -211,13 +211,13 @@ void StrategyWindow::ConnectSignals() {
   Verify(connect(m_ui.autoTradeLevel,
                  static_cast<void (QDoubleSpinBox::*)(double)>(
                      &QDoubleSpinBox::valueChanged),
-                 [this](double level) {
+                 this, [this](const double level) {
                    UpdateAutoTradingLevel(level, m_ui.maxQty->value());
                  }));
   Verify(connect(m_ui.maxQty,
                  static_cast<void (QDoubleSpinBox::*)(double)>(
                      &QDoubleSpinBox::valueChanged),
-                 [this](double qty) {
+                 this, [this](const double qty) {
                    UpdateAutoTradingLevel(m_ui.autoTradeLevel->value(), qty);
                  }));
 
@@ -235,16 +235,19 @@ void StrategyWindow::ConnectSignals() {
 
   for (auto &target : m_targetWidgets) {
     auto *const tradingSystem = target.first;
-    Verify(connect(&target.second->actions, &TargetActionsWidget::Order,
-                   [this, tradingSystem](const OrderSide &side) {
-                     SendOrder(side, tradingSystem);
+    Verify(connect(&target.second->actions, &TargetActionsWidget::Sell, this,
+                   [this, tradingSystem]() {
+                     SendOrder(OrderSide::Sell, tradingSystem);
                    }));
+    Verify(connect(
+        &target.second->actions, &TargetActionsWidget::Buy, this,
+        [this, tradingSystem]() { SendOrder(OrderSide::Buy, tradingSystem); }));
   }
 
-  Verify(connect(m_ui.bestSell, &QPushButton::clicked,
-                 [this]() { SendOrder(ORDER_SIDE_SELL, nullptr); }));
-  Verify(connect(m_ui.bestBuy, &QPushButton::clicked,
-                 [this]() { SendOrder(ORDER_SIDE_BUY, nullptr); }));
+  Verify(connect(m_ui.bestSell, &QPushButton::clicked, this,
+                 [this]() { SendOrder(OrderSide::Sell, nullptr); }));
+  Verify(connect(m_ui.bestBuy, &QPushButton::clicked, this,
+                 [this]() { SendOrder(OrderSide::Buy, nullptr); }));
 }
 
 aa::Strategy &StrategyWindow::GenerateNewStrategyInstance() {
@@ -386,15 +389,15 @@ void StrategyWindow::OnBlocked(const QString &reason) {
 void StrategyWindow::SendOrder(const OrderSide &side,
                                TradingSystem *tradingSystem) {
   if (!tradingSystem) {
-    tradingSystem = side == ORDER_SIDE_BUY ? m_bestBuyTradingSystem
-                                           : m_bestSellTradingSystem;
+    tradingSystem = side == +OrderSide::Buy ? m_bestBuyTradingSystem
+                                            : m_bestSellTradingSystem;
     if (!tradingSystem) {
       QMessageBox::warning(
           this, tr("Failed to send order"),
           QString(
               "There is no suitable exchange to %1 at best price. Wait until "
               "price changed or send a manual order.")
-              .arg(side == ORDER_SIDE_BUY ? tr("buy") : tr("sell")),
+              .arg(ConvertToUiAction(side)),
           QMessageBox::Ok);
       return;
     }
@@ -408,21 +411,20 @@ void StrategyWindow::SendOrder(const OrderSide &side,
     return;
   }
   Assert(tragetIt->security);
-  Security &security = *tragetIt->security;
+  auto &security = *tragetIt->security;
 
   static const OrderParams params = {};
   try {
     tradingSystem->SendOrder(security, security.GetSymbol().GetCurrency(),
                              m_ui.maxQty->value(),
-                             side == ORDER_SIDE_BUY ? security.GetAskPrice()
-                                                    : security.GetBidPrice(),
+                             side == +OrderSide::Buy ? security.GetAskPrice()
+                                                     : security.GetBidPrice(),
                              params, boost::make_unique<OrderStatusNotifier>(),
                              m_engine.GetRiskControl(m_tradingMode), side,
                              TIME_IN_FORCE_GTC, Milestones());
   } catch (const std::exception &ex) {
     QMessageBox::critical(this, tr("Failed to send order"),
                           QString("%1.").arg(ex.what()), QMessageBox::Abort);
-    return;
   }
 }
 

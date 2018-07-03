@@ -59,12 +59,12 @@ void Unset(boost::atomic<double>& val) noexcept {
 }
 
 std::string GetFutureSymbol(const Symbol& symbol) {
-  AssertEq(SECURITY_TYPE_FUTURES, symbol.GetSecurityType());
+  AssertEq(+SecurityType::Futures, symbol.GetSecurityType());
   if (!symbol.IsExplicit()) {
     return symbol.GetSymbol();
   }
   boost::smatch match;
-  const boost::regex expr("^([a-z]+)([a-z]\\d+|\\d{2,2}[a-z]{3,3}FUT)$",
+  const boost::regex expr("^([a-z]+)([a-z]\\d+|\\d{2,2}[a-z]{3,3}Futures)$",
                           boost::regex::icase);
   if (!boost::regex_match(symbol.GetSymbol(), match, expr)) {
     boost::format message("Failed to parse explicit future symbol \"%1%\"");
@@ -77,12 +77,12 @@ std::string GetFutureSymbol(const Symbol& symbol) {
 //! Returns symbol price precision.
 uint8_t GetPrecisionBySymbol(const Symbol& symbol) {
   switch (symbol.GetSecurityType()) {
-    case SECURITY_TYPE_STOCK:
+    case SecurityType::Stock:
       if (symbol.GetSymbol() == "AAPL") {
         return 2;
       }
       break;
-    case SECURITY_TYPE_FUTURES: {
+    case SecurityType::Futures: {
       const auto& symbolStr = GetFutureSymbol(symbol);
       if (symbolStr == "CL") {
         return 2;
@@ -104,18 +104,18 @@ uint8_t GetPrecisionBySymbol(const Symbol& symbol) {
       }
       break;
     }
-    case SECURITY_TYPE_FOR: {
+    case SecurityType::For: {
       if (boost::iends_with(symbol.GetSymbol(), "JPY")) {
         return 3;
       }
       return 5;
     }
-    case SECURITY_TYPE_OPTIONS:
+    case SecurityType::Options:
       if (symbol.GetSymbol() == "AAPL") {
         return 2;
       }
       break;
-    case SECURITY_TYPE_INDEX: {
+    case SecurityType::Index: {
       if (symbol.GetSymbol() == "NIFTY50") {
         return 2;
       }
@@ -126,7 +126,7 @@ uint8_t GetPrecisionBySymbol(const Symbol& symbol) {
         return 2;
       }
     } break;
-    case SECURITY_TYPE_CRYPTO:
+    case SecurityType::Crypto:
       return 8;
     default:
       break;
@@ -144,12 +144,12 @@ uint8_t GetPrecisionBySymbol(const Symbol& symbol) {
 
 size_t GetNumberOfItemsPerQtyBySymbol(const Symbol& symbol) {
   switch (symbol.GetSecurityType()) {
-    case SECURITY_TYPE_STOCK:
+    case SecurityType::Stock:
       if (symbol.GetSymbol() == "AAPL") {
         return 1;
       }
       break;
-    case SECURITY_TYPE_FUTURES: {
+    case SecurityType::Futures: {
       const auto& symbolStr = GetFutureSymbol(symbol);
       if (symbolStr == "CL") {
         return 1000;
@@ -171,14 +171,14 @@ size_t GetNumberOfItemsPerQtyBySymbol(const Symbol& symbol) {
       }
       break;
     }
-    case SECURITY_TYPE_FOR:
+    case SecurityType::For:
       return 1;
-    case SECURITY_TYPE_OPTIONS:
+    case SecurityType::Options:
       if (symbol.GetSymbol() == "AAPL") {
         return 1;
       }
       break;
-    case SECURITY_TYPE_INDEX: {
+    case SecurityType::Index: {
       if (symbol.GetSymbol() == "NIFTY50") {
         return 1;
       }
@@ -189,7 +189,7 @@ size_t GetNumberOfItemsPerQtyBySymbol(const Symbol& symbol) {
         return 1;
       }
     } break;
-    case SECURITY_TYPE_CRYPTO:
+    case SecurityType::Crypto:
       return 1;
     default:
       break;
@@ -205,7 +205,7 @@ size_t GetNumberOfItemsPerQtyBySymbol(const Symbol& symbol) {
 
 Qty GetLotSizeBySymbol(const Symbol& symbol) {
   switch (symbol.GetSecurityType()) {
-    case SECURITY_TYPE_FOR:
+    case SecurityType::For:
       return 100000;
     default:
       return 1;

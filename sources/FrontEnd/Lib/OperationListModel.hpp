@@ -46,8 +46,8 @@ class TRDK_FRONTEND_LIB_API OperationListModel : public QAbstractItemModel {
   Qt::ItemFlags flags(const QModelIndex&) const override;
 
  private slots:
-  void UpdateOperation(const Orm::Operation&);
-  void UpdateOrder(const Orm::Order&);
+  void UpdateOperation(boost::shared_ptr<const OperationRecord>);
+  void UpdateOrder(boost::shared_ptr<const OrderRecord>);
 
  private:
   class Implementation;

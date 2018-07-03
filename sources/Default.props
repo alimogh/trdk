@@ -5,7 +5,7 @@
   <PropertyGroup>
     <IntDir>$(SolutionDir)..\output\$(PlatformShortName)\int\$(Configuration)\$(ProjectName)\</IntDir>
     <LibraryPath>$(SolutionDir)..\output\lib;$(LibraryPath)</LibraryPath>
-    <IncludePath>$(SolutionDir);$(SolutionDir)\..\externals\poco-1.7.9-all\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir);$(SolutionDir)\..\externals\poco-1.7.9-all\include;$(SolutionDir)\..\externals\better-enums;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
@@ -20,7 +20,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>Prec.hpp</PrecompiledHeaderFile>
       <ExceptionHandling>Async</ExceptionHandling>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;_WIN32_WINNT=0x0600;WINVER=0x0600;NOMINMAX;WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_WIN32_WINNT=0x0600;WINVER=0x0600;NOMINMAX;WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;BETTER_ENUMS_CONSTEXPR_TO_STRING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <AdditionalOptions>/Zm1024 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4503;4275;4251;4250</DisableSpecificWarnings>

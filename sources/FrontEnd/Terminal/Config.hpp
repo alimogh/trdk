@@ -12,6 +12,7 @@
 
 namespace trdk {
 namespace FrontEnd {
+namespace Terminal {
 
 class CheckConfigException : public Lib::Exception {
  public:
@@ -19,5 +20,7 @@ class CheckConfigException : public Lib::Exception {
 };
 
 void CheckConfig(const boost::filesystem::path &configFilePath);
+
+}  // namespace Terminal
 }  // namespace FrontEnd
 }  // namespace trdk

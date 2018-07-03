@@ -134,7 +134,7 @@ class SellOrderBestSecurityChecker : public OrderBestSecurityChecker {
   Volume GetRequiredBalance(const Security &) const override {
     return GetRequiredQty();
   }
-  OrderSide GetSide() const override { return ORDER_SIDE_SELL; }
+  OrderSide GetSide() const override { return OrderSide::Sell; }
 };
 
 class BuyOrderBestSecurityChecker : public OrderBestSecurityChecker {
@@ -170,7 +170,7 @@ class BuyOrderBestSecurityChecker : public OrderBestSecurityChecker {
     return checkSecurity.GetSymbol().GetQuoteSymbol();
   }
 
-  OrderSide GetSide() const override { return ORDER_SIDE_BUY; }
+  OrderSide GetSide() const override { return OrderSide::Buy; }
 
   Volume GetRequiredBalance(const Security &checkSecurity) const override {
     return GetRequiredQty() * GetOpportunityPrice(checkSecurity);
@@ -254,7 +254,7 @@ class LongPositionBestSecurityChecker : public PositionBestSecurityChecker {
   Volume GetRequiredBalance(const Security &) const override {
     return GetPosition().GetActiveQty();
   }
-  OrderSide GetSide() const override { return ORDER_SIDE_SELL; }
+  OrderSide GetSide() const override { return OrderSide::Sell; }
 };
 
 class ShortPositionBestSecurityChecker : public PositionBestSecurityChecker {
@@ -292,7 +292,7 @@ class ShortPositionBestSecurityChecker : public PositionBestSecurityChecker {
   Volume GetRequiredBalance(const Security &checkSecurity) const override {
     return GetPosition().GetActiveQty() * GetOpportunityPrice(checkSecurity);
   }
-  OrderSide GetSide() const override { return ORDER_SIDE_BUY; }
+  OrderSide GetSide() const override { return OrderSide::Buy; }
 };
 
 std::unique_ptr<PositionBestSecurityChecker>

@@ -396,9 +396,9 @@ class StandardRiskControlScope : public RiskControlScope {
       const Qty &qty,
       const Price &orderPrice,
       const RiskControlSymbolContext::Side &side) {
-    const Symbol &symbol = security.GetSymbol();
+    const auto &symbol = security.GetSymbol();
 
-    AssertEq(SECURITY_TYPE_FOR, symbol.GetSecurityType());
+    AssertEq(+SecurityType::For, symbol.GetSecurityType());
     AssertNe(symbol.GetFotBaseCurrency(), symbol.GetFotQuoteCurrency());
     Assert(symbol.GetFotBaseCurrency() == currency ||
            symbol.GetFotQuoteCurrency() == currency);
@@ -431,8 +431,8 @@ class StandardRiskControlScope : public RiskControlScope {
                   const Qty &qty,
                   const Price &orderPrice,
                   const RiskControlSymbolContext::Side &side) const {
-    const Symbol &symbol = security.GetSymbol();
-    if (symbol.GetSecurityType() != SECURITY_TYPE_FOR) {
+    const auto &symbol = security.GetSymbol();
+    if (symbol.GetSecurityType() != +SecurityType::For) {
       throw WrongSettingsException("Unknown security type");
     }
 
@@ -485,15 +485,15 @@ class StandardRiskControlScope : public RiskControlScope {
                         const Qty &remainingQty,
                         const Trade *trade,
                         const RiskControlSymbolContext::Side &side) {
-    static_assert(numberOfOrderStatuses == 7, "Status list changed.");
+    static_assert(OrderStatus::_size_constant == 7, "Status list changed.");
     switch (status) {
       default:
-        AssertEq(ORDER_STATUS_ERROR, status);
+        AssertEq(+OrderStatus::Error, status);
         return;
-      case ORDER_STATUS_SENT:
-      case ORDER_STATUS_OPENED:
-      case ORDER_STATUS_FILLED_FULLY:
-      case ORDER_STATUS_FILLED_PARTIALLY:
+      case OrderStatus::Sent:
+      case OrderStatus::Opened:
+      case OrderStatus::FilledFully:
+      case OrderStatus::FulledPartially:
         if (!trade) {
           throw Exception("Filled order has no trade information");
         }
@@ -501,9 +501,9 @@ class StandardRiskControlScope : public RiskControlScope {
         ConfirmBlockedFunds(operationId, security, currency, orderPrice, *trade,
                             side);
         break;
-      case ORDER_STATUS_CANCELED:
-      case ORDER_STATUS_REJECTED:
-      case ORDER_STATUS_ERROR:
+      case OrderStatus::Canceled:
+      case OrderStatus::Rejected:
+      case OrderStatus::Error:
         Assert(!trade);
         UnblockFunds(operationId, security, currency, orderPrice, remainingQty,
                      side);
@@ -517,17 +517,15 @@ class StandardRiskControlScope : public RiskControlScope {
                            const Price &orderPrice,
                            const Trade &trade,
                            const RiskControlSymbolContext::Side &side) {
-    const Symbol &symbol = security.GetSymbol();
-    if (symbol.GetSecurityType() != SECURITY_TYPE_FOR) {
+    const auto &symbol = security.GetSymbol();
+    if (symbol.GetSecurityType() != +SecurityType::For) {
       throw WrongSettingsException("Unknown security type");
     }
 
-    RiskControlSymbolContext::Scope &context =
+    auto &context =
         security.GetRiskControlContext(GetTradingMode()).GetScope(m_index);
-    RiskControlSymbolContext::Position &baseCurrency =
-        *context.baseCurrencyPosition;
-    RiskControlSymbolContext::Position &quoteCurrency =
-        *context.quoteCurrencyPosition;
+    auto &baseCurrency = *context.baseCurrencyPosition;
+    auto &quoteCurrency = *context.quoteCurrencyPosition;
 
     const auto &blocked =
         CalcOrderVolumes(security, currency, trade.qty, orderPrice, side);
@@ -565,17 +563,15 @@ class StandardRiskControlScope : public RiskControlScope {
                     const Price &orderPrice,
                     const Qty &remainingQty,
                     const RiskControlSymbolContext::Side &side) {
-    const Symbol &symbol = security.GetSymbol();
-    if (symbol.GetSecurityType() != SECURITY_TYPE_FOR) {
+    const auto &symbol = security.GetSymbol();
+    if (symbol.GetSecurityType() != +SecurityType::For) {
       throw WrongSettingsException("Unknown security type");
     }
 
-    RiskControlSymbolContext::Scope &context =
+    auto &context =
         security.GetRiskControlContext(GetTradingMode()).GetScope(m_index);
-    RiskControlSymbolContext::Position &baseCurrency =
-        *context.baseCurrencyPosition;
-    RiskControlSymbolContext::Position &quoteCurrency =
-        *context.quoteCurrencyPosition;
+    auto &baseCurrency = *context.baseCurrencyPosition;
+    auto &quoteCurrency = *context.quoteCurrencyPosition;
 
     const auto &blocked =
         CalcOrderVolumes(security, currency, remainingQty, orderPrice, side);

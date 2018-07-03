@@ -444,7 +444,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
         % qty                           // 2
         % *price;                       // 3
 
-    PrivateRequest request(side == ORDER_SIDE_SELL ? "selllimit" : "buylimit",
+    PrivateRequest request(side == +OrderSide::Sell ? "selllimit" : "buylimit",
                            m_settings, *m_endpoint.floodControl, true,
                            requestParams.str(), GetContext(), GetTsLog(),
                            &GetTsTradingLog());
@@ -566,7 +566,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
 
   void UpdateOrder(const OrderId &orderId, const ptr::ptree &order) {
     pt::ptime time;
-    auto status = numberOfOrderStatuses;
+    OrderStatus status = OrderStatus::Error;
     Qty remainingQty = 0;
     try {
       AssertEq(orderId, order.get<OrderId>("OrderUuid"));
@@ -574,12 +574,12 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       remainingQty = order.get<Qty>("QuantityRemaining");
       if (closedField != "null") {
         time = pt::time_from_string(closedField);
-        status = remainingQty == 0 ? ORDER_STATUS_FILLED_FULLY
-                                   : ORDER_STATUS_CANCELED;
+        status = remainingQty == 0 ? OrderStatus::FilledFully
+                                   : OrderStatus::Canceled;
       } else {
         time = pt::time_from_string(order.get<std::string>("Opened"));
-        status = order.get<bool>("CancelInitiated") ? ORDER_STATUS_CANCELED
-                                                    : ORDER_STATUS_OPENED;
+        status = order.get<bool>("CancelInitiated") ? OrderStatus::Canceled
+                                                    : OrderStatus::Opened;
       }
     } catch (const std::exception &ex) {
       boost::format error(
@@ -591,20 +591,22 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
 
     switch (status) {
       default:
-        AssertEq(ORDER_STATUS_OPENED, status);
-      case ORDER_STATUS_OPENED:
+        AssertEq(+OrderStatus::Opened, status);
+      case OrderStatus::Opened:
         OnOrderOpened(time, orderId);
         break;
-      case ORDER_STATUS_CANCELED:
-      case ORDER_STATUS_FILLED_FULLY: {
+      case OrderStatus::Canceled:
+      case OrderStatus::FilledFully: {
         switch (status) {
-          case ORDER_STATUS_CANCELED:
+          case OrderStatus::Canceled:
             AssertLt(0, remainingQty);
             OnOrderCanceled(time, orderId, remainingQty, boost::none);
             break;
-          case ORDER_STATUS_FILLED_FULLY:
+          case OrderStatus::FilledFully:
             AssertEq(0, remainingQty);
             OnOrderFilled(time, orderId, boost::none);
+            break;
+          default:
             break;
         }
         const boost::mutex::scoped_lock lock(m_canceledMutex);

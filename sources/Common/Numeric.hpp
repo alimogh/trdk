@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include <boost/math/special_functions/round.hpp>
+
 namespace trdk {
 namespace Lib {
 
@@ -77,9 +79,12 @@ struct DoubleNumericPolicy {
 };
 
 template <uint8_t precision>
-struct DoubleWithFixedPrecisionNumericPolicy
-    : public trdk::Lib::Detail::DoubleNumericPolicy<precision> {
+struct DoubleWithFixedPrecisionNumericPolicy : DoubleNumericPolicy<precision> {
   static_assert(precision > 0, "Must be greater than zero.");
+
+  typedef DoubleNumericPolicy<precision> Base;
+
+  using Base::GetPrecisionPower;
 
   template <typename T>
   static void Normalize(T &value) {
@@ -104,13 +109,11 @@ class Numeric {
 
   enum { PRECISION = Policy::PRECISION };
 
- public:
   Numeric(const ValueType &value = 0) : m_value(value) { Normalize(); }
 
- public:
   void Swap(Numeric &rhs) noexcept { std::swap(m_value, rhs.m_value); }
 
-  uint8_t GetPrecision() const { return PRECISION; }
+  static uint8_t GetPrecision() { return PRECISION; }
 
   operator ValueType() const noexcept { return Get(); }
 
@@ -125,7 +128,7 @@ class Numeric {
   template <typename StreamElem, typename StreamTraits>
   friend std::basic_ostream<StreamElem, StreamTraits> &operator<<(
       std::basic_ostream<StreamElem, StreamTraits> &os,
-      const trdk::Lib::Numeric<ValueType, Policy> &numeric) {
+      const Numeric<ValueType, Policy> &numeric) {
     numeric.Dump(os);
     return os;
   }
@@ -133,12 +136,11 @@ class Numeric {
   template <typename StreamElem, typename StreamTraits>
   friend std::basic_istream<StreamElem, StreamTraits> &operator>>(
       std::basic_istream<StreamElem, StreamTraits> &is,
-      trdk::Lib::Numeric<ValueType, Policy> &numeric) {
+      Numeric<ValueType, Policy> &numeric) {
     numeric.Load(is);
     return is;
   }
 
- public:
   template <typename AnotherValueType>
   bool operator==(const AnotherValueType &rhs) const {
     return operator==(Numeric(rhs));
@@ -190,7 +192,6 @@ class Numeric {
   bool IsNan() const { return Policy::IsNan(m_value); }
   bool IsNotNan() const { return Policy::IsNotNan(m_value); }
 
- public:
   template <typename AnotherValueType>
   Numeric &operator+=(const AnotherValueType &rhs) {
     m_value += rhs;
@@ -292,42 +293,32 @@ class Numeric {
  private:
   void Normalize() { Policy::Normalize(m_value); }
 
- private:
   ValueType m_value;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename T, typename Policy>
-bool IsEqual(const trdk::Lib::Numeric<T, Policy> &,
-             const trdk::Lib::Numeric<T, Policy> &) {
-  static_assert(false, "Deprecated call, use operator \"==\" instead.");
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-typedef trdk::Lib::Numeric<double, trdk::Lib::Detail::DoubleNumericPolicy<15>>
-    Double;
+typedef Numeric<double, Detail::DoubleNumericPolicy<15>> Double;
 
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename T, typename Policy>
-class BusinessNumeric : public trdk::Lib::Numeric<T, Policy> {
+class BusinessNumeric : public Numeric<T, Policy> {
  public:
-  typedef trdk::Lib::Numeric<T, Policy> Base;
+  typedef Numeric<T, Policy> Base;
   typedef typename Base::ValueType ValueType;
 
- public:
-  BusinessNumeric(const ValueType &value = 0) noexcept : Base(value) {}
-  BusinessNumeric(const trdk::Lib::Double &value) : Base(value.Get()) {}
+  using Base::Get;
 
- public:
-  operator trdk::Lib::Double() const { return Get(); }
+  BusinessNumeric(const ValueType &value = 0) noexcept : Base(value) {}
+  BusinessNumeric(const Double &value) : Base(value.Get()) {}
+
+  operator Double() const { return Get(); }
 
   template <typename StreamElem, typename StreamTraits>
   friend std::basic_ostream<StreamElem, StreamTraits> &operator<<(
       std::basic_ostream<StreamElem, StreamTraits> &os,
-      const trdk::Lib::BusinessNumeric<ValueType, Policy> &numeric) {
+      const BusinessNumeric<ValueType, Policy> &numeric) {
     numeric.Dump(os);
     return os;
   }
@@ -335,12 +326,11 @@ class BusinessNumeric : public trdk::Lib::Numeric<T, Policy> {
   template <typename StreamElem, typename StreamTraits>
   friend std::basic_istream<StreamElem, StreamTraits> &operator>>(
       std::basic_istream<StreamElem, StreamTraits> &is,
-      trdk::Lib::BusinessNumeric<ValueType, Policy> &numeric) {
+      BusinessNumeric<ValueType, Policy> &numeric) {
     numeric.Load(is);
     return is;
   }
 
- public:
   template <typename AnotherValueType>
   bool operator==(const AnotherValueType &rhs) const {
     return operator==(BusinessNumeric(rhs));
@@ -389,9 +379,8 @@ class BusinessNumeric : public trdk::Lib::Numeric<T, Policy> {
     return Base::operator>=(rhs);
   }
 
- public:
   template <typename AnotherValueType>
-  Numeric &operator+=(const AnotherValueType &rhs) {
+  BusinessNumeric &operator+=(const AnotherValueType &rhs) {
     return operator+=(BusinessNumeric(rhs));
   }
   BusinessNumeric &operator+=(const BusinessNumeric &rhs) {
@@ -400,7 +389,7 @@ class BusinessNumeric : public trdk::Lib::Numeric<T, Policy> {
   }
 
   template <typename AnotherValueType>
-  Numeric &operator-=(const AnotherValueType &rhs) {
+  BusinessNumeric &operator-=(const AnotherValueType &rhs) {
     return operator-=(BusinessNumeric(rhs));
   }
   BusinessNumeric &operator-=(const BusinessNumeric &rhs) {
@@ -409,7 +398,7 @@ class BusinessNumeric : public trdk::Lib::Numeric<T, Policy> {
   }
 
   template <typename AnotherValueType>
-  Numeric &operator*=(const AnotherValueType &rhs) {
+  BusinessNumeric &operator*=(const AnotherValueType &rhs) {
     return operator*=(BusinessNumeric(rhs));
   }
   BusinessNumeric &operator*=(const BusinessNumeric &rhs) {
@@ -418,7 +407,7 @@ class BusinessNumeric : public trdk::Lib::Numeric<T, Policy> {
   }
 
   template <typename AnotherValueType>
-  Numeric &operator/=(const AnotherValueType &rhs) {
+  BusinessNumeric &operator/=(const AnotherValueType &rhs) {
     return operator/=(BusinessNumeric(rhs));
   }
   BusinessNumeric &operator/=(const BusinessNumeric &rhs) {

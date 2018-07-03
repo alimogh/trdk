@@ -31,10 +31,6 @@ TRDK_FRONTEND_LIB_API QDateTime
 ConvertToDbDateTime(const boost::posix_time::ptime&);
 TRDK_FRONTEND_LIB_API QDateTime ConvertFromDbDateTime(const QDateTime&);
 
-TRDK_FRONTEND_LIB_API QString ConvertToUiString(const TimeInForce&);
-TRDK_FRONTEND_LIB_API QString ConvertToUiString(const OrderSide&);
-TRDK_FRONTEND_LIB_API QString ConvertToUiString(const OrderStatus&);
-
 TRDK_FRONTEND_LIB_API QUuid ConvertToQUuid(const boost::uuids::uuid&);
 TRDK_FRONTEND_LIB_API boost::uuids::uuid ConvertToBoostUuid(const QUuid&);
 

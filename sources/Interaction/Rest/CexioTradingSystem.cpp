@@ -285,9 +285,9 @@ CexioTradingSystem::SendOrderTransaction(trdk::Security &security,
   const auto &product = productIt->second;
 
   boost::format requestParams(product.requestParamsFormat);
-  requestParams % (side == ORDER_SIDE_BUY ? "buy" : "sell")  // 1
-      % qty.Get()                                            // 2
-      % price->Get();                                        // 3
+  requestParams % (side == +OrderSide::Buy ? "buy" : "sell")  // 1
+      % qty.Get()                                             // 2
+      % price->Get();                                         // 3
 
   OrderRequest request("place_order/" + product.id, requestParams.str(),
                        m_settings, m_nonces.TakeNonce(), GetContext(), GetLog(),

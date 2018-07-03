@@ -38,7 +38,7 @@ void BreakDebug() noexcept {
 #endif
 #else
   {
-    const char *message =
+    const auto message =
         "An unexpected program failure occurred! Please send this"
         " and other product log files to " TRDK_SUPPORT_EMAIL
         " with descriptions of actions that you have made during"
@@ -47,7 +47,7 @@ void BreakDebug() noexcept {
   }
 #endif
 }
-}
+}  // namespace
 
 #if defined(BOOST_ENABLE_ASSERT_HANDLER)
 
@@ -79,7 +79,7 @@ void assertion_failed_msg(char const *expr,
   EventsLog::BroadcastCriticalError(message.str());
   BreakDebug();
 }
-}
+}  // namespace boost
 
 void Detail::ReportCompareAssertFail(const std::string &val1,
                                      const std::string &val2,

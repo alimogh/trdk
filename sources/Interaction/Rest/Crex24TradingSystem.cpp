@@ -320,7 +320,7 @@ Crex24TradingSystem::SendOrderTransaction(trdk::Security &security,
       % *price                // 2
       % qty;                  // 3
 
-  PrivateRequest request(side == ORDER_SIDE_BUY ? "Buy" : "Sell",
+  PrivateRequest request(side == +OrderSide::Buy ? "Buy" : "Sell",
                          requestParams.str(), m_settings, m_nonces, true,
                          GetContext(), GetLog(), &GetTradingLog());
 

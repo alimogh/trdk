@@ -11,6 +11,9 @@
 #include "Prec.hpp"
 #include "TotalResultsReportModel.hpp"
 #include "Engine.hpp"
+#include "OperationRecord.hpp"
+#include "OperationStatus.hpp"
+#include "PnlRecord.hpp"
 
 using namespace trdk::FrontEnd;
 namespace mi = boost::multi_index;
@@ -26,27 +29,28 @@ enum Column {
 
 class Item {
  public:
-  explicit Item(const boost::shared_ptr<Orm::Pnl>& pnl)
-      : m_symbol(pnl->getSymbol()),
-        m_finResult(pnl->getFinancialResult()),
-        m_commission(pnl->getCommission()) {
-    m_data.emplace(pnl->getOperation()->getId(), pnl);
+  explicit Item(boost::shared_ptr<const PnlRecord> pnl)
+      : m_symbol(pnl->GetSymbol()),
+        m_finResult(pnl->GetFinancialResult()),
+        m_commission(pnl->GetCommission()) {
+    auto operationId = pnl->GetOperation()->GetId();
+    m_data.emplace(std::move(operationId), std::move(pnl));
   }
 
   const QString& GetSymbol() const { return m_symbol; }
 
-  void Update(const boost::shared_ptr<Orm::Pnl>& pnl) {
-    const auto& it = m_data.find(pnl->getOperation()->getId());
+  void Update(const boost::shared_ptr<const PnlRecord>& pnl) {
+    const auto& it = m_data.find(pnl->GetOperation()->GetId());
     if (it != m_data.cend()) {
       auto& record = it->second;
-      m_finResult -= record->getFinancialResult();
-      m_commission -= record->getCommission();
+      m_finResult -= record->GetFinancialResult();
+      m_commission -= record->GetCommission();
       record = pnl;
     } else {
-      m_data.emplace(pnl->getOperation()->getId(), pnl);
+      m_data.emplace(pnl->GetOperation()->GetId(), pnl);
     }
-    m_finResult += pnl->getFinancialResult();
-    m_commission += pnl->getCommission();
+    m_finResult += pnl->GetFinancialResult();
+    m_commission += pnl->GetCommission();
   }
 
   QVariant GetData(const Column& column) const {
@@ -69,7 +73,7 @@ class Item {
   QString m_symbol;
   trdk::Volume m_finResult;
   trdk::Volume m_commission;
-  boost::unordered_map<QUuid, boost::shared_ptr<Orm::Pnl>> m_data;
+  boost::unordered_map<QUuid, boost::shared_ptr<const PnlRecord>> m_data;
 };  // namespace
 
 struct BySymbol {};
@@ -106,10 +110,10 @@ class TotalResultsReportModel::Implementation : boost::noncopyable {
   explicit Implementation(TotalResultsReportModel& self, const Engine& engine)
       : m_self(self), m_engine(engine) {}
 
-  void Update(const std::vector<boost::shared_ptr<Orm::Pnl>>& update) {
+  void Update(const std::vector<boost::shared_ptr<const PnlRecord>>& update) {
     auto& data = m_data.get<BySymbol>();
     for (const auto& pnl : update) {
-      const auto& it = data.find(pnl->getSymbol());
+      const auto& it = data.find(pnl->GetSymbol());
       if (it == data.cend()) {
         const auto index = static_cast<int>(m_data.size());
         m_self.beginInsertRows(QModelIndex(), index, index);
@@ -131,7 +135,7 @@ class TotalResultsReportModel::Implementation : boost::noncopyable {
 TotalResultsReportModel::TotalResultsReportModel(Engine& engine,
                                                  QObject* parent)
     : Base(parent), m_pimpl(boost::make_unique<Implementation>(*this, engine)) {
-  Verify(connect(&m_pimpl->m_engine, &Engine::OperationUpdate, this,
+  Verify(connect(&m_pimpl->m_engine, &Engine::OperationUpdated, this,
                  &TotalResultsReportModel::UpdateOperation));
 }
 
@@ -150,23 +154,24 @@ void TotalResultsReportModel::Build(const QDateTime& start,
   for (const auto& operation :
        m_pimpl->m_engine.GetOperations(m_pimpl->m_startTime, m_pimpl->m_endTime,
                                        true, true, true, strategy)) {
-    UpdateOperation(*operation);
+    UpdateOperation(operation);
   }
 }
 
-void TotalResultsReportModel::UpdateOperation(const Orm::Operation& operation) {
-  if (!(operation.getStartTime() >= m_pimpl->m_startTime &&
+void TotalResultsReportModel::UpdateOperation(
+    const boost::shared_ptr<const OperationRecord>& operation) {
+  if (!(operation->GetStartTime() >= m_pimpl->m_startTime &&
         (!m_pimpl->m_endTime ||
-         operation.getStartTime() <= *m_pimpl->m_endTime)) &&
-      !(operation.getStatus() == Orm::OperationStatus::ACTIVE &&
+         operation->GetStartTime() <= *m_pimpl->m_endTime)) &&
+      !(operation->GetStatus() == +OperationStatus::Active &&
         !m_pimpl->m_endTime) &&
-      !(operation.getStatus() != Orm::OperationStatus::ACTIVE) &&
-      !(operation.getEndTime() >= m_pimpl->m_startTime &&
+      !(operation->GetStatus() != +OperationStatus::Active) &&
+      !(operation->GetEndTime() >= m_pimpl->m_startTime &&
         (!m_pimpl->m_endTime ||
-         operation.getEndTime() <= *m_pimpl->m_endTime))) {
+         operation->GetEndTime() <= *m_pimpl->m_endTime))) {
     return;
   }
-  m_pimpl->Update(operation.getPnl());
+  m_pimpl->Update(operation->GetPnl());
 }
 
 int TotalResultsReportModel::rowCount(const QModelIndex&) const {

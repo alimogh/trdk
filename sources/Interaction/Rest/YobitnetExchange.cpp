@@ -580,7 +580,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     }
 
     const auto& productId = product->second.id;
-    const std::string actualSide = side == ORDER_SIDE_SELL ? "sell" : "buy";
+    const std::string actualSide = side == +OrderSide::Sell ? "sell" : "buy";
     const auto actualPrice =
         RoundByPrecisionPower(*price, product->second.precisionPower);
 
@@ -911,8 +911,8 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
 
     for (const auto& node : orders) {
       for (const auto& order : boost::get<0>(node)) {
-        UpdateOrder(boost::get<1>(node), order.first, boost::get<2>(node),
-                    order.second, trades, tradesRequest);
+        UpdateOrder(boost::get<1>(node), OrderId{std::move(order.first)},
+                    boost::get<2>(node), order.second, trades, tradesRequest);
       }
     }
   }
@@ -926,7 +926,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
                            std::map<size_t, std::pair<pt::ptime, Trade>>>&
           trades,
       const boost::unordered_map<std::string, pt::ptime>& tradesRequest) {
-    OrderStatus status;
+    OrderStatus status = OrderStatus::Error;
     try {
       switch (statusCode) {
         case 0: {
@@ -934,19 +934,18 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
           const auto& qty = source.get<Qty>("start_amount");
           const auto& remainingQty = source.get<Qty>("amount");
           AssertGe(qty, remainingQty);
-          status = qty == remainingQty ? ORDER_STATUS_OPENED
-                                       : ORDER_STATUS_FILLED_PARTIALLY;
+          status = qty == remainingQty ? OrderStatus::Opened
+                                       : OrderStatus::FulledPartially;
           break;
         }
         case 1:  // 1 - fulfilled and closed
-          status = ORDER_STATUS_FILLED_FULLY;
+          status = OrderStatus::FilledFully;
           break;
         case 2:  // 2 - canceled
         case 3:  // 3 - canceled after partially fulfilled
-          status = ORDER_STATUS_CANCELED;
+          status = OrderStatus::Canceled;
           break;
         default:
-          status = ORDER_STATUS_ERROR;
           break;
       }
     } catch (const std::exception& ex) {
@@ -958,7 +957,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
 
     const auto& tradesIt = trades.find(id);
     if (tradesIt == trades.cend()) {
-      if (status == ORDER_STATUS_FILLED_FULLY) {
+      if (status == +OrderStatus::FilledFully) {
         const auto& requestIt =
             tradesRequest.find(source.get<std::string>("pair"));
         Assert(requestIt != tradesRequest.cend());
@@ -971,8 +970,8 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
                                               : pt::not_a_date_time);
       }
     } else {
-      if (status == ORDER_STATUS_OPENED) {
-        status = ORDER_STATUS_FILLED_PARTIALLY;
+      if (status == +OrderStatus::Opened) {
+        status = OrderStatus::FulledPartially;
       }
       for (auto& node : tradesIt->second) {
         const auto& tradeTime = node.second.first;
@@ -992,19 +991,19 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       }
     }
 
-    static_assert(numberOfOrderStatuses == 7, "List changed.");
+    static_assert(OrderStatus::_size_constant == 7, "List changed.");
     switch (status) {
       default:
-        AssertEq(ORDER_STATUS_FILLED_PARTIALLY, status);
-      case ORDER_STATUS_FILLED_PARTIALLY:
+        AssertEq(+OrderStatus::FulledPartially, status);
+      case OrderStatus::FulledPartially:
         break;
-      case ORDER_STATUS_FILLED_FULLY:
+      case OrderStatus::FilledFully:
         OnOrderFilled(time, id, boost::none);
         break;
-      case ORDER_STATUS_OPENED:
+      case OrderStatus::Opened:
         // Notified immediately after receiving.
         break;
-      case ORDER_STATUS_CANCELED:
+      case OrderStatus::Canceled:
         try {
           OnOrderCanceled(time, id, boost::none, boost::none);
         } catch (OrderIsUnknownException&) {
@@ -1013,10 +1012,10 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
           // and https://trello.com/c/luVuGQH2 for details.
         }
         break;
-      case ORDER_STATUS_REJECTED:
+      case OrderStatus::Rejected:
         OnOrderRejected(time, id, boost::none, boost::none);
         break;
-      case ORDER_STATUS_ERROR:
+      case OrderStatus::Error:
         OnOrderError(time, id, boost::none, boost::none,
                      "Unknown order status");
         break;
@@ -1036,8 +1035,8 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
 
       ForEachRemoteActiveOrder(
           productId, m_tradingSession, m_tradingAuth, true,
-          [&](const std::string& orderId, const ptr::ptree& order) {
-            if (IsIdRegisterInLastOrders(orderId) ||
+          [&](OrderId orderId, const ptr::ptree& order) {
+            if (IsIdRegisterInLastOrders(orderId.GetValue()) ||
                 GetActiveOrders().count(orderId) ||
                 order.get<std::string>("type") != side ||
                 order.get<Qty>("amount") > qty ||
@@ -1100,7 +1099,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       const std::string& productId,
       std::unique_ptr<net::HTTPSClientSession>& session,
       Auth& auth,
-      bool isPriority,
+      const bool isPriority,
       const Callback& callback) const {
     TradeRequest request("ActiveOrders", auth, isPriority, "pair=" + productId,
                          GetContext(), GetTsLog(), &GetTsTradingLog());
@@ -1110,8 +1109,8 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     } catch (const TradeRequest::EmptyResponseException&) {
       return;
     }
-    for (const auto& node : response) {
-      callback(node.first, node.second);
+    for (auto& node : response) {
+      callback(OrderId{std::move(node.first)}, node.second);
     }
   }
 

@@ -33,7 +33,7 @@ class BuyLegPolicy : public LegPolicy {
 
  public:
   virtual const OrderSide &GetSide() const override {
-    static const OrderSide result = ORDER_SIDE_BUY;
+    static const OrderSide result = OrderSide::Buy;
     return result;
   }
 
@@ -51,7 +51,7 @@ class BuyLegPolicy : public LegPolicy {
     auto balance = tradingSystem.GetBalances().GetAvailableToTrade(
         security.GetSymbol().GetQuoteSymbol());
     balance -= tradingSystem.CalcCommission(balance / price, price,
-                                            ORDER_SIDE_BUY, security);
+                                            OrderSide::Buy, security);
     return balance / price;
   }
 
@@ -66,7 +66,7 @@ class SellLegPolicy : public LegPolicy {
   ~SellLegPolicy() override = default;
 
   const OrderSide &GetSide() const override {
-    static const auto result = ORDER_SIDE_SELL;
+    static const auto result = +OrderSide::Sell;
     return result;
   }
 
@@ -666,10 +666,11 @@ class ta::Strategy::Implementation : private boost::noncopyable {
       Opportunity::Targets &targets) {
     size_t leg = 0;
     for (auto target : targets) {
-      const auto &result = OrderBestSecurityChecker::Create(
-                               m_self, m_legs[leg]->GetSide() == ORDER_SIDE_BUY,
-                               target.qty, target.price)
-                               ->Check(*target.security);
+      const auto &result =
+          OrderBestSecurityChecker::Create(
+              m_self, m_legs[leg]->GetSide() == +OrderSide::Buy, target.qty,
+              target.price)
+              ->Check(*target.security);
       if (result) {
         return {&result->GetRuleNameRef(), target.tradingSystem};
       }
@@ -739,14 +740,14 @@ ta::Strategy::Strategy(Context &context,
         throw Exception("Wrong leg configuration in leg set configuration");
       }
       legsConf.emplace_back(legConf.substr(1), legConf[0] == '+'
-                                                   ? ORDER_SIDE_LONG
-                                                   : ORDER_SIDE_SHORT);
-      ++(legsConf.back().second == ORDER_SIDE_LONG ? numberOfLongs
+                                                   ? OrderSide::Buy
+                                                   : OrderSide::Sell);
+      ++(legsConf.back().second == +OrderSide::Buy ? numberOfLongs
                                                    : numberOfShorts);
     }
     auto legIt = m_pimpl->m_legs.begin();
     for (const auto &legConf : legsConf) {
-      if (legConf.second == ORDER_SIDE_LONG) {
+      if (legConf.second == +OrderSide::Buy) {
         *legIt =
             boost::make_unique<OppositeLegPolicy<BuyLegPolicy>>(legConf.first);
       } else {

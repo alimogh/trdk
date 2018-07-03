@@ -75,17 +75,6 @@ class DropCopy {
                                const boost::posix_time::ptime&,
                                const OrderStatus&,
                                const Qty& remainingQty) = 0;
-  virtual void CopyOrder(const OrderId&,
-                         const TradingSystem&,
-                         const std::string& symbol,
-                         const OrderStatus&,
-                         const Qty& qty,
-                         const Qty& remainingQty,
-                         const boost::optional<Price>&,
-                         const OrderSide&,
-                         const TimeInForce&,
-                         const boost::posix_time::ptime& openTime,
-                         const boost::posix_time::ptime& updateTime) = 0;
 
   virtual void CopyTrade(
       const boost::posix_time::ptime&,
@@ -135,4 +124,5 @@ class DropCopy {
                            const Volume& available,
                            const Volume& locked) = 0;
 };
+
 }  // namespace trdk

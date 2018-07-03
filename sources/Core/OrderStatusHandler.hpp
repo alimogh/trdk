@@ -20,29 +20,29 @@ class OrderStatusHandler : private boost::noncopyable {
  public:
   //! Order sent to the trading system and received reception confirmation.
   //! The order is active.
-  /** @sa ORDER_STATUS_OPENED
+  /** @sa OrderStatus::Opened
    */
   virtual void OnOpened() = 0;
   //! The order is fully filled and is not active anymore.
-  /** @sa ORDER_STATUS_FILLED_FULLY
+  /** @sa OrderStatus::FilledFully
    */
   virtual void OnFilled(const trdk::Volume &comission) = 0;
   //! The order got a new part of the partial filling and still be active.
-  /** @sa ORDER_STATUS_FILLED_PARTIALLY
+  /** @sa OrderStatus::FilledParetially
    */
   virtual void OnTrade(const trdk::Trade &) = 0;
   //! The order is canceled by the owner with or without partial filling. The
   //! order is not active anymore.
-  /** @sa ORDER_STATUS_CANCELED
+  /** @sa OrderStatus::Canceled
    */
   virtual void OnCanceled(const trdk::Volume &comission) = 0;
   //! The order is rejected by the trading system and is not active.
   //! Remaining quantity is canceled.
-  /** @sa ORDER_STATUS_REJECTED,
+  /** @sa OrderStatus::Rejected,
    */
   virtual void OnRejected(const trdk::Volume &comission) = 0;
   //! The unknown error has occurred. State of the order is unknown.
-  /** @sa ORDER_STATUS_ERROR,
+  /** @sa OrderStatus::Error,
    */
   virtual void OnError(const trdk::Volume &comission) = 0;
 };

@@ -466,8 +466,8 @@ class CoinbaseExchange : public TradingSystem, public MarketDataSource {
       boost::format requestParams(
           "{\"side\": \"%1%\", \"product_id\": \"%2%\", \"price\": \"%3%\", "
           "\"size\": \"%4%\"}");
-      requestParams % (side == ORDER_SIDE_SELL ? "sell" : "buy")  // 1
-          % product->second.id                                    // 2
+      requestParams % (side == +OrderSide::Sell ? "sell" : "buy")  // 1
+          % product->second.id                                     // 2
           % RoundByPrecisionPower(price->Get(),
                                   product->second.precisionPower)  // 3
           % qty;                                                   // 4

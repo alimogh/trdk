@@ -8,74 +8,104 @@
     <Filter Include="Dummies">
       <UniqueIdentifier>{41fea1af-e367-461a-ad3e-7207c4030c41}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Unit Tests">
+    <Filter Include="Dummies\Core">
+      <UniqueIdentifier>{6d56323b-5b6b-4cdd-9684-decb5a7fe4d9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Dummies\Lib">
+      <UniqueIdentifier>{300a4c34-33db-41b9-b720-7a065df72338}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Dummies\TradingLib">
+      <UniqueIdentifier>{d39518d1-dc68-4020-8c2b-8b5e8139b13f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Mocks\Core">
+      <UniqueIdentifier>{635f3e40-e3a4-4183-96e4-3623d9cdca5e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Mocks\Lib">
+      <UniqueIdentifier>{edf93069-5ba0-4ea8-9405-f5f5a44e9024}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Mocks\TradingLib">
+      <UniqueIdentifier>{8c78bd50-ea1f-4d65-88fa-674f44c2d01b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Tests">
       <UniqueIdentifier>{4669332f-e99e-471a-92ee-eaecea72e893}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Func Tests">
-      <UniqueIdentifier>{dc672552-1ea9-431f-a573-f527d7f12639}</UniqueIdentifier>
+    <Filter Include="Tests\Lib">
+      <UniqueIdentifier>{aec0306b-d086-4db4-b42a-4a1b21b01579}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Tests\Core">
+      <UniqueIdentifier>{1ea33200-2e4e-4a70-b887-d06b03af387b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Tests\TradingLib">
+      <UniqueIdentifier>{c443f991-432d-43f9-b32c-a0776fa00a34}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="FuncTestList.hpp" />
-    <ClInclude Include="..\Core\TradingSystemMock.hpp">
-      <Filter>Mocks</Filter>
+    <ClInclude Include="Core\ContextDummy.hpp">
+      <Filter>Dummies\Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\Core\ContextMock.hpp">
-      <Filter>Mocks</Filter>
+    <ClInclude Include="Core\MarketDataSourceDummy.hpp">
+      <Filter>Dummies\Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\Core\DropCopyMock.hpp">
-      <Filter>Mocks</Filter>
+    <ClInclude Include="Core\StrategyDummy.hpp">
+      <Filter>Dummies\Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\Core\MarketDataSourceMock.hpp">
-      <Filter>Mocks</Filter>
+    <ClInclude Include="Core\ContextMock.hpp">
+      <Filter>Mocks\Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\Core\SecurityMock.hpp">
-      <Filter>Mocks</Filter>
+    <ClInclude Include="Core\DropCopyMock.hpp">
+      <Filter>Mocks\Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\Core\ContextDummy.hpp">
-      <Filter>Dummies</Filter>
+    <ClInclude Include="Core\MarketDataSourceMock.hpp">
+      <Filter>Mocks\Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\Core\MarketDataSourceDummy.hpp">
-      <Filter>Dummies</Filter>
+    <ClInclude Include="Core\SecurityMock.hpp">
+      <Filter>Mocks\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\TradingSystemMock.hpp">
+      <Filter>Mocks\Core</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Prec.cpp" />
-    <ClCompile Include="..\Core\SecurityUTest.cpp">
-      <Filter>Unit Tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Common\SymbolUTest.cpp">
-      <Filter>Unit Tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Common\ExpirationCalendarUTest.cpp">
-      <Filter>Unit Tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Common\UtilUTest.cpp">
-      <Filter>Unit Tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Core\PriceBookUTest.cpp">
-      <Filter>Unit Tests</Filter>
-    </ClCompile>
     <ClCompile Include="FuncTestList.cpp" />
-    <ClCompile Include="..\Core\TradingSystemMock.cpp">
-      <Filter>Mocks</Filter>
+    <ClCompile Include="Core\ContextDummy.cpp">
+      <Filter>Dummies\Core</Filter>
     </ClCompile>
-    <ClCompile Include="..\Core\ContextMock.cpp">
-      <Filter>Mocks</Filter>
+    <ClCompile Include="Core\MarketDataSourceDummy.cpp">
+      <Filter>Dummies\Core</Filter>
     </ClCompile>
-    <ClCompile Include="..\Core\MarketDataSourceMock.cpp">
-      <Filter>Mocks</Filter>
+    <ClCompile Include="Core\StrategyDummy.cpp">
+      <Filter>Dummies\Core</Filter>
     </ClCompile>
-    <ClCompile Include="..\Core\ContextDummy.cpp">
-      <Filter>Dummies</Filter>
+    <ClCompile Include="Core\ContextMock.cpp">
+      <Filter>Mocks\Core</Filter>
     </ClCompile>
-    <ClCompile Include="..\Core\MarketDataSourceDummy.cpp">
-      <Filter>Dummies</Filter>
+    <ClCompile Include="Core\MarketDataSourceMock.cpp">
+      <Filter>Mocks\Core</Filter>
     </ClCompile>
-    <ClCompile Include="..\TradingLib\TrendUTest.cpp">
-      <Filter>Unit Tests</Filter>
+    <ClCompile Include="Core\TradingSystemMock.cpp">
+      <Filter>Mocks\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Lib\ExpirationCalendarTest.cpp">
+      <Filter>Tests\Lib</Filter>
+    </ClCompile>
+    <ClCompile Include="Lib\SymbolTest.cpp">
+      <Filter>Tests\Lib</Filter>
+    </ClCompile>
+    <ClCompile Include="Lib\UtilTest.cpp">
+      <Filter>Tests\Lib</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\PriceBookTest.cpp">
+      <Filter>Tests\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\SecurityTest.cpp">
+      <Filter>Tests\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="TradingLib\TrendTest.cpp">
+      <Filter>Tests\TradingLib</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

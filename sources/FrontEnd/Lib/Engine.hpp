@@ -10,9 +10,6 @@
 
 #pragma once
 
-#include "Api.h"
-#include "Fwd.hpp"
-
 namespace trdk {
 namespace FrontEnd {
 
@@ -30,12 +27,12 @@ class TRDK_FRONTEND_LIB_API Engine : public QObject {
   void Message(const QString&, bool isCritical);
   void LogRecord(const QString&);
 
-  void OperationUpdate(const Orm::Operation&);
-  void OrderUpdate(const Orm::Order&);
+  void OperationUpdated(const boost::shared_ptr<const OperationRecord>&);
+  void OrderUpdated(const boost::shared_ptr<const OrderRecord>&);
 
-  void PriceUpdate(const Security*);
+  void PriceUpdated(const Security*);
 
-  void BarUpdate(const Security*, const Bar&);
+  void BarUpdated(const Security*, const Bar&);
 
  public:
   bool IsStarted() const;
@@ -43,11 +40,18 @@ class TRDK_FRONTEND_LIB_API Engine : public QObject {
   Context& GetContext();
   const Context& GetContext() const;
 
+  void LogDebug(const QString&);
+  void LogInfo(const QString&);
+  void LogWarn(const QString&);
+  void LogError(const QString&);
+
   const DropCopy& GetDropCopy() const;
 
   RiskControlScope& GetRiskControl(const TradingMode&);
 
-  std::vector<boost::shared_ptr<Orm::Operation>> GetOperations(
+  QString ResolveTradingSystemTitle(const QString& instanceName) const;
+
+  std::vector<boost::shared_ptr<OperationRecord>> GetOperations(
       const QDateTime& startTime,
       const boost::optional<QDateTime>& endTime,
       bool isTradesIncluded = true,
@@ -58,9 +62,7 @@ class TRDK_FRONTEND_LIB_API Engine : public QObject {
   boost::property_tree::ptree LoadConfig() const;
   void StoreConfig(const boost::property_tree::ptree&);
 
-  void StoreConfig(const Strategy&,
-                   const boost::property_tree::ptree& config,
-                   bool isActive);
+  void StoreConfig(const Strategy&, boost::property_tree::ptree, bool isActive);
 
   void ForEachActiveStrategy(
       const boost::function<void(const QUuid& typeIt,
@@ -71,19 +73,16 @@ class TRDK_FRONTEND_LIB_API Engine : public QObject {
 
   std::vector<QString> GetStrategyNameList() const;
 
-  std::string GenerateNewStrategyInstanceName(
-      const std::string& nameBase) const;
+  static std::string GenerateNewStrategyInstanceName(
+      const std::string& nameBase);
 
   void Start(const boost::function<void(const std::string&)>& progressCallback);
   void Stop();
-
-#ifdef DEV_VER
-  void Test();
-#endif
 
  private:
   class Implementation;
   std::unique_ptr<Implementation> m_pimpl;
 };
+
 }  // namespace FrontEnd
 }  // namespace trdk

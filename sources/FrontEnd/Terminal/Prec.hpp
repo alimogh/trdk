@@ -8,12 +8,13 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
+#pragma once
+
 #pragma warning(push)
 #pragma warning(disable : 4127)
 #include <QtWidgets>
 #pragma warning(pop)
 
-#include "Common/Common.hpp"
 #include "Lib/Common.hpp"
 #include "Core/Context.hpp"
 #include "Core/MarketDataSource.hpp"

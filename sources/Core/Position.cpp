@@ -209,7 +209,7 @@ class Position::Implementation : private boost::noncopyable {
       AssertEq(0, order.executedQty);
       AssertEq(ORDER_STATUS_STEP_SENT, order.status);
       order.status = ORDER_STATUS_STEP_OPENED;
-      Report(ORDER_STATUS_OPENED);
+      Report(OrderStatus::Opened);
     }
 
     virtual void OnFilled(const Volume &comission) override {
@@ -225,7 +225,7 @@ class Position::Implementation : private boost::noncopyable {
       }
       order.status = ORDER_STATUS_STEP_CLOSED;
       UpdateStat();
-      Report(ORDER_STATUS_FILLED_FULLY);
+      Report(OrderStatus::FilledFully);
       SignalUpdate(lock);
       impl.m_operation->AddComission(*impl.m_security, comission);
     }
@@ -244,7 +244,7 @@ class Position::Implementation : private boost::noncopyable {
       if (!impl.m_defaultOrderParams.position) {
         impl.m_defaultOrderParams.position = &*GetOrder().transactionContext;
       }
-      Report(ORDER_STATUS_FILLED_PARTIALLY);
+      Report(OrderStatus::FulledPartially);
       impl.m_operation->UpdatePnl(*impl.m_security, GetOrderSide(), trade.qty,
                                   trade.price);
     }
@@ -258,7 +258,7 @@ class Position::Implementation : private boost::noncopyable {
       AssertGe(ORDER_STATUS_STEP_OPENED, order.status);
       order.status = ORDER_STATUS_STEP_CLOSED;
       UpdateStat();
-      Report(ORDER_STATUS_CANCELED);
+      Report(OrderStatus::Canceled);
       SignalUpdate(lock);
       {
         auto &impl = GetPositionImpl();
@@ -277,7 +277,7 @@ class Position::Implementation : private boost::noncopyable {
       order.status = ORDER_STATUS_STEP_CLOSED;
       order.isRejected = true;
       UpdateStat();
-      Report(ORDER_STATUS_REJECTED);
+      Report(OrderStatus::Rejected);
       SignalUpdate(lock);
       {
         auto &impl = GetPositionImpl();
@@ -295,7 +295,7 @@ class Position::Implementation : private boost::noncopyable {
       order.status = ORDER_STATUS_STEP_CLOSED;
       GetPositionImpl().m_isError = true;
       UpdateStat();
-      Report(ORDER_STATUS_ERROR);
+      Report(OrderStatus::Error);
       SignalUpdate(lock);
       {
         auto &impl = GetPositionImpl();
@@ -348,11 +348,10 @@ class Position::Implementation : private boost::noncopyable {
     }
 
     void Report(const OrderStatus &status) {
-      GetPositionImpl().ReportAction(GetAction(), ConvertToPch(status),
+      GetPositionImpl().ReportAction(GetAction(), status._to_string(),
                                      GetDirection(), GetFilledQty());
     }
 
-   private:
     const boost::shared_ptr<Position> m_position;
   };
 
@@ -886,16 +885,15 @@ int64_t Position::GetSubOperationId() const {
 }
 
 bool Position::IsLong() const {
-  static_assert(numberOfPositionSides == 2, "List changed.");
-  Assert(GetSide() == POSITION_SIDE_LONG || GetSide() == POSITION_SIDE_SHORT);
-  return GetSide() == POSITION_SIDE_LONG;
+  static_assert(PositionSide::_size_constant == 2, "List changed.");
+  return GetSide() == +PositionSide::Long;
 }
 
 const boost::shared_ptr<Operation> &Position::GetOperation() {
   return m_pimpl->m_operation;
 }
 const boost::shared_ptr<const Operation> &Position::GetOperation() const {
-  const boost::shared_ptr<const Operation> &result =
+  const auto &result =
       reinterpret_cast<const boost::shared_ptr<const Operation> &>(
           m_pimpl->m_operation);
   return result;
@@ -1521,11 +1519,11 @@ LongPosition::LongPosition(const boost::shared_ptr<Operation> &operation,
 
 LongPosition::~LongPosition() { ReportAboutDeletion(*this); }
 
-PositionSide LongPosition::GetSide() const { return POSITION_SIDE_LONG; }
+PositionSide LongPosition::GetSide() const { return PositionSide::Long; }
 
-OrderSide LongPosition::GetOpenOrderSide() const { return ORDER_SIDE_BUY; }
+OrderSide LongPosition::GetOpenOrderSide() const { return OrderSide::Buy; }
 
-OrderSide LongPosition::GetCloseOrderSide() const { return ORDER_SIDE_SELL; }
+OrderSide LongPosition::GetCloseOrderSide() const { return OrderSide::Sell; }
 
 Volume LongPosition::GetRealizedPnl() const {
   const auto &activeQty = GetActiveQty();
@@ -1582,7 +1580,7 @@ LongPosition::DoOpenAtMarketPrice(
   Assert(!IsClosed());
   return GetTradingSystem().SendOrder(
       shared_from_this(), qty, boost::none, params, std::move(handler),
-      ORDER_SIDE_BUY, TIME_IN_FORCE_GTC, GetTimeMeasurement());
+      OrderSide::Buy, TIME_IN_FORCE_GTC, GetTimeMeasurement());
 }
 
 boost::shared_ptr<const OrderTransactionContext> LongPosition::DoOpen(
@@ -1593,7 +1591,7 @@ boost::shared_ptr<const OrderTransactionContext> LongPosition::DoOpen(
   Assert(!IsOpened());
   Assert(!IsClosed());
   return GetTradingSystem().SendOrder(shared_from_this(), qty, price, params,
-                                      std::move(handler), ORDER_SIDE_BUY,
+                                      std::move(handler), OrderSide::Buy,
                                       TIME_IN_FORCE_GTC, GetTimeMeasurement());
 }
 
@@ -1606,7 +1604,7 @@ LongPosition::DoOpenImmediatelyOrCancel(
   Assert(!IsOpened());
   Assert(!IsClosed());
   return GetTradingSystem().SendOrder(shared_from_this(), qty, price, params,
-                                      std::move(handler), ORDER_SIDE_BUY,
+                                      std::move(handler), OrderSide::Buy,
                                       TIME_IN_FORCE_IOC, GetTimeMeasurement());
 }
 
@@ -1619,7 +1617,7 @@ LongPosition::DoCloseAtMarketPrice(
   Assert(!IsClosed());
   return GetTradingSystem().SendOrder(
       shared_from_this(), qty, boost::none, params, std::move(handler),
-      ORDER_SIDE_SELL, TIME_IN_FORCE_GTC, GetTimeMeasurement());
+      OrderSide::Sell, TIME_IN_FORCE_GTC, GetTimeMeasurement());
 }
 
 boost::shared_ptr<const OrderTransactionContext> LongPosition::DoClose(
@@ -1630,7 +1628,7 @@ boost::shared_ptr<const OrderTransactionContext> LongPosition::DoClose(
   Assert(IsOpened());
   Assert(!IsClosed());
   return GetTradingSystem().SendOrder(shared_from_this(), qty, price, params,
-                                      std::move(handler), ORDER_SIDE_SELL,
+                                      std::move(handler), OrderSide::Sell,
                                       TIME_IN_FORCE_GTC,
 
                                       GetTimeMeasurement());
@@ -1646,7 +1644,7 @@ LongPosition::DoCloseImmediatelyOrCancel(
   Assert(!IsClosed());
   AssertLt(0, qty);
   return GetTradingSystem().SendOrder(shared_from_this(), qty, price, params,
-                                      std::move(handler), ORDER_SIDE_SELL,
+                                      std::move(handler), OrderSide::Sell,
                                       TIME_IN_FORCE_IOC, GetTimeMeasurement());
 }
 
@@ -1692,11 +1690,11 @@ ShortPosition::ShortPosition(const boost::shared_ptr<Operation> &operation,
 
 ShortPosition::~ShortPosition() { ReportAboutDeletion(*this); }
 
-PositionSide ShortPosition::GetSide() const { return POSITION_SIDE_SHORT; }
+PositionSide ShortPosition::GetSide() const { return PositionSide::Short; }
 
-OrderSide ShortPosition::GetOpenOrderSide() const { return ORDER_SIDE_SELL; }
+OrderSide ShortPosition::GetOpenOrderSide() const { return OrderSide::Sell; }
 
-OrderSide ShortPosition::GetCloseOrderSide() const { return ORDER_SIDE_BUY; }
+OrderSide ShortPosition::GetCloseOrderSide() const { return OrderSide::Buy; }
 
 Volume ShortPosition::GetRealizedPnl() const {
   if (GetActiveQty() == 0) {
@@ -1747,7 +1745,7 @@ ShortPosition::DoOpenAtMarketPrice(
   Assert(!IsClosed());
   return GetTradingSystem().SendOrder(
       shared_from_this(), qty, boost::none, params, std::move(handler),
-      ORDER_SIDE_SELL, TIME_IN_FORCE_GTC, GetTimeMeasurement());
+      OrderSide::Sell, TIME_IN_FORCE_GTC, GetTimeMeasurement());
 }
 
 boost::shared_ptr<const OrderTransactionContext> ShortPosition::DoOpen(
@@ -1758,7 +1756,7 @@ boost::shared_ptr<const OrderTransactionContext> ShortPosition::DoOpen(
   Assert(!IsOpened());
   Assert(!IsClosed());
   return GetTradingSystem().SendOrder(shared_from_this(), qty, price, params,
-                                      std::move(handler), ORDER_SIDE_SELL,
+                                      std::move(handler), OrderSide::Sell,
                                       TIME_IN_FORCE_GTC, GetTimeMeasurement());
 }
 
@@ -1771,7 +1769,7 @@ ShortPosition::DoOpenImmediatelyOrCancel(
   Assert(!IsOpened());
   Assert(!IsClosed());
   return GetTradingSystem().SendOrder(shared_from_this(), qty, price, params,
-                                      std::move(handler), ORDER_SIDE_SELL,
+                                      std::move(handler), OrderSide::Sell,
                                       TIME_IN_FORCE_IOC, GetTimeMeasurement());
 }
 
@@ -1784,7 +1782,7 @@ ShortPosition::DoCloseAtMarketPrice(
   Assert(!IsClosed());
   return GetTradingSystem().SendOrder(
       shared_from_this(), qty, boost::none, params, std::move(handler),
-      ORDER_SIDE_BUY, TIME_IN_FORCE_GTC, GetTimeMeasurement());
+      OrderSide::Buy, TIME_IN_FORCE_GTC, GetTimeMeasurement());
 }
 
 boost::shared_ptr<const OrderTransactionContext> ShortPosition::DoClose(
@@ -1793,7 +1791,7 @@ boost::shared_ptr<const OrderTransactionContext> ShortPosition::DoClose(
     const OrderParams &params,
     std::unique_ptr<OrderStatusHandler> &&handler) {
   return GetTradingSystem().SendOrder(shared_from_this(), qty, price, params,
-                                      std::move(handler), ORDER_SIDE_BUY,
+                                      std::move(handler), OrderSide::Buy,
                                       TIME_IN_FORCE_GTC, GetTimeMeasurement());
 }
 
@@ -1806,7 +1804,7 @@ ShortPosition::DoCloseImmediatelyOrCancel(
   Assert(IsOpened());
   Assert(!IsClosed());
   return GetTradingSystem().SendOrder(shared_from_this(), qty, price, params,
-                                      std::move(handler), ORDER_SIDE_BUY,
+                                      std::move(handler), OrderSide::Buy,
                                       TIME_IN_FORCE_IOC, GetTimeMeasurement());
 }
 

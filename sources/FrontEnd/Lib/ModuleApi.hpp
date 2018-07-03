@@ -18,5 +18,6 @@ typedef boost::function<StrategyWidgetList(QWidget *parent)>
     StrategyWindowFactory;
 typedef std::vector<std::pair<QString, StrategyWindowFactory>>
     StrategyMenuActionList;
+
 }  // namespace FrontEnd
 }  // namespace trdk

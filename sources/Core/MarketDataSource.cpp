@@ -280,7 +280,7 @@ Security &MarketDataSource::CreateSecurity(const Symbol &symbol) {
   auto &result = CreateNewSecurityObject(symbol);
   Assert(this == &result.GetSource());
   switch (result.GetSymbol().GetSecurityType()) {
-    case SECURITY_TYPE_FUTURES:
+    case SecurityType::Futures:
       if (!result.GetSymbol().IsExplicit()) {
         result.SetExpiration(
             pt::not_a_date_time,

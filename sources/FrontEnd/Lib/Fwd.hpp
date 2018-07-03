@@ -12,16 +12,16 @@
 
 namespace trdk {
 namespace FrontEnd {
+
 class DropCopy;
 class Engine;
 class OperationListModel;
+class OperationRecord;
+class OperationStatus;
+class OrderRecord;
+class PnlRecord;
 class TotalResultsReportModel;
+class StrategyInstanceRecord;
 
-namespace Orm {
-class Operation;
-class Order;
-class Strategy;
-class StrategyInstance;
-}  // namespace Orm
 }  // namespace FrontEnd
 }  // namespace trdk

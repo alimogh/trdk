@@ -100,37 +100,6 @@ QDateTime front::ConvertFromDbDateTime(const QDateTime& source) {
   return source;
 }
 
-QString front::ConvertToUiString(const TimeInForce& tif) {
-  return QString(ConvertToPch(tif)).toUpper();
-}
-
-QString front::ConvertToUiString(const OrderSide& side) {
-  static_assert(numberOfOrderSides == 2, "List changed");
-  return side == ORDER_SIDE_BUY ? QObject::tr("buy") : QObject::tr("sell");
-}
-
-QString front::ConvertToUiString(const OrderStatus& status) {
-  static_assert(numberOfOrderStatuses == 7, "List changed.");
-  switch (status) {
-    case ORDER_STATUS_SENT:
-      return QObject::tr("sent");
-    case ORDER_STATUS_OPENED:
-      return QObject::tr("opened");
-    case ORDER_STATUS_CANCELED:
-      return QObject::tr("canceled");
-    case ORDER_STATUS_FILLED_FULLY:
-      return QObject::tr("filled");
-    case ORDER_STATUS_FILLED_PARTIALLY:
-      return QObject::tr("filled partially");
-    case ORDER_STATUS_REJECTED:
-      return QObject::tr("rejected");
-    case ORDER_STATUS_ERROR:
-      return QObject::tr("error");
-  }
-  AssertEq(ORDER_STATUS_SENT, status);
-  return QObject::tr("undefined");
-}
-
 QUuid front::ConvertToQUuid(const ids::uuid& source) {
   static_assert(sizeof(uint) + sizeof(ushort) + sizeof(ushort) + sizeof(uchar) +
                         sizeof(uchar) + sizeof(uchar) + sizeof(uchar) +

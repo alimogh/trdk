@@ -36,27 +36,27 @@ enum Column {
 };
 
 QString ConvertToFullSecyrityTypeName(const SecurityType &source) {
-  static_assert(numberOfSecurityTypes == 8, "List changed.");
+  static_assert(SecurityType::_size_constant == 8, "List changed.");
   switch (source) {
     default:
-      AssertEq(SECURITY_TYPE_STOCK, source);
+      AssertEq(+SecurityType::Stock, source);
       return QObject::tr("Unknown");
-    case SECURITY_TYPE_STOCK:
+    case SecurityType::Stock:
       return QObject::tr("Stock");
-    case SECURITY_TYPE_FUTURES:
+    case SecurityType::Futures:
       return QObject::tr("Future Contract");
-    case SECURITY_TYPE_FUTURES_OPTIONS:
+    case SecurityType::FuturesOptions:
       return QObject::tr("Future Option Contract");
-    case SECURITY_TYPE_FOR:
+    case SecurityType::For:
       return QObject::tr("Foreign Exchange Contract");
-    case SECURITY_TYPE_FOR_FUTURES_OPTIONS:
+    case SecurityType::ForFuturesOptions:
       return QObject::tr(
           "Future Option Contract for Foreign Exchange Contract");
-    case SECURITY_TYPE_OPTIONS:
+    case SecurityType::Options:
       return QObject::tr("Option Contract");
-    case SECURITY_TYPE_INDEX:
+    case SecurityType::Index:
       return QObject::tr("Index");
-    case SECURITY_TYPE_CRYPTO:
+    case SecurityType::Crypto:
       return QObject::tr("Cryptocurrency");
   }
 }
@@ -73,8 +73,8 @@ SecurityListModel::SecurityListModel(front::Engine &engine, QWidget *parent)
     : Base(parent), m_pimpl(boost::make_unique<Implementation>({engine})) {
   Verify(connect(&m_pimpl->m_engine, &Engine::StateChange, this,
                  &SecurityListModel::OnStateChanged, Qt::QueuedConnection));
-  Verify(connect(&m_pimpl->m_engine.GetDropCopy(), &DropCopy::PriceUpdate, this,
-                 &SecurityListModel::UpdatePrice, Qt::QueuedConnection));
+  Verify(connect(&m_pimpl->m_engine.GetDropCopy(), &DropCopy::PriceUpdated,
+                 this, &SecurityListModel::UpdatePrice, Qt::QueuedConnection));
 }
 SecurityListModel::~SecurityListModel() = default;
 
@@ -201,16 +201,15 @@ QVariant SecurityListModel::data(const QModelIndex &index, int role) const {
         }
         case COLUMN_CURRENCY:
           return QString::fromStdString(
-              ConvertToIso(security.GetSymbol().GetCurrency()));
+              security.GetSymbol().GetCurrency()._to_string());
         case COLUMN_SYMBOL_FULL:
           return QString::fromStdString(security.GetSymbol().GetAsString());
         case COLUMN_TYPE_FULL:
           return ConvertToFullSecyrityTypeName(
               security.GetSymbol().GetSecurityType());
         default:
-          break;
+          return {};
       }
-      break;
 
     case Qt::StatusTipRole:
     case Qt::ToolTipRole:
@@ -221,17 +220,15 @@ QVariant SecurityListModel::data(const QModelIndex &index, int role) const {
     case Qt::TextAlignmentRole:
       return Qt::AlignLeft + Qt::AlignVCenter;
     default:
-      break;
+      return {};
   }
-
-  return QVariant();
 }
 
 QModelIndex SecurityListModel::index(const int row,
                                      const int column,
                                      const QModelIndex &) const {
   if (column < 0 || column > numberOfColumns || row < 0 ||
-      row >= m_pimpl->m_securities.size()) {
+      static_cast<size_t>(row) >= m_pimpl->m_securities.size()) {
     return {};
   }
   return createIndex(row, column, m_pimpl->m_securities[row]);

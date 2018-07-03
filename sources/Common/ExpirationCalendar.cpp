@@ -123,7 +123,7 @@ typedef boost::multi_index_container<
     SymbolContracts;
 
 typedef boost::unordered_map<std::string, SymbolContracts> ContractsBySymbol;
-}
+}  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -299,7 +299,7 @@ void ExpirationCalendar::ReloadCsv(const fs::path &filePath) {
 
 ExpirationCalendar::Iterator ExpirationCalendar::Find(
     const Symbol &symbol, const gr::date &startDate) const {
-  if (symbol.GetSecurityType() != SECURITY_TYPE_FUTURES) {
+  if (symbol.GetSecurityType() != +SecurityType::Futures) {
     boost::format error(
         "No info about expiration for \"%1%\" - wrong security type");
     error % symbol;

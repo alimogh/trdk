@@ -315,7 +315,7 @@ CryptopiaTradingSystem::SendOrderTransaction(
 
   const auto &productId = product->id;
   const std::string actualSide =
-      product->NormalizeSide(side) == ORDER_SIDE_BUY ? "Buy" : "Sell";
+      product->NormalizeSide(side) == +OrderSide::Buy ? "Buy" : "Sell";
   const auto &actualQty = product->NormalizeQty(*price, qty, security);
   const auto &actualPrice = product->NormalizePrice(*price, security);
 
@@ -375,11 +375,12 @@ CryptopiaTradingSystem::SendOrderTransaction(
 
   try {
     auto orderId = response.get<OrderId>("OrderId");
-    const bool isImmediatelyFilled = orderId.GetValue() == "null";
+    const auto isImmediatelyFilled = orderId.GetValue() == "null";
     if (isImmediatelyFilled) {
       const auto &now = GetContext().GetCurrentTime();
       static size_t virtualOrderId = 1;
-      orderId = "v" + boost::lexical_cast<std::string>(virtualOrderId++);
+      orderId =
+          OrderId{"v" + boost::lexical_cast<std::string>(virtualOrderId++)};
       m_pollingTask.AddTask(boost::lexical_cast<std::string>(orderId), 0,
                             [this, orderId, now]() {
                               try {

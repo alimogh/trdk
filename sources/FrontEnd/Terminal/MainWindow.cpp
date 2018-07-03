@@ -82,16 +82,6 @@ void MainWindow::ConnectSignals() {
         }
       }));
 
-#ifdef _DEBUG
-  {
-    auto &action = *new QAction("Test operation list");
-    m_ui.menuHelp->insertAction(m_ui.showAbout, &action);
-    m_ui.menuHelp->insertSeparator(m_ui.showAbout);
-    Verify(
-        connect(&action, &QAction::triggered, [this]() { m_engine.Test(); }));
-  }
-#endif
-
   Verify(connect(&m_engine, &Engine::Message,
                  [this](const QString &message, bool isCritical) {
                    if (isCritical) {
@@ -208,19 +198,18 @@ void MainWindow::RestoreModules() {
   m_engine.ForEachActiveStrategy(
       [this, &widgets](const QUuid &typeId, const QUuid &instanceId,
                        const QString &name, const ptr::ptree &config) {
-        for (const auto &module : m_moduleDlls) {
-          try {
-            for (auto &widget :
-                 module->GetFunction<StrategyWidgetList(
-                     Engine &, const QUuid &, const QUuid &, const QString &,
-                     const ptr::ptree &, QWidget *)>("RestoreStrategyWidgets")(
+    for (const auto &module : m_moduleDlls) {
+      try {
+        for (auto &widget :
+             module->GetFunction<StrategyWidgetList(
+                 Engine &, const QUuid &, const QUuid &, const QString &,
+                 const ptr::ptree &, QWidget *)>("RestoreStrategyWidgets")(
                      m_engine, typeId, instanceId, name, config, this)) {
-              widgets.emplace_back(widget.release());
-            }
-          } catch (const Dll::DllFuncException &) {
-            continue;
-          }
+          widgets.emplace_back(widget.release());
         }
+      } catch (const Dll::DllFuncException &) {
+      }
+    }
       });
   ShowModuleWindows(widgets);
 }
@@ -312,7 +301,7 @@ void MainWindow::CreateNewChartWindow(const QString &symbol) {
           }));
       {
         const auto symbolStr = symbol.toStdString();
-        Verify(connect(&m_engine, &Engine::BarUpdate, &chart,
+        Verify(connect(&m_engine, &Engine::BarUpdated, &chart,
                        [&windowRef, &chart, symbolStr](const Security *security,
                                                        const Bar &bar) {
                          if (!windowRef.HasSecurity(*security)) {

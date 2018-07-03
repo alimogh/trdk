@@ -49,7 +49,7 @@ class TRDK_CORE_API Settings {
   //! Default security Security Type.
   /**
    * Path: Defaults::currency.
-   * Values: STK, FUT, FOP, FOR, FORFOP
+   * Values: STK, Futures, FOP, For, FORFOP
    * Ex.: "security_type = FOP"
    */
   const Lib::SecurityType& GetDefaultSecurityType() const;

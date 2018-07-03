@@ -9,3 +9,11 @@
  **************************************************************************/
 
 #include "Prec.hpp"
+
+#ifdef _DEBUG
+#pragma comment(lib, "ssleay32MTd.lib")
+#pragma comment(lib, "libeay32MTd.lib")
+#else
+#pragma comment(lib, "ssleay32MT.lib")
+#pragma comment(lib, "libeay32MT.lib")
+#endif  // _DEBUG

@@ -44,8 +44,8 @@ class BalancesContainer::Implementation : private boost::noncopyable {
         m_tradingLog(tradingLog) {}
 
   void Set(const std::string &symbol,
-           boost::optional<Volume> &&available,
-           boost::optional<Volume> &&locked) {
+           boost::optional<Volume> available,
+           boost::optional<Volume> locked) {
     const auto &resolvedSymbol =
         m_tradingSystem.GetContext().GetSettings().ResolveSymbolAlias(symbol);
     const WriteLock lock(m_mutex);
@@ -56,8 +56,8 @@ class BalancesContainer::Implementation : private boost::noncopyable {
   }
 
   void Insert(const std::string &symbol,
-              boost::optional<Volume> &&availableSource,
-              boost::optional<Volume> &&lockedSource) {
+              boost::optional<Volume> availableSource,
+              boost::optional<Volume> lockedSource) {
     auto available = availableSource ? std::move(*availableSource) : 0;
     auto locked = lockedSource ? std::move(*lockedSource) : 0;
 
@@ -83,8 +83,8 @@ class BalancesContainer::Implementation : private boost::noncopyable {
   }
 
   void Update(Storage::value_type &storage,
-              boost::optional<Volume> &&availableSource,
-              boost::optional<Volume> &&lockedSource) {
+              boost::optional<Volume> availableSource,
+              boost::optional<Volume> lockedSource) {
     auto available = availableSource ? std::move(*availableSource)
                                      : storage.second.available;
     auto locked =
@@ -141,17 +141,17 @@ Volume BalancesContainer::GetAvailableToTrade(const std::string &symbol) const {
 }
 
 void BalancesContainer::Set(const std::string &symbol,
-                            Volume &&available,
-                            Volume &&locked) {
+                            Volume available,
+                            Volume locked) {
   m_pimpl->Set(symbol, std::move(available), std::move(locked));
 }
 
 void BalancesContainer::SetAvailableToTrade(const std::string &symbol,
-                                            Volume &&volume) {
+                                            Volume volume) {
   m_pimpl->Set(symbol, std::move(volume), boost::none);
 }
 
-void BalancesContainer::SetLocked(const std::string &symbol, Volume &&volume) {
+void BalancesContainer::SetLocked(const std::string &symbol, Volume volume) {
   m_pimpl->Set(symbol, boost::none, std::move(volume));
 }
 
@@ -161,13 +161,13 @@ void BalancesContainer::ReduceAvailableToTradeByOrder(
     const Price &price,
     const OrderSide &side,
     const TradingSystem &tradingSystem) {
-  AssertEq(SECURITY_TYPE_CRYPTO, security.GetSymbol().GetSecurityType());
-  if (security.GetSymbol().GetSecurityType() != SECURITY_TYPE_CRYPTO) {
+  AssertEq(+SecurityType::Crypto, security.GetSymbol().GetSecurityType());
+  if (security.GetSymbol().GetSecurityType() != +SecurityType::Crypto) {
     return;
   }
 
   switch (side) {
-    case ORDER_SIDE_SELL: {
+    case OrderSide::Sell: {
       const auto &symbol = security.GetSymbol().GetBaseSymbol();
       auto delta = qty;
 
@@ -217,7 +217,7 @@ void BalancesContainer::ReduceAvailableToTradeByOrder(
       break;
     }
 
-    case ORDER_SIDE_BUY: {
+    case OrderSide::Buy: {
       const auto &symbol = security.GetSymbol().GetQuoteSymbol();
       auto delta = qty * price;
       delta += tradingSystem.CalcCommission(qty, price, side, security);

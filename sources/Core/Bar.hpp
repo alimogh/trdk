@@ -15,8 +15,7 @@ namespace trdk {
 struct Bar {
   //! Bar start time.
   boost::posix_time::ptime time;
-  //! Bar size (if bar-by-time). If period is not set - this is
-  //! bar-by-points.
+  //! Bar size (if bar-by-time). If period is not set - this is bar-by-points.
   /** @sa numberOfPoints
    */
   boost::optional<boost::posix_time::time_duration> period;

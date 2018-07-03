@@ -13,38 +13,7 @@
 #include "Common/ExpirationCalendar.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-
-////////////////////////////////////////////////////////////////////////////////
-
-const char *trdk::ConvertToPch(const OrderSide &side) {
-  static_assert(numberOfOrderSides == 2, "List changed.");
-  switch (side) {
-    default:
-      AssertEq(int(ORDER_SIDE_BUY),
-               int(side));  // "to int" - to avoid recursion
-      return "undefined";
-    case ORDER_SIDE_BUY:
-      return "buy";
-    case ORDER_SIDE_SELL:
-      return "sell";
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-const char *trdk::ConvertToPch(const PositionSide &type) {
-  static_assert(numberOfPositionSides == 2, "List changed.");
-  switch (type) {
-    default:
-      AssertEq(POSITION_SIDE_LONG, type);
-      return "undefined";
-    case POSITION_SIDE_LONG:
-      return "long";
-    case POSITION_SIDE_SHORT:
-      return "short";
-  }
-}
+using namespace Lib;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -178,32 +147,6 @@ const std::string &trdk::ConvertToString(const TradingMode &mode) {
       AssertEq(int(TRADING_MODE_LIVE),
                int(mode));  // "to int" - to avoid recursion
       return tradingModeUnknown;
-  }
-}
-
-//////////////////////////////////////////////////////////////////////////
-
-const char *trdk::ConvertToPch(const OrderStatus &status) {
-  static_assert(numberOfOrderStatuses == 7, "List changed.");
-  switch (status) {
-    default:
-      AssertEq(int(ORDER_STATUS_SENT),
-               int(status));  // "to int" - to avoid recursion
-      return "undefined";
-    case ORDER_STATUS_SENT:
-      return "sent";
-    case ORDER_STATUS_OPENED:
-      return "opened";
-    case ORDER_STATUS_CANCELED:
-      return "canceled";
-    case ORDER_STATUS_FILLED_FULLY:
-      return "filled";
-    case ORDER_STATUS_FILLED_PARTIALLY:
-      return "filled partially";
-    case ORDER_STATUS_REJECTED:
-      return "rejected";
-    case ORDER_STATUS_ERROR:
-      return "error";
   }
 }
 

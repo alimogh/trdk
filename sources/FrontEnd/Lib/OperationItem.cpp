@@ -10,19 +10,24 @@
 
 #include "Prec.hpp"
 #include "OperationItem.hpp"
+#include "Engine.hpp"
+#include "I18n.hpp"
+#include "OperationRecord.hpp"
+#include "OrderRecord.hpp"
+#include "PnlRecord.hpp"
+#include "StrategyInstanceRecord.hpp"
 
-using namespace trdk::FrontEnd::Detail;
+using namespace trdk::FrontEnd;
+using namespace Detail;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-OperationItem::OperationItem() : m_parent(nullptr), m_row(-1) {}
-
-void OperationItem::AppendChild(const boost::shared_ptr<OperationItem> &child) {
+void OperationItem::AppendChild(boost::shared_ptr<OperationItem> child) {
   Assert(!child->m_parent);
   AssertEq(-1, child->m_row);
-  m_childItems.emplace_back(child);
   child->m_parent = this;
   child->m_row = static_cast<int>(m_childItems.size()) - 1;
+  m_childItems.emplace_back(std::move(child));
 }
 
 void OperationItem::RemoveChild(const boost::shared_ptr<OperationItem> &child) {
@@ -49,9 +54,9 @@ int OperationItem::GetNumberOfChilds() const {
   return static_cast<int>(m_childItems.size());
 }
 
-OperationItem *OperationItem::GetChild(int row) {
+OperationItem *OperationItem::GetChild(const int row) {
   AssertGt(m_childItems.size(), row);
-  if (m_childItems.size() <= row) {
+  if (row < 0 || m_childItems.size() <= static_cast<size_t>(row)) {
     return nullptr;
   }
   return &*m_childItems[row];
@@ -72,11 +77,58 @@ QVariant OperationItem::GetToolTip() const { return QVariant(); }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-OperationNodeItem::OperationNodeItem(OperationRecord &&record)
-    : m_record(std::move(record)) {}
+OperationNodeItem::OperationNodeItem(
+    boost::shared_ptr<const OperationRecord> record) {
+  Update(std::move(record));
+}
 
-OperationRecord &OperationNodeItem::GetRecord() { return m_record; }
-const OperationRecord &OperationNodeItem::GetRecord() const { return m_record; }
+void OperationNodeItem::Update(
+    boost::shared_ptr<const OperationRecord> record) {
+  m_record = std::move(record);
+
+  m_financialResult.clear();
+  m_commission.clear();
+  m_totalResult.clear();
+
+  for (const auto &pnl : m_record->GetPnl()) {
+    const auto &addToBalanceString =
+        [&pnl](const Volume &value, const bool showPlus, QString &destination) {
+          if (!value) {
+            return;
+          }
+          if (!destination.isEmpty()) {
+            destination += ", ";
+          }
+          if (showPlus && value > 0) {
+            destination += '+';
+          }
+          {
+            std::ostringstream os;
+            os << value;
+            auto strValue = os.str();
+            boost::trim_right_if(strValue, [](char ch) { return ch == '0'; });
+            if (!strValue.empty() &&
+                (strValue.back() == '.' || strValue.back() == ',')) {
+              strValue.pop_back();
+            }
+            if (strValue.empty()) {
+              strValue = "0.00000001";
+            }
+            destination += QString::fromStdString(strValue);
+          }
+          destination += " " + pnl->GetSymbol();
+        };
+
+    addToBalanceString(pnl->GetFinancialResult(), true, m_financialResult);
+    addToBalanceString(pnl->GetCommission(), false, m_commission);
+    addToBalanceString(pnl->GetFinancialResult() - pnl->GetCommission(), true,
+                       m_totalResult);
+  }
+}
+
+const OperationRecord &OperationNodeItem::GetRecord() const {
+  return *m_record;
+}
 
 QVariant OperationNodeItem::GetData(const int column) const {
   static_assert(numberOfOperationColumns == 14, "List changed.");
@@ -84,25 +136,28 @@ QVariant OperationNodeItem::GetData(const int column) const {
     case OPERATION_COLUMN_OPERATION_NUMBER_OR_ORDER_LEG:
       return GetRow() + 1;
     case OPERATION_COLUMN_OPERATION_TIME_OR_ORDER_SIDE:
-      return GetRecord().startTime;
-    case OPERATION_COLUMN_OPERATION_END_TIME_OR_ORDER_TIME:
-      return GetRecord().endTime;
+      return m_record->GetStartTime();
+    case OPERATION_COLUMN_OPERATION_END_TIME_OR_ORDER_SUBMIT_TIME: {
+      const auto &endTime = m_record->GetEndTime();
+      if (!endTime) {
+        return {};
+      }
+      return *endTime;
+    }
     case OPERATION_COLUMN_OPERATION_STATUS_OR_ORDER_SYMBOL:
-      return GetRecord().statusName;
+      return ConvertToUiString(m_record->GetStatus());
     case OPERATION_COLUMN_OPERATION_FINANCIAL_RESULT_OR_ORDER_EXCHANGE:
-      return GetRecord().financialResult;
+      return m_financialResult;
     case OPERATION_COLUMN_OPERATION_COMMISSION_OR_ORDER_STATUS:
-      return GetRecord().commission;
+      return m_commission;
     case OPERATION_COLUMN_OPERATION_TOTAL_RESULT_OR_ORDER_PRICE:
-      return GetRecord().totalResult;
+      return m_totalResult;
     case OPERATION_COLUMN_OPERATION_STRATEGY_NAME_OR_ORDER_QTY:
-      return GetRecord().strategyName;
-    case OPERATION_COLUMN_OPERATION_STRATEGY_PARAMS_OR_ORDER_VOLUME:
-      return GetRecord().strategyParams;
+      return m_record->GetStrategyInstance()->GetName();
     case OPERATION_COLUMN_OPERATION_ID_OR_ORDER_ID:
-      return GetRecord().id;
+      return m_record->GetId();
     default:
-      return QVariant();
+      return {};
   }
 }
 
@@ -115,7 +170,7 @@ QVariant OperationOrderHeadItem::GetData(const int column) const {
       return QObject::tr("Leg");
     case OPERATION_COLUMN_OPERATION_TIME_OR_ORDER_SIDE:
       return QObject::tr("Side");
-    case OPERATION_COLUMN_OPERATION_END_TIME_OR_ORDER_TIME:
+    case OPERATION_COLUMN_OPERATION_END_TIME_OR_ORDER_SUBMIT_TIME:
       return QObject::tr("Time");
     case OPERATION_COLUMN_OPERATION_STATUS_OR_ORDER_SYMBOL:
       return QObject::tr("Symbol");
@@ -127,7 +182,7 @@ QVariant OperationOrderHeadItem::GetData(const int column) const {
       return QObject::tr("Order price");
     case OPERATION_COLUMN_OPERATION_STRATEGY_NAME_OR_ORDER_QTY:
       return QObject::tr("Order qty.");
-    case OPERATION_COLUMN_OPERATION_STRATEGY_PARAMS_OR_ORDER_VOLUME:
+    case OPERATION_COLUMN_ORDER_VOLUME:
       return QObject::tr("Order vol.");
     case OPERATION_COLUMN_ORDER_REMAINING_QTY:
       return QObject::tr("Remaining qty.");
@@ -139,65 +194,86 @@ QVariant OperationOrderHeadItem::GetData(const int column) const {
       return QObject::tr("Update");
     case OPERATION_COLUMN_OPERATION_ID_OR_ORDER_ID:
       return QObject::tr("Order ID");
+    default:
+      return "";
   }
-  return "";
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-OperationOrderItem::OperationOrderItem(OrderRecord &&record)
-    : m_record(std::move(record)) {}
+OperationOrderItem::OperationOrderItem(
+    boost::shared_ptr<const OrderRecord> record, const Engine &engine)
+    : m_record(std::move(record)), m_engine(engine) {}
 
-OrderRecord &OperationOrderItem::GetRecord() { return m_record; }
-const OrderRecord &OperationOrderItem::GetRecord() const { return m_record; }
+void OperationOrderItem::Update(boost::shared_ptr<const OrderRecord> record) {
+  m_record = std::move(record);
+}
 
-QVariant OperationOrderItem::GetData(int column) const {
+const OrderRecord &OperationOrderItem::GetRecord() const { return *m_record; }
+
+QVariant OperationOrderItem::GetData(const int column) const {
   static_assert(numberOfOperationColumns == 14, "List changed.");
   switch (column) {
     case OPERATION_COLUMN_OPERATION_NUMBER_OR_ORDER_LEG: {
-      const auto &value = GetRecord().subOperationId;
-      if (value && *value) {
-        return *value;
-      } else {
-        return QVariant();
+      const auto &value = m_record->GetSubOperationId();
+      if (!value || !*value) {
+        return {};
       }
+      return *value;
     }
     case OPERATION_COLUMN_OPERATION_TIME_OR_ORDER_SIDE:
-      return GetRecord().sideName;
-    case OPERATION_COLUMN_OPERATION_END_TIME_OR_ORDER_TIME:
-      return GetRecord().orderTime;
+      return ConvertToUiString(m_record->GetSide());
+    case OPERATION_COLUMN_OPERATION_END_TIME_OR_ORDER_SUBMIT_TIME:
+      return m_record->GetSubmitTime();
     case OPERATION_COLUMN_OPERATION_STATUS_OR_ORDER_SYMBOL:
-      return GetRecord().symbol;
+      return m_record->GetSymbol();
     case OPERATION_COLUMN_OPERATION_FINANCIAL_RESULT_OR_ORDER_EXCHANGE:
-      return GetRecord().tradingSystem;
+      return m_engine.ResolveTradingSystemTitle(
+          m_record->GetTradingSystemInstanceName());
     case OPERATION_COLUMN_OPERATION_COMMISSION_OR_ORDER_STATUS:
-      return GetRecord().statusName;
-    case OPERATION_COLUMN_OPERATION_TOTAL_RESULT_OR_ORDER_PRICE:
-      return GetRecord().price.Get();
+      return ConvertToUiString(m_record->GetStatus());
+    case OPERATION_COLUMN_OPERATION_TOTAL_RESULT_OR_ORDER_PRICE: {
+      const auto &price = m_record->GetPrice();
+      if (!price) {
+        return {};
+      }
+      return price->Get();
+    }
     case OPERATION_COLUMN_OPERATION_STRATEGY_NAME_OR_ORDER_QTY:
-      return GetRecord().qty.Get();
-    case OPERATION_COLUMN_OPERATION_STRATEGY_PARAMS_OR_ORDER_VOLUME:
-      return (GetRecord().price * GetRecord().qty).Get();
+      return m_record->GetQty().Get();
+    case OPERATION_COLUMN_ORDER_VOLUME: {
+      const auto &price = m_record->GetPrice();
+      if (!price) {
+        return {};
+      }
+      return (*price * m_record->GetQty()).Get();
+    }
     case OPERATION_COLUMN_ORDER_REMAINING_QTY:
-      return GetRecord().remainingQty.Get();
+      return m_record->GetRemainingQty().Get();
     case OPERATION_COLUMN_ORDER_FILLED_QTY:
-      return GetRecord().filledQty.Get();
+      return (m_record->GetQty() - m_record->GetRemainingQty()).Get();
     case OPERATION_COLUMN_ORDER_TIF:
-      return GetRecord().tif;
+      return ConvertToUiString(m_record->GetTimeInForce());
     case OPERATION_COLUMN_ORDER_LAST_TIME:
-      return GetRecord().updateTime;
+      return m_record->GetUpdateTime();
     case OPERATION_COLUMN_OPERATION_ID_OR_ORDER_ID:
-      return GetRecord().id;
+      return m_record->GetId();
+    default:
+      return {};
   }
-  return QVariant();
 }
 
 QVariant OperationOrderItem::GetToolTip() const {
-  return GetRecord().additionalInfo;
+  const auto &result = m_record->GetAdditionalInfo();
+  if (!result) {
+    return "";
+  }
+  return *result;
 }
 
 bool OperationOrderItem::HasErrors() const {
-  return (m_record.status == ORDER_STATUS_ERROR && !m_record.id.isEmpty()) ||
+  return (m_record->GetStatus() == +OrderStatus::Error &&
+          !m_record->GetRemoteId().isEmpty()) ||
          Base::HasErrors();
 }
 

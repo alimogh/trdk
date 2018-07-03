@@ -350,26 +350,30 @@
     <ResourceCompile Include="Tests.rc" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\Core\ContextDummy.hpp" />
-    <ClInclude Include="..\Core\ContextMock.hpp" />
-    <ClInclude Include="..\Core\DropCopyMock.hpp" />
-    <ClInclude Include="..\Core\MarketDataSourceDummy.hpp" />
-    <ClInclude Include="..\Core\MarketDataSourceMock.hpp" />
-    <ClInclude Include="..\Core\SecurityMock.hpp" />
-    <ClInclude Include="..\Core\TradingSystemMock.hpp" />
+    <ClInclude Include="Core\ContextDummy.hpp" />
+    <ClInclude Include="Core\ContextMock.hpp" />
+    <ClInclude Include="Core\DropCopyMock.hpp" />
+    <ClInclude Include="Core\MarketDataSourceDummy.hpp" />
+    <ClInclude Include="Core\MarketDataSourceMock.hpp" />
+    <ClInclude Include="Core\SecurityMock.hpp" />
+    <ClInclude Include="Core\StrategyDummy.hpp" />
+    <ClInclude Include="Core\TradingSystemMock.hpp" />
     <ClInclude Include="FuncTestList.hpp" />
     <ClInclude Include="Prec.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\Core\ContextDummy.cpp" />
-    <ClCompile Include="..\Core\ContextMock.cpp" />
-    <ClCompile Include="..\Core\MarketDataSourceDummy.cpp" />
-    <ClCompile Include="..\Core\MarketDataSourceMock.cpp" />
-    <ClCompile Include="..\Core\TradingSystemMock.cpp" />
-    <ClCompile Include="..\Common\ExpirationCalendarUTest.cpp" />
-    <ClCompile Include="..\TradingLib\TrendUTest.cpp" />
+    <ClCompile Include="Lib\ExpirationCalendarTest.cpp" />
+    <ClCompile Include="Lib\SymbolTest.cpp" />
+    <ClCompile Include="Lib\UtilTest.cpp" />
+    <ClCompile Include="Core\ContextDummy.cpp" />
+    <ClCompile Include="Core\ContextMock.cpp" />
+    <ClCompile Include="Core\MarketDataSourceDummy.cpp" />
+    <ClCompile Include="Core\MarketDataSourceMock.cpp" />
+    <ClCompile Include="Core\PriceBookTest.cpp" />
+    <ClCompile Include="Core\SecurityTest.cpp" />
+    <ClCompile Include="Core\StrategyDummy.cpp" />
+    <ClCompile Include="Core\TradingSystemMock.cpp" />
     <ClCompile Include="FuncTestList.cpp" />
-    <ClCompile Include="..\Core\PriceBookUTest.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Create</PrecompiledHeader>
@@ -385,9 +389,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="..\Core\SecurityUTest.cpp" />
-    <ClCompile Include="..\Common\SymbolUTest.cpp" />
-    <ClCompile Include="..\Common\UtilUTest.cpp" />
+    <ClCompile Include="TradingLib\TrendTest.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

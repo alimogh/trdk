@@ -13,7 +13,6 @@
 #include "Currency.hpp"
 #include "Exception.hpp"
 #include "SecurityType.hpp"
-#include <iosfwd>
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -41,20 +40,23 @@ class Symbol {
     explicit ParameterError(const char *what) noexcept;
   };
 
-  Symbol();
-  explicit Symbol(const std::string &line,
-                  const SecurityType &defSecurityType = numberOfSecurityTypes,
-                  const Currency &defCurrency = numberOfCurrencies);
-
+  Symbol() = default;
+  explicit Symbol(
+      const std::string &line,
+      const boost::optional<SecurityType> &defSecurityType = boost::none,
+      const boost::optional<Currency> &defCurrency = boost::none);
+  Symbol(Symbol &&) noexcept;
   Symbol(const Symbol &);
-
+  Symbol &operator=(Symbol &&) noexcept;
   Symbol &operator=(const Symbol &);
+  ~Symbol() = default;
 
+  //! Symbol is not empty.
   explicit operator bool() const;
 
-  bool operator<(const Symbol &rhs) const;
-  bool operator==(const Symbol &rhs) const;
-  bool operator!=(const Symbol &rhs) const;
+  bool operator<(const Symbol &) const;
+  bool operator==(const Symbol &) const;
+  bool operator!=(const Symbol &) const;
 
   friend std::ostream &operator<<(std::ostream &, const Symbol &);
 
@@ -102,27 +104,25 @@ class Symbol {
 
  private:
   struct Data {
-    SecurityType securityType;
+    boost::optional<SecurityType> securityType;
     std::string symbol;
     std::string exchange;
     std::string primaryExchange;
 
-    bool isExplicit;
-    double strike;
-    Right right;
+    bool isExplicit = true;
+    double strike = .0;
+    Right right = numberOfRights;
 
     std::string baseSymbol;
     std::string quoteSymbol;
 
-    Currency fotBaseCurrency;
-    //! Currency and FOR Quote Currency.
-    Currency currency;
-
-    Data();
+    boost::optional<Currency> fotBaseCurrency;
+    //! Currency and For Quote Currency.
+    boost::optional<Currency> currency;
 
   } m_data;
 
-  boost::atomic<Hash> m_hash;
+  boost::atomic<Hash> m_hash{0};
 };
 
 inline size_t hash_value(const Symbol &symbol) { return symbol.GetHash(); }

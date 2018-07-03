@@ -160,7 +160,6 @@ function CopyContent() {
 	var isQtChartsRequired = false;
 	var isPocoRequired = false;
 	var isOpenSslRequired = false;
-	var isQxOrmRequired = false;
 
 	for (var i = 0; i < branch.requiredModules.length; ++i) {
 		var module = branch.requiredModules[i];
@@ -169,9 +168,6 @@ function CopyContent() {
 		fileSystem.CopyFile(file, destination, true);
 		if (module == 'FrontEnd') {
 			isQtCoreRequired = true;
-			isQtSqlRequired = true;
-			isQtSqlLiteRequired = true;
-			isQxOrmRequired = true;
 		} else if (module == 'Shell') {
 			isQtCoreRequired = true;
 		} else if (module == 'Charts') {
@@ -228,11 +224,6 @@ function CopyContent() {
 			+ '/../externals/openssl-1.0.1t-vs2015/bin64/';
 		fileSystem.CopyFile(openSslDir + 'libeay32MD' + openSslSuffix + '.dll', destination, true);
 		fileSystem.CopyFile(openSslDir + 'ssleay32MD' + openSslSuffix + '.dll', destination, true);
-	}
-	if (isQxOrmRequired) {
-		stdout.WriteLine('Adding QxORM DLLs...');
-		fileSystem.CopyFile(solutionDir + '/../externals/QxOrm/lib/QxOrm'
-			+ qxOrmSuffix + '.dll', destination, true);
 	}
 
 	stdout.WriteLine('Adding VC Runtime DLLs...');

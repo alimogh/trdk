@@ -16,6 +16,7 @@
 using namespace trdk;
 using namespace Lib;
 using namespace FrontEnd;
+using namespace Terminal;
 namespace fs = boost::filesystem;
 namespace ptr = boost::property_tree;
 
@@ -29,7 +30,7 @@ void CreateConfigFile(const fs::path &path) {
   config.add("general.marketDataLog.isEnabled", false);
 
   config.add("defaults.currency", "BTC");
-  config.add("defaults.securityType", "CRYPTO");
+  config.add("defaults.securityType", "Crypto");
   {
     const std::string symbols[] = {"BTC_EUR", "BTC_USD",  "ETH_BTC",
                                    "ETH_EUR", "ETH_USD",  "DOGE_BTC",
@@ -59,7 +60,7 @@ void CreateConfigFile(const fs::path &path) {
 }
 }  // namespace
 
-void FrontEnd::CheckConfig(const fs::path &configFilePath) {
+void Terminal::CheckConfig(const fs::path &configFilePath) {
   if (!fs::exists(configFilePath)) {
     CreateConfigFile(configFilePath);
   }

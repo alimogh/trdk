@@ -23,9 +23,8 @@ struct LegConf {
 
 typedef boost::array<LegConf, numberOfLegs> LegsConf;
 
-typedef trdk::Lib::Numeric<
-    Lib::Double::ValueType,
-    trdk::Lib::Detail::DoubleNumericPolicy<Price::PRECISION>>
+typedef Lib::Numeric<Lib::Double::ValueType,
+                     Lib::Detail::DoubleNumericPolicy<Price::PRECISION>>
     Y;
 
 struct Opportunity {
@@ -45,15 +44,17 @@ struct Opportunity {
   bool isSignaled;
 };
 
-class LegPolicy : private boost::noncopyable {
+class LegPolicy {
  public:
   typedef Y X;
 
- public:
   explicit LegPolicy(const std::string &symbol);
+  LegPolicy(LegPolicy &&) = default;
+  LegPolicy(const LegPolicy &) = delete;
+  LegPolicy &operator=(LegPolicy &&) = delete;
+  LegPolicy &operator=(const LegPolicy &) = delete;
   virtual ~LegPolicy() = default;
 
- public:
   const std::string &GetSymbol() const;
 
   boost::unordered_set<Security *> &GetSecurities();

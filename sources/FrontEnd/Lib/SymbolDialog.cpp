@@ -24,9 +24,9 @@ class SymbolDialog::Implementation {
 SymbolDialog::SymbolDialog(QWidget *parent)
     : Base(parent), m_pimpl(boost::make_unique<Implementation>()) {
   m_pimpl->m_ui.setupUi(this);
-  for (auto i = 0; i < numberOfCurrencies; ++i) {
+  for (auto i = 0; i < Currency::_size(); ++i) {
     m_pimpl->m_ui.currency->addItem(
-        QString::fromStdString(ConvertToIso(static_cast<Currency>(i))));
+        QString::fromStdString(Currency::_values()[i]._to_string()));
   }
 }
 SymbolDialog::~SymbolDialog() = default;

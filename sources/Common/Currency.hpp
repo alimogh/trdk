@@ -10,46 +10,24 @@
 
 #pragma once
 
+#include <enum.h>
+
 namespace trdk {
 namespace Lib {
 
 //! Currency.
-enum Currency {
-  CURRENCY_USD,
-  CURRENCY_EUR,
-  CURRENCY_JPY,
-  CURRENCY_RUB,
-  CURRENCY_GBP,
-  CURRENCY_CHF,
-  CURRENCY_AUD,
-  CURRENCY_INR,
-  CURRENCY_BTC,
-  CURRENCY_ETH,
-  CURRENCY_LTC,
-  CURRENCY_USDT,
-  CURRENCY_EURT,
-  CURRENCY_XRP,
-  numberOfCurrencies
-};
+BETTER_ENUM(Currency,
+            std::uint16_t,
+            EUR = 978,
+            EURT = 1978,
+            USD = 840,
+            USDT = 1840,
+            GBP = 826,
+            RUB = 810,
+            BTC = 2001,
+            ETH = 2002,
+            LTC = 2003,
+            XRP = 2004);
 
-//! Convert currency to string in ISO 4217 code.
-/** http://en.wikipedia.org/wiki/ISO_4217
- * @sa ConvertCurrencyFromIso
- */
-const std::string &ConvertToIso(const trdk::Lib::Currency &);
-
-//! Convert currency from ISO 4217 code.
-/** http://en.wikipedia.org/wiki/ISO_4217
- * Throws an exception if currency is unknown.
- * @sa ConvertToIso
- * @throw trdk::Lib::Exception
- */
-trdk::Lib::Currency ConvertCurrencyFromIso(const std::string &);
-
-inline std::ostream &operator<<(std::ostream &oss,
-                                const trdk::Lib::Currency &currency) {
-  oss << trdk::Lib::ConvertToIso(currency);
-  return oss;
-}
 }  // namespace Lib
 }  // namespace trdk

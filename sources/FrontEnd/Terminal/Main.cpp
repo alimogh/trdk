@@ -9,6 +9,7 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
+#include "Application.hpp"
 #include "Config.hpp"
 #include "Lib/Engine.hpp"
 #include "Lib/Style.hpp"
@@ -27,7 +28,7 @@ namespace {
 class SplashScreen : public QSplashScreen {
  public:
   SplashScreen() : QSplashScreen(QPixmap{":/Terminal/Resources/Splash.png"}) {}
-  SplashScreen(SplashScreen &&) = default;
+  SplashScreen(SplashScreen &&) = delete;
   SplashScreen(const SplashScreen &) = delete;
   SplashScreen &operator=(SplashScreen &&) = delete;
   SplashScreen &operator=(const SplashScreen &) = delete;
@@ -74,19 +75,18 @@ int main(int argc, char *argv[]) {
 #endif
 
   QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
-  QApplication application(argc, argv);
+  Application application(argc, argv);
 
   try {
-    application.setApplicationName(TRDK_NAME);
-    application.setOrganizationDomain(TRDK_DOMAIN);
+    QApplication::setApplicationName(TRDK_NAME);
+    QApplication::setOrganizationDomain(TRDK_DOMAIN);
 
     CheckConfig(GetConfigFilePath());
 
     auto splash = boost::make_unique<SplashScreen>();
     splash->show();
 
-    splash->ShowMessage(
-        application.tr("Loading " TRDK_NAME "...").toStdString());
+    splash->ShowMessage(QObject::tr("Loading " TRDK_NAME "...").toStdString());
 
     LoadStyle(application);
 
@@ -99,13 +99,13 @@ int main(int argc, char *argv[]) {
         splash->ShowMessage(message);
       });
     } catch (const std::exception &ex) {
-      QMessageBox::critical(nullptr, application.tr("Failed to start"),
+      QMessageBox::critical(nullptr, QObject::tr("Failed to start"),
                             QString("%1.").arg(ex.what()), QMessageBox::Abort);
       return 1;
     }
 
     MainWindow mainWindow(engine, moduleDlls, nullptr);
-    mainWindow.setWindowTitle(application.applicationName()
+    mainWindow.setWindowTitle(QApplication::applicationName()
 #ifdef DEV_VER
                               + " (build: " TRDK_BUILD_IDENTITY
                                 ", build time: " __DATE__ " " __TIME__ ")"
@@ -119,7 +119,7 @@ int main(int argc, char *argv[]) {
 
     {
       splash->ShowMessage(
-          application.tr("Loading strategy modules...").toStdString());
+          QObject::tr("Loading strategy modules...").toStdString());
       mainWindow.LoadModule("ArbitrationAdvisor");
       mainWindow.LoadModule("TriangularArbitrage");
       mainWindow.LoadModule("MarketMaker");
@@ -128,7 +128,7 @@ int main(int argc, char *argv[]) {
 
     {
       splash->ShowMessage(
-          application.tr("Restoring module instances...").toStdString());
+          QObject::tr("Restoring module instances...").toStdString());
       mainWindow.RestoreModules();
     }
 
@@ -136,26 +136,39 @@ int main(int argc, char *argv[]) {
     splash->finish(&mainWindow);
     splash.reset();
 
-    return application.exec();
+    return QApplication::exec();
   } catch (const CheckConfigException &) {
     QMessageBox::warning(
-        nullptr, application.tr("Configuration required"),
-        application.tr(
+        nullptr,
+        QObject::tr("%1 configuration required")
+            .arg(QApplication::applicationName()),
+        QObject::tr(
             "Impossible to continue to use application with the "
             "current configuration. To configure, run the application again."),
         QMessageBox::Close);
-  } catch (const ptr::ptree_error &ex) {
-    QMessageBox::critical(
-        nullptr, application.tr("Application fatal error"),
-        QString(R"(Configuration format error: "%1".)").arg(ex.what()),
-        QMessageBox::Abort);
   } catch (const std::exception &ex) {
-    QMessageBox::critical(nullptr, application.tr("Application fatal error"),
-                          QString("%1.").arg(ex.what()), QMessageBox::Abort);
+    QMessageBox::critical(
+        nullptr,
+        QObject::tr("%1 fatal error").arg(QApplication::applicationName()),
+        QObject::tr(
+            "An unexpected program failure occurred: %1. "
+            "\n\nApplication is terminated.\n\nPlease contact support by %2 "
+            "with descriptions of actions that you have made during "
+            "the occurrence of the failure.")
+            .arg(ex.what(), TRDK_SUPPORT_EMAIL),
+        QMessageBox::Abort);
   } catch (...) {
     AssertFailNoException();
-    QMessageBox::critical(nullptr, application.tr("Application fatal error"),
-                          application.tr("Unknown error."), QMessageBox::Abort);
+    QMessageBox::critical(
+        nullptr,
+        QObject::tr("%1 fatal error").arg(QApplication::applicationName()),
+        QObject::tr(
+            "An unexpected unknown program failure occurred! "
+            "\n\nApplication is terminated.\n\nPlease contact support by %1 "
+            "with descriptions of actions that you have made during "
+            "the occurrence of the failure.")
+            .arg(TRDK_SUPPORT_EMAIL),
+        QMessageBox::Abort);
   }
   return 1;
 }

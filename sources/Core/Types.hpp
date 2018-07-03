@@ -33,22 +33,7 @@ typedef Lib::BusinessNumeric<
 ////////////////////////////////////////////////////////////////////////////////
 
 //! Order side.
-enum OrderSide {
-  ORDER_SIDE_BUY = 0,
-  ORDER_SIDE_BID = ORDER_SIDE_BUY,
-  ORDER_SIDE_LONG = ORDER_SIDE_BUY,
-  ORDER_SIDE_SELL = 1,
-  ORDER_SIDE_OFFER = ORDER_SIDE_SELL,
-  ORDER_SIDE_ASK = ORDER_SIDE_SELL,
-  ORDER_SIDE_SHORT = ORDER_SIDE_SELL,
-  numberOfOrderSides
-};
-
-TRDK_CORE_API const char* ConvertToPch(const OrderSide&);
-
-inline std::ostream& operator<<(std::ostream& os, const OrderSide& side) {
-  return os << ConvertToPch(side);
-}
+BETTER_ENUM(OrderSide, std::int8_t, Buy = 1, Sell = -1);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -60,18 +45,7 @@ struct OrderCheckError {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-enum PositionSide {
-  POSITION_SIDE_LONG,
-  POSITION_SIDE_SHORT,
-  numberOfPositionSides
-};
-
-TRDK_CORE_API const char* ConvertToPch(const PositionSide&);
-
-inline std::ostream& operator<<(std::ostream& os,
-                                const PositionSide& positionSide) {
-  return os << ConvertToPch(positionSide);
-}
+BETTER_ENUM(PositionSide, std::uint8_t, Long, Short);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -124,37 +98,29 @@ struct OrderParams {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-enum OrderStatus {
-  //! Order sent by the owner to the trading system. State of the order is
-  //! unknown.
-  ORDER_STATUS_SENT,
-  //! Order sent to the trading system and received reception confirmation. The
-  //! order is active, there are no any trades yet.
-  ORDER_STATUS_OPENED,
-  //! The order is canceled by the owner with or without partial filling. The
-  //! order is not active anymore.
-  ORDER_STATUS_CANCELED,
-  //! The order is fully filled and is not active anymore. Remaining quantity is
-  //! zero.
-  ORDER_STATUS_FILLED_FULLY,
-  //! The order got a new part of the partial filling and still be active.
-  //! Has remaining quantity.
-  ORDER_STATUS_FILLED_PARTIALLY,
-  //! The order is rejected by the trading system and is not active. Remaining
-  //! quantity is canceled.
-  ORDER_STATUS_REJECTED,
-  //! The unknown error has occurred. State of the order is unknown.
-  ORDER_STATUS_ERROR,
-  //! Number of order statuses.
-  numberOfOrderStatuses
-};
-
-TRDK_CORE_API const char* ConvertToPch(const OrderStatus&);
-
-inline std::ostream& operator<<(std::ostream& os, const OrderStatus& status) {
-  os << ConvertToPch(status);
-  return os;
-}
+BETTER_ENUM(
+    OrderStatus,
+    std::uint8_t,
+    //! Order sent by the owner to the trading system. State of the order is
+    //! unknown.
+    Sent = 10,
+    //! Order sent to the trading system and received reception confirmation.
+    //! The order is active, there are no any trades yet.
+    Opened = 20,
+    //! The order is canceled by the owner with or without partial filling. The
+    //! order is not active anymore.
+    Canceled = 30,
+    //! The order is fully filled and is not active anymore. Remaining quantity
+    //! is zero.
+    FilledFully = 40,
+    //! The order got a new part of the partial filling and still be active.
+    //! Has remaining quantity.
+    FulledPartially = 41,
+    //! The order is rejected by the trading system and is not active. Remaining
+    //! quantity is canceled.
+    Rejected = 50,
+    //! The unknown error has occurred. State of the order is unknown.
+    Error = 60);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -297,7 +263,7 @@ class Level1TickValue {
         return Create<LEVEL1_TICK_TRADING_VOLUME>(value);
     }
     AssertEq(LEVEL1_TICK_LAST_PRICE, type);
-    throw Exception("Unknown Level 1 Tick Value Type");
+    throw Lib::Exception("Unknown Level 1 Tick Value Type");
   }
 
   const Level1TickType& GetType() const { return m_type; }
@@ -341,19 +307,31 @@ inline std::ostream& operator<<(std::ostream& oss, const TradingMode& mode) {
 //////////////////////////////////////////////////////////////////////////
 
 namespace trdk {
+
 //! Order ID.
 class OrderId {
  public:
   OrderId() = default;
-  OrderId(const std::string& value) : m_value(value) {}
-  OrderId(const std::string&& value) : m_value(std::move(value)) {}
-  OrderId(int32_t value) : m_value(boost::lexical_cast<std::string>(value)) {}
-  OrderId(uint32_t value) : m_value(boost::lexical_cast<std::string>(value)) {}
-  OrderId(intmax_t value) : m_value(boost::lexical_cast<std::string>(value)) {}
-  OrderId(uintmax_t value) : m_value(boost::lexical_cast<std::string>(value)) {}
+  explicit OrderId(std::string value) : m_value(std::move(value)) {}
+  OrderId(const int32_t value)
+      : m_value(boost::lexical_cast<std::string>(value)) {}
+  OrderId(const uint32_t value)
+      : m_value(boost::lexical_cast<std::string>(value)) {}
+  OrderId(const int64_t value)
+      : m_value(boost::lexical_cast<std::string>(value)) {}
+  OrderId(const uint64_t value)
+      : m_value(boost::lexical_cast<std::string>(value)) {}
+  OrderId(OrderId&&) = default;
+  OrderId(const OrderId&) = default;
+  OrderId& operator=(OrderId&&) = default;
+  OrderId& operator=(const OrderId&) = default;
+  ~OrderId() = default;
 
   bool operator==(const OrderId& rhs) const { return m_value == rhs.m_value; }
   bool operator!=(const OrderId& rhs) const { return !operator==(rhs); }
+
+  bool operator==(const std::string& rhs) const { return m_value == rhs; }
+  bool operator!=(const std::string& rhs) const { return !operator==(rhs); }
 
   friend std::ostream& operator<<(std::ostream& os, const OrderId& orderId) {
     return os << orderId.m_value;

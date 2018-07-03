@@ -1,357 +1,123 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
-    </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{D9D6E242-F8AF-46E4-B9FD-80ECBC20BA3E}</UniqueIdentifier>
-      <Extensions>qrc;*</Extensions>
-      <ParseFiles>false</ParseFiles>
-    </Filter>
-    <Filter Include="Form Files">
-      <UniqueIdentifier>{99349809-55BA-4b9d-BF79-8FDBB0286EB3}</UniqueIdentifier>
-      <Extensions>ui</Extensions>
-    </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{D9D6E242-F8AF-46E4-B9FD-80ECBC20BA3E}</UniqueIdentifier>
-      <Extensions>qrc;*</Extensions>
-      <ParseFiles>false</ParseFiles>
-    </Filter>
-    <Filter Include="Generated Files">
-      <UniqueIdentifier>{71ED8ED8-ACB9-4CE9-BBE1-E00B30144E11}</UniqueIdentifier>
-      <Extensions>moc;h;cpp</Extensions>
-      <SourceControlFiles>False</SourceControlFiles>
-    </Filter>
-    <Filter Include="Generated Files\Debug Standalone">
-      <UniqueIdentifier>{1cd85ba2-d118-4c30-931d-aa097302b71a}</UniqueIdentifier>
-      <Extensions>cpp;moc</Extensions>
-      <SourceControlFiles>False</SourceControlFiles>
-    </Filter>
-    <Filter Include="Generated Files\Test Standalone">
-      <UniqueIdentifier>{84baa5a8-56a9-45a5-9561-ecd010ecb0c0}</UniqueIdentifier>
-      <Extensions>cpp;moc</Extensions>
-      <SourceControlFiles>False</SourceControlFiles>
-    </Filter>
-    <Filter Include="Generated Files\Release Standalone">
-      <UniqueIdentifier>{a1c460ef-58d0-4178-9a1a-b1971285b8e2}</UniqueIdentifier>
-      <Extensions>cpp;moc</Extensions>
-      <SourceControlFiles>False</SourceControlFiles>
-    </Filter>
-    <Filter Include="Resource Files\qdarkstyle">
-      <UniqueIdentifier>{9e62654b-ae32-4b8e-95de-b1871633d225}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resource Files\qdarkstyle\rc">
-      <UniqueIdentifier>{64907111-ccb4-4076-9228-22da58d4e10d}</UniqueIdentifier>
-    </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="Prec.cpp">
+    <ClCompile Include="..\..\Common\Assert.cpp" />
+    <ClCompile Include="BalanceItem.cpp" />
+    <ClCompile Include="BalanceItemDelegate.cpp" />
+    <ClCompile Include="BalanceListModel.cpp" />
+    <ClCompile Include="BalanceListView.cpp" />
+    <ClCompile Include="DropCopy.cpp" />
+    <ClCompile Include="Engine.cpp" />
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_ItemDelegate.cpp" />
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_OperationItemDelegate.cpp" />
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_SecurityListView.cpp" />
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_SourcePropertiesDialog.cpp" />
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_SourcesListWidget.cpp" />
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_SymbolDialog.cpp" />
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_TotalResultsReportSettingsWidget.cpp" />
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_TotalResultsReportView.cpp" />
+    <ClCompile Include="GeneratedFiles\Orm\OperationRecord-odb.cxx" />
+    <ClCompile Include="GeneratedFiles\Orm\OrderRecord-odb.cxx" />
+    <ClCompile Include="GeneratedFiles\Orm\PnlRecord-odb.cxx" />
+    <ClCompile Include="GeneratedFiles\Orm\StrategyInstanceRecord-odb.cxx" />
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_ItemDelegate.cpp" />
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_OperationItemDelegate.cpp" />
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_SecurityListView.cpp" />
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_SourcePropertiesDialog.cpp" />
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_SourcesListWidget.cpp" />
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_SymbolDialog.cpp" />
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_TotalResultsReportSettingsWidget.cpp" />
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_TotalResultsReportView.cpp" />
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_ItemDelegate.cpp" />
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_OperationItemDelegate.cpp" />
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_SecurityListView.cpp" />
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_SourcePropertiesDialog.cpp" />
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_SourcesListWidget.cpp" />
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_SymbolDialog.cpp" />
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_TotalResultsReportSettingsWidget.cpp" />
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_TotalResultsReportView.cpp" />
+    <ClCompile Include="ItemDelegate.cpp" />
+    <ClCompile Include="OperationItemDelegate.cpp" />
+    <ClCompile Include="SecurityListView.cpp" />
+    <ClCompile Include="SourcePropertiesDialog.cpp" />
+    <ClCompile Include="SourcesListWidget.cpp" />
+    <ClCompile Include="SymbolDialog.cpp" />
+    <ClCompile Include="TotalResultsReportModel.cpp" />
+    <ClCompile Include="TotalResultsReportSettingsWidget.cpp" />
+    <ClCompile Include="TotalResultsReportView.cpp" />
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_BalanceItemDelegate.cpp" />
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_BalanceListModel.cpp" />
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_BalanceListView.cpp" />
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_DropCopy.cpp" />
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_Engine.cpp" />
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_OperationListModel.cpp" />
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_OperationListSettingsWidget.cpp" />
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_OperationListView.cpp" />
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_OrderListModel.cpp" />
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_OrderListView.cpp" />
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_SecurityListModel.cpp" />
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_SortFilterProxyModel.cpp" />
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_SymbolSelectionDialog.cpp" />
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_TotalResultsReportModel.cpp" />
+    <ClCompile Include="GeneratedFiles\qrc_style.cpp" />
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_BalanceItemDelegate.cpp" />
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_BalanceListModel.cpp" />
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_BalanceListView.cpp" />
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_DropCopy.cpp" />
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_Engine.cpp" />
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_OperationListModel.cpp" />
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_OperationListSettingsWidget.cpp" />
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_OperationListView.cpp" />
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_OrderListModel.cpp" />
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_OrderListView.cpp" />
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_SecurityListModel.cpp" />
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_SortFilterProxyModel.cpp" />
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_SymbolSelectionDialog.cpp" />
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_TotalResultsReportModel.cpp" />
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_BalanceItemDelegate.cpp" />
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_BalanceListModel.cpp" />
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_BalanceListView.cpp" />
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_DropCopy.cpp" />
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_Engine.cpp" />
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_OperationListModel.cpp" />
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_OperationListSettingsWidget.cpp" />
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_OperationListView.cpp" />
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_OrderListModel.cpp" />
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_OrderListView.cpp" />
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_SecurityListModel.cpp" />
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_SortFilterProxyModel.cpp" />
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_SymbolSelectionDialog.cpp" />
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_TotalResultsReportModel.cpp" />
+    <ClCompile Include="OperationItem.cpp" />
+    <ClCompile Include="OperationListModel.cpp" />
+    <ClCompile Include="OperationListSettingsWidget.cpp" />
+    <ClCompile Include="OperationListView.cpp" />
+    <ClCompile Include="OrderListModel.cpp" />
+    <ClCompile Include="OrderListView.cpp" />
+    <ClCompile Include="OrderStatusNotifier.cpp" />
+    <ClCompile Include="SecurityListModel.cpp" />
+    <ClCompile Include="SortFilterProxyModel.cpp" />
+    <ClCompile Include="SymbolSelectionDialog.cpp" />
+    <ClCompile Include="Util.cpp" />
+    <ClCompile Include="Style.cpp" />
+    <ClCompile Include="Version.cpp" />
+    <ClCompile Include="Prec.cpp" />
+    <ClCompile Include="OrderRecord.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GeneratedFiles\qrc_style.cpp">
-      <Filter>Generated Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Version.cpp">
+    <ClCompile Include="PnlRecord.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Style.cpp">
+    <ClCompile Include="OperationRecord.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Common\Assert.cpp">
+    <ClCompile Include="StrategyInstanceRecord.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Util.cpp">
+    <ClCompile Include="GeneratedFiles\Orm\StrategyInstanceViews-odb.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Engine.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_Engine.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_Engine.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_Engine.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="DropCopy.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_DropCopy.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_DropCopy.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_DropCopy.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="SecurityListModel.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_SecurityListModel.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_SecurityListModel.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_SecurityListModel.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="OrderListModel.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_OrderListModel.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_OrderListModel.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_OrderListModel.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="OrderListView.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_OrderListView.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_OrderListView.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_OrderListView.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="SortFilterProxyModel.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_SortFilterProxyModel.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_SortFilterProxyModel.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_SortFilterProxyModel.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="OrderStatusNotifier.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_BalanceListModel.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_BalanceListModel.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_BalanceListModel.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="BalanceListModel.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BalanceListView.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_BalanceListView.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_BalanceListView.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_BalanceListView.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_OperationListModel.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_OperationListModel.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_OperationListModel.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="OperationListModel.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="OrderModelUtils.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_OperationListView.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_OperationListView.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_OperationListView.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="OperationListView.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Core\StrategyDummy.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="OperationItem.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="OperationModelUtils.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_BalanceItemDelegate.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_BalanceItemDelegate.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_BalanceItemDelegate.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="BalanceItemDelegate.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BalanceItem.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_SymbolSelectionDialog.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_SymbolSelectionDialog.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_SymbolSelectionDialog.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="SymbolSelectionDialog.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Orm.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="OperationListSettingsWidget.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_OperationListSettingsWidget.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_OperationListSettingsWidget.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_OperationListSettingsWidget.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_TotalResultsReportModel.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_TotalResultsReportModel.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_TotalResultsReportModel.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="TotalResultsReportModel.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_TotalResultsReportSettingsWidget.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_TotalResultsReportSettingsWidget.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_TotalResultsReportSettingsWidget.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="TotalResultsReportSettingsWidget.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_TotalResultsReportView.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_TotalResultsReportView.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_TotalResultsReportView.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="TotalResultsReportView.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ItemDelegate.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_ItemDelegate.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_ItemDelegate.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_ItemDelegate.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="OperationItemDelegate.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_OperationItemDelegate.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_OperationItemDelegate.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_OperationItemDelegate.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="SourcesListWidget.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_SourcesListWidget.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_SourcesListWidget.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_SourcesListWidget.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="SourcePropertiesDialog.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_SourcePropertiesDialog.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_SourcePropertiesDialog.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_SourcePropertiesDialog.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_SymbolDialog.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="SymbolDialog.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_SymbolDialog.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_SymbolDialog.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_SecurityListView.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_SecurityListView.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_SecurityListView.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="SecurityListView.cpp">
+    <ClCompile Include="I18n.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="OrderWindow.cpp">
@@ -368,302 +134,151 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Prec.hpp">
+    <ClInclude Include="Adapters.hpp" />
+    <ClInclude Include="BalanceItem.hpp" />
+    <ClInclude Include="Common.hpp" />
+    <ClInclude Include="Fwd.hpp" />
+    <ClInclude Include="GeneratedFiles\Orm\OperationRecord-odb.hxx" />
+    <ClInclude Include="GeneratedFiles\Orm\OrderRecord-odb.hxx" />
+    <ClInclude Include="GeneratedFiles\Orm\PnlRecord-odb.hxx" />
+    <ClInclude Include="GeneratedFiles\Orm\StrategyInstanceRecord-odb.hxx" />
+    <ClInclude Include="GeneratedFiles\ui_OperationListSettingsWidget.h" />
+    <ClInclude Include="GeneratedFiles\ui_SourcePropertiesDialog.h" />
+    <ClInclude Include="GeneratedFiles\ui_SourcesListWidget.h" />
+    <ClInclude Include="GeneratedFiles\ui_SymbolDialog.h" />
+    <ClInclude Include="GeneratedFiles\ui_SymbolSelectionDialog.h" />
+    <ClInclude Include="GeneratedFiles\ui_TotalResultsReportSettingsWidget.h" />
+    <ClInclude Include="ModuleApi.hpp" />
+    <ClInclude Include="OdbPrologue.hpp" />
+    <ClInclude Include="OperationItem.hpp" />
+    <ClInclude Include="OperationStatus.hpp" />
+    <ClInclude Include="Types.hpp" />
+    <ClInclude Include="Util.hpp" />
+    <ClInclude Include="Prec.hpp" />
+    <ClInclude Include="Api.h" />
+    <ClInclude Include="Std.hpp" />
+    <ClInclude Include="Style.hpp" />
+    <ClInclude Include="GeneratedFiles\Orm\StrategyInstanceViews-odb.hxx">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Api.h">
+    <ClInclude Include="OperationOrm.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Std.hpp">
+    <ClInclude Include="OrderOrm.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Style.hpp">
+    <ClInclude Include="PnlOrm.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <CustomBuild Include="Resources\qdarkstyle\style.qrc">
-      <Filter>Resource Files\qdarkstyle</Filter>
-    </CustomBuild>
-    <ClInclude Include="Util.hpp">
+    <ClInclude Include="StrategyInstanceOrm.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Fwd.hpp">
+    <ClInclude Include="I18n.hpp">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Adapters.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Types.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="OrderModelUtils.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="OperationItem.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="OperationModelUtils.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BalanceItem.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ModuleApi.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="GeneratedFiles\ui_SymbolSelectionDialog.h">
-      <Filter>Generated Files</Filter>
-    </ClInclude>
-    <ClInclude Include="GeneratedFiles\ui_OperationListSettingsWidget.h">
-      <Filter>Generated Files</Filter>
-    </ClInclude>
-    <ClInclude Include="GeneratedFiles\ui_TotalResultsReportSettingsWidget.h">
-      <Filter>Generated Files</Filter>
-    </ClInclude>
-    <ClInclude Include="GeneratedFiles\ui_SourcesListWidget.h">
-      <Filter>Generated Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Common.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="GeneratedFiles\ui_SourcePropertiesDialog.h">
-      <Filter>Generated Files</Filter>
-    </ClInclude>
-    <ClInclude Include="GeneratedFiles\ui_SymbolDialog.h">
-      <Filter>Generated Files</Filter>
-    </ClInclude>
-    <ClInclude Include="GeneratedFiles\ui_OrderWindow.h">
-      <Filter>Generated Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="Resources\FrontEndLib.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
+    <CustomBuild Include="Engine.hpp" />
+    <CustomBuild Include="DropCopy.hpp" />
+    <CustomBuild Include="BalanceListModel.hpp" />
+    <CustomBuild Include="BalanceListView.hpp" />
+    <CustomBuild Include="BalanceItemDelegate.hpp" />
+    <CustomBuild Include="TotalResultsReportModel.hpp" />
+    <CustomBuild Include="TotalResultsReportSettingsWidget.hpp" />
+    <CustomBuild Include="SecurityListModel.hpp" />
+    <CustomBuild Include="OrderListModel.hpp" />
+    <CustomBuild Include="OrderListView.hpp" />
+    <CustomBuild Include="SortFilterProxyModel.hpp" />
+    <CustomBuild Include="OrderStatusNotifier.hpp" />
+    <CustomBuild Include="OperationListModel.hpp" />
+    <CustomBuild Include="OperationListView.hpp" />
+    <CustomBuild Include="ItemDelegate.hpp" />
+    <CustomBuild Include="OperationRecord.hpp" />
+    <CustomBuild Include="OperationListSettingsWidget.hpp" />
+    <CustomBuild Include="OperationItemDelegate.hpp" />
+    <CustomBuild Include="OrderRecord.hpp" />
+    <CustomBuild Include="SymbolSelectionDialog.hpp" />
+    <CustomBuild Include="TotalResultsReportView.hpp" />
+    <CustomBuild Include="SourcesListWidget.hpp" />
+    <CustomBuild Include="SourcePropertiesDialog.hpp" />
+    <CustomBuild Include="SymbolDialog.hpp" />
+    <CustomBuild Include="SecurityListView.hpp" />
+    <CustomBuild Include="PnlRecord.hpp" />
+    <CustomBuild Include="StrategyInstanceRecord.hpp" />
+    <CustomBuild Include="FrontEndLib.qrc" />
+    <CustomBuild Include="Resources\qdarkstyle\style.qrc" />
+    <CustomBuild Include="TotalResultsReportSettingsWidget.ui" />
+    <CustomBuild Include="OperationListSettingsWidget.ui" />
+    <CustomBuild Include="SymbolSelectionDialog.ui" />
+    <CustomBuild Include="SourcesListWidget.ui" />
+    <CustomBuild Include="SourcePropertiesDialog.ui" />
+    <CustomBuild Include="SymbolDialog.ui" />
+    <CustomBuild Include="StrategyInstanceViews.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="Resources\qdarkstyle\rc\branch_closed.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\branch_closed-on.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\branch_open.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\branch_open-on.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\checkbox_checked.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\checkbox_checked_disabled.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\checkbox_checked_focus.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\checkbox_indeterminate.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\checkbox_indeterminate_disabled.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\checkbox_indeterminate_focus.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\checkbox_unchecked.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\checkbox_unchecked_disabled.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\checkbox_unchecked_focus.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\close.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\close-hover.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\close-pressed.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\down_arrow.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\down_arrow_disabled.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\Hmovetoolbar.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\Hsepartoolbar.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\left_arrow.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\left_arrow_disabled.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\radio_checked.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\radio_checked_disabled.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\radio_checked_focus.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\radio_unchecked.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\radio_unchecked_disabled.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\radio_unchecked_focus.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\right_arrow.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\right_arrow_disabled.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\sizegrip.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\stylesheet-branch-end.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\stylesheet-branch-more.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\stylesheet-vline.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\transparent.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\undock.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\up_arrow.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\up_arrow_disabled.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\Vmovetoolbar.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
-    <Image Include="Resources\qdarkstyle\rc\Vsepartoolbar.png">
-      <Filter>Resource Files\qdarkstyle\rc</Filter>
-    </Image>
+    <ResourceCompile Include="Resources\FrontEndLib.rc" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\qdarkstyle\style.qss">
-      <Filter>Resource Files\qdarkstyle</Filter>
-    </None>
-    <None Include="FrontEndLib.def" />
+    <Image Include="Resources\qdarkstyle\rc\branch_closed-on.png" />
+    <Image Include="Resources\qdarkstyle\rc\branch_closed.png" />
+    <Image Include="Resources\qdarkstyle\rc\branch_open-on.png" />
+    <Image Include="Resources\qdarkstyle\rc\branch_open.png" />
+    <Image Include="Resources\qdarkstyle\rc\checkbox_checked.png" />
+    <Image Include="Resources\qdarkstyle\rc\checkbox_checked_disabled.png" />
+    <Image Include="Resources\qdarkstyle\rc\checkbox_checked_focus.png" />
+    <Image Include="Resources\qdarkstyle\rc\checkbox_indeterminate.png" />
+    <Image Include="Resources\qdarkstyle\rc\checkbox_indeterminate_disabled.png" />
+    <Image Include="Resources\qdarkstyle\rc\checkbox_indeterminate_focus.png" />
+    <Image Include="Resources\qdarkstyle\rc\checkbox_unchecked.png" />
+    <Image Include="Resources\qdarkstyle\rc\checkbox_unchecked_disabled.png" />
+    <Image Include="Resources\qdarkstyle\rc\checkbox_unchecked_focus.png" />
+    <Image Include="Resources\qdarkstyle\rc\close-hover.png" />
+    <Image Include="Resources\qdarkstyle\rc\close-pressed.png" />
+    <Image Include="Resources\qdarkstyle\rc\close.png" />
+    <Image Include="Resources\qdarkstyle\rc\down_arrow.png" />
+    <Image Include="Resources\qdarkstyle\rc\down_arrow_disabled.png" />
+    <Image Include="Resources\qdarkstyle\rc\Hmovetoolbar.png" />
+    <Image Include="Resources\qdarkstyle\rc\Hsepartoolbar.png" />
+    <Image Include="Resources\qdarkstyle\rc\left_arrow.png" />
+    <Image Include="Resources\qdarkstyle\rc\left_arrow_disabled.png" />
+    <Image Include="Resources\qdarkstyle\rc\radio_checked.png" />
+    <Image Include="Resources\qdarkstyle\rc\radio_checked_disabled.png" />
+    <Image Include="Resources\qdarkstyle\rc\radio_checked_focus.png" />
+    <Image Include="Resources\qdarkstyle\rc\radio_unchecked.png" />
+    <Image Include="Resources\qdarkstyle\rc\radio_unchecked_disabled.png" />
+    <Image Include="Resources\qdarkstyle\rc\radio_unchecked_focus.png" />
+    <Image Include="Resources\qdarkstyle\rc\right_arrow.png" />
+    <Image Include="Resources\qdarkstyle\rc\right_arrow_disabled.png" />
+    <Image Include="Resources\qdarkstyle\rc\sizegrip.png" />
+    <Image Include="Resources\qdarkstyle\rc\stylesheet-branch-end.png" />
+    <Image Include="Resources\qdarkstyle\rc\stylesheet-branch-more.png" />
+    <Image Include="Resources\qdarkstyle\rc\stylesheet-vline.png" />
+    <Image Include="Resources\qdarkstyle\rc\transparent.png" />
+    <Image Include="Resources\qdarkstyle\rc\undock.png" />
+    <Image Include="Resources\qdarkstyle\rc\up_arrow.png" />
+    <Image Include="Resources\qdarkstyle\rc\up_arrow_disabled.png" />
+    <Image Include="Resources\qdarkstyle\rc\Vmovetoolbar.png" />
+    <Image Include="Resources\qdarkstyle\rc\Vsepartoolbar.png" />
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="FrontEndLib.qrc">
-      <Filter>Resource Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="Engine.hpp">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="DropCopy.hpp">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="SecurityListModel.hpp">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="OrderListModel.hpp">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="OrderListView.hpp">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="SortFilterProxyModel.hpp">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="OrderStatusNotifier.hpp">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="BalanceListModel.hpp">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="BalanceListView.hpp">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="OperationListModel.hpp">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="OperationListView.hpp">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="BalanceItemDelegate.hpp">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="SymbolSelectionDialog.ui">
-      <Filter>Form Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="SymbolSelectionDialog.hpp">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="OperationListSettingsWidget.hpp">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="OperationListSettingsWidget.ui">
-      <Filter>Form Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="TotalResultsReportModel.hpp">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="TotalResultsReportSettingsWidget.hpp">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="TotalResultsReportView.hpp">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="TotalResultsReportSettingsWidget.ui">
-      <Filter>Form Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="ItemDelegate.hpp">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="OperationItemDelegate.hpp">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="SourcesListWidget.ui">
-      <Filter>Form Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="SourcesListWidget.hpp">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="SourcePropertiesDialog.ui">
-      <Filter>Form Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="SourcePropertiesDialog.hpp">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="SymbolDialog.ui">
-      <Filter>Form Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="SymbolDialog.hpp">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="SecurityListView.hpp">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="OrderWindow.hpp">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="OrderWindow.ui">
-      <Filter>Form Files</Filter>
-    </CustomBuild>
+    <None Include="GeneratedFiles\Orm\OperationRecord-odb.ixx" />
+    <None Include="GeneratedFiles\Orm\OrderRecord-odb.ixx" />
+    <None Include="GeneratedFiles\Orm\PnlRecord-odb.ixx" />
+    <None Include="GeneratedFiles\Orm\StrategyInstanceRecord-odb.ixx" />
+    <None Include="odb.cmd" />
+    <None Include="Resources\qdarkstyle\style.qss" />
+    <None Include="GeneratedFiles\Orm\StrategyInstanceViews-odb.ixx" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;cxx;c;def</Extensions>
+      <ParseFiles>true</ParseFiles>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h</Extensions>
+      <ParseFiles>true</ParseFiles>
+    </Filter>
   </ItemGroup>
 </Project>

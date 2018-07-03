@@ -10,9 +10,6 @@
 
 #pragma once
 
-#include "Api.h"
-#include "Fwd.hpp"
-
 namespace trdk {
 namespace FrontEnd {
 
@@ -40,7 +37,7 @@ class TRDK_FRONTEND_LIB_API TotalResultsReportModel
   int columnCount(const QModelIndex& parent) const override;
 
  private slots:
-  void UpdateOperation(const Orm::Operation&);
+  void UpdateOperation(const boost::shared_ptr<const OperationRecord>&);
 
  private:
   class Implementation;

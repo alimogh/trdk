@@ -42,24 +42,24 @@ class BalanceListModel::Implementation : boost::noncopyable {
   RootItem m_root;
   boost::unordered_map<
       const TradingSystem*,
-      std::pair<BalanceTradingSystemItem*,
-                boost::unordered_map<std::string,
-                                     boost::shared_ptr<BalanceDataItem>>>>
+      std::pair<
+          BalanceTradingSystemItem*,
+          boost::unordered_map<QString, boost::shared_ptr<BalanceDataItem>>>>
       m_data;
-  boost::unordered_set<std::string> m_defaultSymbols;
+  boost::unordered_set<QString> m_defaultSymbols;
 
   explicit Implementation(BalanceListModel& self) : m_self(self) {}
 
-  void OnUpdate(const TradingSystem* tradingSystem,
-                const std::string& symbol,
-                const Volume& available,
-                const Volume& locked,
-                const bool isDefault) {
+  void Update(const TradingSystem* tradingSystem,
+              const QString& symbol,
+              const Volume& available,
+              const Volume& locked,
+              const bool isDefault) {
     auto tradingSystemIt = m_data.find(tradingSystem);
     if (tradingSystemIt == m_data.cend()) {
       if (!isDefault) {
         for (const auto& defaultSymbol : m_defaultSymbols) {
-          OnUpdate(tradingSystem, defaultSymbol, 0, 0, true);
+          Update(tradingSystem, defaultSymbol, 0, 0, true);
         }
       }
       tradingSystemIt = m_data.find(tradingSystem);
@@ -69,7 +69,7 @@ class BalanceListModel::Implementation : boost::noncopyable {
           return;
         }
         const auto index = m_root.GetNumberOfChilds();
-        m_self.beginInsertRows(QModelIndex(), index, index);
+        m_self.beginInsertRows({}, index, index);
         auto tradingSystemItem =
             boost::make_unique<BalanceTradingSystemItem>(*tradingSystem);
         tradingSystemIt =
@@ -132,14 +132,15 @@ BalanceListModel::BalanceListModel(const front::Engine& engine, QWidget* parent)
              !it.eof(); ++it) {
           auto subSymbol = boost::copy_range<std::string>(*it);
           if (!subSymbol.empty()) {
-            m_pimpl->m_defaultSymbols.emplace(std::move(subSymbol));
+            m_pimpl->m_defaultSymbols.emplace(
+                QString::fromStdString(subSymbol));
           }
         }
       }
     }
   }
-  Verify(connect(&engine.GetDropCopy(), &front::DropCopy::BalanceUpdate, this,
-                 &BalanceListModel::OnUpdate, Qt::QueuedConnection));
+  Verify(connect(&engine.GetDropCopy(), &front::DropCopy::BalanceUpdated, this,
+                 &BalanceListModel::Update, Qt::QueuedConnection));
   {
     const auto& size = engine.GetContext().GetNumberOfTradingSystems();
     for (size_t i = 0; i < size; ++i) {
@@ -149,7 +150,8 @@ BalanceListModel::BalanceListModel(const front::Engine& engine, QWidget* parent)
           [this, &tradingSystem](const std::string& symbol,
                                  const Volume& available,
                                  const Volume& locked) {
-            OnUpdate(&tradingSystem, symbol, available, locked);
+            Update(&tradingSystem, QString::fromStdString(symbol), available,
+                   locked);
           });
     }
   }
@@ -182,13 +184,16 @@ QVariant BalanceListModel::headerData(int section,
         return tr("Time");
       case BALANCE_COLUMN_USED:
         return tr("Used");
+      default:
+        break;
     }
   }
 
   return Base::headerData(section, orientation, role);
 }
 
-QVariant BalanceListModel::data(const QModelIndex& index, int role) const {
+QVariant BalanceListModel::data(const QModelIndex& index,
+                                const int role) const {
   if (!index.isValid()) {
     return QVariant();
   }
@@ -199,12 +204,13 @@ QVariant BalanceListModel::data(const QModelIndex& index, int role) const {
     case Qt::DisplayRole:
       return static_cast<BalanceItem*>(index.internalPointer())
           ->GetData(index.column());
+    default:
+      return {};
   }
-  return QVariant();
 }
 
-QModelIndex BalanceListModel::index(int row,
-                                    int column,
+QModelIndex BalanceListModel::index(const int row,
+                                    const int column,
                                     const QModelIndex& parentIndex) const {
   if (!hasIndex(row, column, parentIndex)) {
     return QModelIndex();
@@ -249,14 +255,14 @@ int BalanceListModel::columnCount(const QModelIndex&) const {
 
 Qt::ItemFlags BalanceListModel::flags(const QModelIndex& index) const {
   if (!index.isValid()) {
-    return 0;
+    return nullptr;
   }
   return QAbstractItemModel::flags(index);
 }
 
-void BalanceListModel::OnUpdate(const TradingSystem* tradingSystem,
-                                const std::string& symbol,
-                                const Volume& available,
-                                const Volume& locked) {
-  m_pimpl->OnUpdate(tradingSystem, symbol, available, locked, false);
+void BalanceListModel::Update(const TradingSystem* tradingSystem,
+                              const QString& symbol,
+                              const Volume& available,
+                              const Volume& locked) {
+  m_pimpl->Update(tradingSystem, symbol, available, locked, false);
 }

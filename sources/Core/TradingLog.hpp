@@ -19,7 +19,7 @@ namespace trdk {
 
 //! Log record with delayed formatting with tag.
 /** @sa trdk::TradingRecord
-        */
+ */
 class TradingRecord : public trdk::AsyncLogRecord {
  public:
   typedef trdk::AsyncLogRecord Base;
@@ -87,7 +87,7 @@ class TradingLogOutStream : private boost::noncopyable {
 
 typedef trdk::
     AsyncLog<trdk::TradingRecord, TradingLogOutStream, TRDK_CONCURRENCY_PROFILE>
-        TradingLogBase;
+    TradingLogBase;
 
 class TradingLog : public trdk::TradingLogBase {
  public:

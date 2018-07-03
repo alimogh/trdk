@@ -491,7 +491,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     auto buyBalance = buyTradingSystem.GetBalances().GetAvailableToTrade(
         buy.GetSymbol().GetQuoteSymbol());
     buyBalance -= buyTradingSystem.CalcCommission(
-        buyBalance / buyPrice, buyPrice, ORDER_SIDE_BUY, buy);
+        buyBalance / buyPrice, buyPrice, OrderSide::Buy, buy);
 
     return std::min(sellBalance, buyBalance / buyPrice);
   }

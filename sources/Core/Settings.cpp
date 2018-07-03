@@ -24,10 +24,10 @@ using namespace Lib;
 class Settings::Implementation {
  public:
   ptr::ptree m_config;
-  SecurityType m_defaultSecurityType;
-  Currency m_defaultCurrency;
-  bool m_isReplayMode;
-  bool m_isMarketDataLogEnabled;
+  SecurityType m_defaultSecurityType = SecurityType::Stock;
+  Currency m_defaultCurrency = Currency::EUR;
+  bool m_isReplayMode = false;
+  bool m_isMarketDataLogEnabled = false;
   pt::ptime m_startTime;
   fs::path m_logsDir;
   lt::time_zone_ptr m_timeZone;
@@ -35,20 +35,12 @@ class Settings::Implementation {
   boost::unordered_map<std::string, std::string> m_symbolAliases;
 
   Implementation()
-      : m_defaultSecurityType(numberOfSecurityTypes),
-        m_defaultCurrency(numberOfCurrencies),
-        m_isReplayMode(false),
-        m_isMarketDataLogEnabled(false),
-        m_timeZone(boost::make_shared<lt::posix_time_zone>("GMT")) {}
+      : m_timeZone(boost::make_shared<lt::posix_time_zone>("GMT")) {}
 
   Implementation(const fs::path &confFile,
                  fs::path &&logsDir,
                  const pt::ptime &universalStartTime)
-      : m_defaultSecurityType(numberOfSecurityTypes),
-        m_defaultCurrency(numberOfCurrencies),
-        m_isReplayMode(false),
-        m_isMarketDataLogEnabled(false),
-        m_logsDir(std::move(logsDir)) {
+      : m_logsDir(std::move(logsDir)) {
     LoadConfig(confFile);
 
     m_startTime =
@@ -122,8 +114,8 @@ class Settings::Implementation {
       {
         const auto &currency = defaultsConf.get<std::string>("currency");
         try {
-          m_defaultCurrency = ConvertCurrencyFromIso(currency);
-        } catch (const Exception &ex) {
+          m_defaultCurrency = Currency::_from_string_nocase(currency.c_str());
+        } catch (const std::runtime_error &ex) {
           boost::format error(
               R"(Failed to parse default currency ISO 4217 code "%1%": "%2%")");
           error % currency % ex.what();
@@ -134,8 +126,9 @@ class Settings::Implementation {
         const auto &securityType =
             defaultsConf.get<std::string>("securityType");
         try {
-          m_defaultSecurityType = ConvertSecurityTypeFromString(securityType);
-        } catch (const Exception &ex) {
+          m_defaultSecurityType =
+              SecurityType::_from_string_nocase(securityType.c_str());
+        } catch (const std::runtime_error &ex) {
           boost::format error(
               R"(Failed to parse default security type "%1%": "%2%")");
           error % securityType % ex.what();

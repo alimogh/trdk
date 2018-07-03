@@ -146,7 +146,7 @@ trdk::Security &RandomMarketDataSource::CreateNewSecurityObject(
                                        .set(LEVEL1_TICK_TRADING_VOLUME));
 
   switch (result->GetSymbol().GetSecurityType()) {
-    case SECURITY_TYPE_FUTURES: {
+    case SecurityType::Futures: {
       const auto &now = GetContext().GetCurrentTime();
       const auto &expiration =
           GetContext().GetExpirationCalendar().Find(symbol, now.date());

@@ -211,15 +211,14 @@ BittrexTradingSystem::SendOrderTransaction(trdk::Security &security,
                                   log,
                                   tradingLog) {}
 
-   public:
     OrderId SendOrderTransaction(
         std::unique_ptr<net::HTTPSClientSession> &session) {
       const auto response = boost::get<1>(Base::Send(session));
       try {
-        return response.get<std::string>("uuid");
+        return OrderId{response.get<std::string>("uuid")};
       } catch (const ptr::ptree_error &ex) {
         boost::format error(
-            "Wrong server response to the request \"%1%\" (%2%): \"%3%\"");
+            R"(Wrong server response to the request "%1%" (%2%): "%3%")");
         error % GetName()            // 1
             % GetRequest().getURI()  // 2
             % ex.what();             // 3
@@ -240,8 +239,8 @@ BittrexTradingSystem::SendOrderTransaction(trdk::Security &security,
   };
 
   return boost::make_unique<OrderTransactionContext>(
-      *this, NewOrderRequest(side == ORDER_SIDE_BUY ? "/market/buylimit"
-                                                    : "/market/selllimit",
+      *this, NewOrderRequest(side == +OrderSide::Buy ? "/market/buylimit"
+                                                     : "/market/selllimit",
                              productId, qty, actualPrice, m_settings,
                              GetContext(), GetLog(), GetTradingLog())
                  .SendOrderTransaction(m_tradingSession));

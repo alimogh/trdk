@@ -330,7 +330,7 @@ class Test::TradingSystem::Implementation : boost::noncopyable {
         trade.id = tradeId;
         trade.qty = order.qty;
 
-        //         order.callback(order.id, ORDER_STATUS_FILLED_FULLY, 0,
+        //         order.callback(order.id, OrderStatus::FilledFully, 0,
         //         boost::none,
         //                        &trade);
 
@@ -342,9 +342,9 @@ class Test::TradingSystem::Implementation : boost::noncopyable {
     }
 
     const auto &status =
-        order.isCanceled <= 1 ? ORDER_STATUS_CANCELED : ORDER_STATUS_ERROR;
+        order.isCanceled <= 1 ? OrderStatus::Canceled : OrderStatus::Error;
 
-    if (status == ORDER_STATUS_ERROR) {
+    if (status == OrderStatus::Error) {
       m_self->GetLog().Error(
           "Failed to cancel order %1% as it already canceled,"
           " executed, or was never sent.",

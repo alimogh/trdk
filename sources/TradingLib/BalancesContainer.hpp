@@ -14,35 +14,28 @@
 namespace trdk {
 namespace TradingLib {
 
-class BalancesContainer : public trdk::Balances {
+class BalancesContainer : public Balances {
  public:
-  explicit BalancesContainer(const trdk::TradingSystem &,
-                             trdk::ModuleEventsLog &,
-                             trdk::ModuleTradingLog &);
-  virtual ~BalancesContainer() override;
+  explicit BalancesContainer(const TradingSystem &,
+                             ModuleEventsLog &,
+                             ModuleTradingLog &);
+  ~BalancesContainer() override;
 
- public:
-  virtual trdk::Volume GetAvailableToTrade(
-      const std::string &symbol) const override;
+  Volume GetAvailableToTrade(const std::string &symbol) const override;
 
- public:
-  virtual void ForEach(
-      const boost::function<void(
-          const std::string &, const trdk::Volume &, const trdk::Volume &)> &)
+  void ForEach(const boost::function<
+               void(const std::string &, const Volume &, const Volume &)> &)
       const override;
 
-  void Set(const std::string &symbol,
-           trdk::Volume &&available,
-           trdk::Volume &&locked);
-  void SetAvailableToTrade(const std::string &symbol, trdk::Volume &&);
-  void SetLocked(const std::string &symbol, trdk::Volume &&);
+  void Set(const std::string &symbol, Volume available, Volume locked);
+  void SetAvailableToTrade(const std::string &symbol, Volume);
+  void SetLocked(const std::string &symbol, Volume);
 
-  virtual void ReduceAvailableToTradeByOrder(
-      const trdk::Security &,
-      const trdk::Qty &,
-      const trdk::Price &,
-      const trdk::OrderSide &,
-      const trdk::TradingSystem &) override;
+  void ReduceAvailableToTradeByOrder(const Security &,
+                                     const Qty &,
+                                     const Price &,
+                                     const OrderSide &,
+                                     const TradingSystem &) override;
 
  private:
   class Implementation;

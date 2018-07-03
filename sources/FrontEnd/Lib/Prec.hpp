@@ -10,19 +10,6 @@
 
 #pragma once
 
-#include "Common/Common.hpp"
-
-#pragma warning(push)
-#pragma warning(disable : 4127)
-#include <QtWidgets>
-#pragma warning(pop)
-
-#pragma warning(push)
-#pragma warning(disable : 4706)
-#pragma warning(disable : 4127)
-#include "GeneratedFiles/Orm/include/Trdk_FrontEnd_Lib_Orm_all_include.gen.h"
-#pragma warning(pop)
-
 #include "Common.hpp"
 #include "Core/Balances.hpp"
 #include "Core/Bar.hpp"
@@ -35,8 +22,6 @@
 #include "Core/Settings.hpp"
 #include "Core/Strategy.hpp"
 #include "Engine/Engine.hpp"
-#include "Std.hpp"
-#include "Types.hpp"
 #include <boost/algorithm/string.hpp>
 #include <boost/multi_index/composite_key.hpp>
 #include <boost/multi_index/hashed_index.hpp>
@@ -47,13 +32,28 @@
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/uuid/uuid.hpp>
-#include <boost/uuid/uuid_generators.hpp>
+#include <odb/pre.hxx>
+#include <odb/lazy-ptr.hxx>
+#include <odb/schema-catalog.hxx>
+#include <odb/sqlite/connection.hxx>
+#include <odb/sqlite/container-statements.hxx>
+#include <odb/sqlite/database.hxx>
+#include <odb/sqlite/exceptions.hxx>
+#include <odb/sqlite/simple-object-result.hxx>
+#include <odb/sqlite/simple-object-statements.hxx>
+#include <odb/sqlite/statement-cache.hxx>
+#include <odb/sqlite/statement.hxx>
+#include <odb/sqlite/traits.hxx>
+#include <odb/sqlite/transaction.hxx>
+#include <odb/post.hxx>
+#include <cassert>
+#include <cstring>
 
-#ifdef DEV_VER
-#include "TradingLib/PnlContainer.hpp"
-#include "Core/StrategyDummy.hpp"
-#include <boost/thread.hpp>
-#include <boost/uuid/random_generator.hpp>
-#endif
+#pragma warning(push)
+#pragma warning(disable : 4127)
+#include <QtWidgets>
+#pragma warning(pop)
 
+#include "Std.hpp"
+#include "Types.hpp"
 #include "Util.hpp"

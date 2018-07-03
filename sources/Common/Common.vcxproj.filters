@@ -32,13 +32,7 @@
     <ClCompile Include="Symbol.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Currency.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="TimeMeasurement.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SecurityType.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ExpirationCalendar.cpp">
@@ -51,15 +45,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="HttpStreamClient.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ExpirationCalendarUTest.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SymbolUTest.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="UtilUTest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="VerifyModules.cpp">

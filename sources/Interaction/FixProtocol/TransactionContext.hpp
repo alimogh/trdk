@@ -18,14 +18,16 @@ class OrderTransactionContext : public trdk::OrderTransactionContext {
  public:
   typedef trdk::OrderTransactionContext Base;
 
- public:
   explicit OrderTransactionContext(TradingSystem &tradingSystem,
                                    const MessageSequenceNumber &orderId)
       : Base(tradingSystem, orderId) {}
-  virtual ~OrderTransactionContext() = default;
+  OrderTransactionContext(OrderTransactionContext &&) = default;
+  OrderTransactionContext(const OrderTransactionContext &) = default;
+  OrderTransactionContext &operator=(OrderTransactionContext &&) = default;
+  OrderTransactionContext &operator=(const OrderTransactionContext &) = default;
+  ~OrderTransactionContext() = default;
 
- public:
-  void SetPositionId(const std::string &&positionId) {
+  void SetPositionId(std::string positionId) {
     Assert(!positionId.empty());
     if (!m_positionId.empty()) {
       return;
@@ -37,6 +39,6 @@ class OrderTransactionContext : public trdk::OrderTransactionContext {
  private:
   std::string m_positionId;
 };
-}
-}
-}
+}  // namespace FixProtocol
+}  // namespace Interaction
+}  // namespace trdk

@@ -11,6 +11,9 @@
 #include "Prec.hpp"
 #include "OperationItemDelegate.hpp"
 #include "OperationItem.hpp"
+#include "OperationRecord.hpp"
+#include "OperationStatus.hpp"
+#include "OrderRecord.hpp"
 
 using namespace trdk::Lib;
 using namespace trdk::FrontEnd;
@@ -46,30 +49,29 @@ void OperationItemDelegate::initStyleOption(QStyleOptionViewItem *options,
         options->backgroundBrush = backgoundColorOfError;
         options->palette.setColor(QPalette::Text, textColorOfError);
         options->font.setBold(true);
-      } else if (operation->GetRecord().status !=
-                 Orm::OperationStatus::ACTIVE) {
-        static_assert(Orm::OperationStatus::numberOfStatuses == 6,
-                      "List changed.");
-        switch (operation->GetRecord().status) {
-          case Orm::OperationStatus::CANCELED:
+      } else if (operation->GetRecord().GetStatus() !=
+                 +OperationStatus::Active) {
+        static_assert(OperationStatus::_size_constant == 6, "List changed.");
+        switch (operation->GetRecord().GetStatus()) {
+          case OperationStatus::Canceled:
             options->palette.setColor(QPalette::Text, colorOfInactive);
             break;
-          case Orm::OperationStatus::PROFIT:
+          case OperationStatus::Profit:
             options->backgroundBrush =
                 index.row() % 2 ? colorOfProfitAlt : colorOfProfit;
             break;
-          case Orm::OperationStatus::LOSS:
+          case OperationStatus::Loss:
             options->backgroundBrush =
                 index.row() % 2 ? colorOfLossAlt : colorOfLoss;
             break;
-          case Orm::OperationStatus::COMPLETED:
+          case OperationStatus::Completed:
             options->backgroundBrush =
                 index.row() % 2 ? colorOfCompletedAlt : colorOfCompleted;
             break;
           default:
-            AssertEq(Orm::OperationStatus::ERROR,
-                     operation->GetRecord().status);
-          case Orm::OperationStatus::ERROR:
+            AssertEq(+OperationStatus::Error,
+                     operation->GetRecord().GetStatus());
+          case OperationStatus::Error:
             options->backgroundBrush = backgoundColorOfError;
             options->palette.setColor(QPalette::Text, textColorOfError);
             options->font.setBold(true);
@@ -90,42 +92,42 @@ void OperationItemDelegate::initStyleOption(QStyleOptionViewItem *options,
   if (order) {
     options->font.setPointSize(options->font.pointSize() - 1);
     const auto &record = order->GetRecord();
-    static_assert(numberOfOrderStatuses == 7, "List changed.");
+    static_assert(OrderStatus::_size_constant == 7, "List changed.");
     if (order->HasErrors()) {
       options->backgroundBrush = backgoundColorOfError;
       options->palette.setColor(QPalette::Text, textColorOfError);
       options->font.setBold(true);
     } else {
-      switch (record.status) {
-        case ORDER_STATUS_SENT:
-        case ORDER_STATUS_OPENED:
-        case ORDER_STATUS_FILLED_PARTIALLY:
-          options->palette.setColor(QPalette::Text,
-                                    order->GetRecord().side == ORDER_SIDE_BUY
-                                        ? colorOfBuyActive
-                                        : colorOfSellActive);
+      switch (record.GetStatus()) {
+        case OrderStatus::Sent:
+        case OrderStatus::Opened:
+        case OrderStatus::FulledPartially:
+          options->palette.setColor(
+              QPalette::Text, order->GetRecord().GetSide() == +OrderSide::Buy
+                                  ? colorOfBuyActive
+                                  : colorOfSellActive);
           options->font.setBold(true);
           break;
-        case ORDER_STATUS_FILLED_FULLY:
-          options->palette.setColor(QPalette::Text,
-                                    order->GetRecord().side == ORDER_SIDE_BUY
-                                        ? colorOfBuyClosed
-                                        : colorOfSellClosed);
+        case OrderStatus::FilledFully:
+          options->palette.setColor(
+              QPalette::Text, order->GetRecord().GetSide() == +OrderSide::Buy
+                                  ? colorOfBuyClosed
+                                  : colorOfSellClosed);
           break;
-        case ORDER_STATUS_ERROR:
+        case OrderStatus::Error:
           options->backgroundBrush = backgoundColorOfError;
           options->palette.setColor(QPalette::Text, textColorOfError);
           options->font.setBold(true);
           break;
-        case ORDER_STATUS_CANCELED:
-        case ORDER_STATUS_REJECTED:
-          if (record.remainingQty == record.qty) {
+        case OrderStatus::Canceled:
+        case OrderStatus::Rejected:
+          if (record.GetRemainingQty() == record.GetQty()) {
             options->palette.setColor(QPalette::Text, colorOfInactive);
           } else {
-            options->palette.setColor(QPalette::Text,
-                                      order->GetRecord().side == ORDER_SIDE_BUY
-                                          ? colorOfBuyClosed
-                                          : colorOfSellClosed);
+            options->palette.setColor(
+                QPalette::Text, order->GetRecord().GetSide() == +OrderSide::Buy
+                                    ? colorOfBuyClosed
+                                    : colorOfSellClosed);
           }
           break;
         default:

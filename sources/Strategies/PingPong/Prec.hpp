@@ -15,7 +15,7 @@
 #include <QtWidgets>
 #pragma warning(pop)
 
-#include "Common/Common.hpp"
+#include "FrontEnd/Lib/Common.hpp"
 #include "TradingLib/BestSecurityChecker.hpp"
 #include "TradingLib/OrderPolicy.hpp"
 #include "TradingLib/PnlContainer.hpp"

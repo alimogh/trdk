@@ -22,61 +22,51 @@ class TRDK_FRONTEND_LIB_API OrderListModel : public QAbstractItemModel {
  public:
   typedef QAbstractItemModel Base;
 
- public:
   explicit OrderListModel(Engine &, QWidget *parent);
-  virtual ~OrderListModel() override;
+  OrderListModel(OrderListModel &&) = delete;
+  OrderListModel(const OrderListModel &) = delete;
+  OrderListModel &operator=(OrderListModel &&) = delete;
+  OrderListModel &operator=(const OrderListModel &) = delete;
+  ~OrderListModel() override;
 
- public:
-  virtual QVariant headerData(int section,
-                              Qt::Orientation,
-                              int role) const override;
-  virtual QVariant data(const QModelIndex &index, int role) const override;
-  virtual QModelIndex index(int row,
-                            int column,
-                            const QModelIndex &parent) const override;
-  virtual QModelIndex parent(const QModelIndex &index) const override;
-  virtual int rowCount(const QModelIndex &parent) const override;
-  virtual int columnCount(const QModelIndex &parent) const override;
+  QVariant headerData(int section, Qt::Orientation, int role) const override;
+  QVariant data(const QModelIndex &index, int role) const override;
+  QModelIndex index(int row,
+                    int column,
+                    const QModelIndex &parent) const override;
+  QModelIndex parent(const QModelIndex &index) const override;
+  int rowCount(const QModelIndex &parent) const override;
+  int columnCount(const QModelIndex &parent) const override;
 
  private slots:
-  void OnOrderSubmitted(const trdk::OrderId &,
-                        const boost::posix_time::ptime &,
-                        const trdk::Security *,
-                        const trdk::Lib::Currency &,
-                        const trdk::TradingSystem *,
-                        const trdk::OrderSide &,
-                        const trdk::Qty &,
-                        const boost::optional<trdk::Price> &,
-                        const trdk::TimeInForce &);
-  void OnOrderSubmitError(const boost::posix_time::ptime &,
-                          const trdk::Security *,
-                          const trdk::Lib::Currency &,
-                          const trdk::TradingSystem *,
-                          const trdk::OrderSide &,
-                          const trdk::Qty &,
-                          const boost::optional<trdk::Price> &,
-                          const trdk::TimeInForce &,
-                          const QString &error);
-  void OnOrderUpdated(const trdk::OrderId &,
-                      const trdk::TradingSystem *,
-                      const boost::posix_time::ptime &,
-                      const trdk::OrderStatus &,
-                      const trdk::Qty &remainingQty);
-  void OnOrder(const trdk::OrderId &,
-               const trdk::TradingSystem *,
-               const std::string &symbol,
-               const trdk::OrderStatus &,
-               const trdk::Qty &qty,
-               const trdk::Qty &remainingQty,
-               const boost::optional<trdk::Price> &,
-               const trdk::OrderSide &,
-               const trdk::TimeInForce &,
-               const boost::posix_time::ptime &openTime,
-               const boost::posix_time::ptime &updateTime);
+  void SubmitOrder(QString,
+                   const QDateTime &,
+                   const Security *,
+                   const boost::shared_ptr<const Lib::Currency> &,
+                   const TradingSystem *,
+                   const boost::shared_ptr<const OrderSide> &,
+                   const Qty &,
+                   const boost::optional<Price> &,
+                   const TimeInForce &);
+  void SubmitOrderError(const QDateTime &,
+                        const Security *,
+                        const Lib::Currency &,
+                        const TradingSystem *,
+                        const boost::shared_ptr<const OrderSide> &,
+                        Qty,
+                        const boost::optional<Price> &,
+                        const TimeInForce &,
+                        const QString &error);
+  void UpdateOrder(const QString &,
+                   const TradingSystem *,
+                   QDateTime,
+                   const boost::shared_ptr<const OrderStatus> &,
+                   const Qty &remainingQty);
 
  private:
   class Implementation;
   std::unique_ptr<Implementation> m_pimpl;
 };
+
 }  // namespace FrontEnd
 }  // namespace trdk

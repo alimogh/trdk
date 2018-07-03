@@ -61,7 +61,7 @@ const TradingLib::OrderPolicy &ta::Operation::GetCloseOrderPolicy(
 }
 
 bool ta::Operation::IsLong(const Security &security) const {
-  return GetLeg(security).GetSide() == ORDER_SIDE_LONG;
+  return GetLeg(security).GetSide() == +OrderSide::Buy;
 }
 
 Qty ta::Operation::GetPlannedQty(const Security &security) const {

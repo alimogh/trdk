@@ -12,14 +12,12 @@
 #include "OrderListModel.hpp"
 #include "DropCopy.hpp"
 #include "Engine.hpp"
+#include "I18n.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::FrontEnd;
-
-namespace pt = boost::posix_time;
+using namespace Lib;
+using namespace FrontEnd;
 namespace mi = boost::multi_index;
-namespace front = trdk::FrontEnd;
 
 namespace {
 
@@ -39,12 +37,10 @@ enum Column {
   numberOfColumns
 };
 
-struct Order {
+struct OrderItem {
   QString id;
   QDateTime time;
-  const Security *security;
   QString symbol;
-  QString currency;
   const TradingSystem *tradingSystem;
   QString exchangeName;
   QString side;
@@ -63,64 +59,62 @@ struct ById {};
 struct BySequence {};
 
 typedef boost::multi_index_container<
-    Order,
+    OrderItem,
     mi::indexed_by<
         mi::hashed_unique<
             mi::tag<ById>,
-            mi::composite_key<
-                Order,
-                mi::member<Order, const TradingSystem *, &Order::tradingSystem>,
-                mi::member<Order, QString, &Order::id>>>,
+            mi::composite_key<OrderItem,
+                              mi::member<OrderItem,
+                                         const TradingSystem *,
+                                         &OrderItem::tradingSystem>,
+                              mi::member<OrderItem, QString, &OrderItem::id>>>,
         mi::random_access<mi::tag<BySequence>>>>
     OrderList;
+
 }  // namespace
 
-class OrderListModel::Implementation : private boost::noncopyable {
+class OrderListModel::Implementation {
  public:
   OrderList m_orders;
 };
 
-OrderListModel::OrderListModel(front::Engine &engine, QWidget *parent)
+OrderListModel::OrderListModel(FrontEnd::Engine &engine, QWidget *parent)
     : Base(parent), m_pimpl(boost::make_unique<Implementation>()) {
-  Verify(connect(&engine.GetDropCopy(), &DropCopy::FreeOrderSubmit, this,
-                 &OrderListModel::OnOrderSubmitted, Qt::QueuedConnection));
+  Verify(connect(&engine.GetDropCopy(), &DropCopy::FreeOrderSubmited, this,
+                 &OrderListModel::SubmitOrder, Qt::QueuedConnection));
   Verify(connect(&engine.GetDropCopy(), &DropCopy::FreeOrderSubmitError, this,
-                 &OrderListModel::OnOrderSubmitError, Qt::QueuedConnection));
-  Verify(connect(&engine.GetDropCopy(), &DropCopy::OrderUpdate, this,
-                 &OrderListModel::OnOrderUpdated, Qt::QueuedConnection));
-  Verify(connect(&engine.GetDropCopy(), &DropCopy::Order, this,
-                 &OrderListModel::OnOrder, Qt::QueuedConnection));
+                 &OrderListModel::SubmitOrderError, Qt::QueuedConnection));
+  Verify(connect(&engine.GetDropCopy(), &DropCopy::OrderUpdated, this,
+                 &OrderListModel::UpdateOrder, Qt::QueuedConnection));
 }
 
 OrderListModel::~OrderListModel() = default;
 
-void OrderListModel::OnOrderSubmitted(const OrderId &id,
-                                      const pt::ptime &time,
-                                      const Security *security,
-                                      const Currency &currency,
-                                      const TradingSystem *tradingSystem,
-                                      const OrderSide &side,
-                                      const Qty &qty,
-                                      const boost::optional<Price> &price,
-                                      const TimeInForce &tif) {
-  const auto qTime = ConvertToQDateTime(time);
+void OrderListModel::SubmitOrder(QString id,
+                                 const QDateTime &time,
+                                 const Security *security,
+                                 const boost::shared_ptr<const Currency> &,
+                                 const TradingSystem *tradingSystem,
+                                 const boost::shared_ptr<const OrderSide> &side,
+                                 const Qty &qty,
+                                 const boost::optional<Price> &price,
+                                 const TimeInForce &tif) {
   const auto qtyStr = ConvertQtyToText(qty);
-  const Order order{QString::fromStdString(id.GetValue()),
-                    qTime,
-                    security,
-                    QString::fromStdString(security->GetSymbol().GetSymbol()),
-                    QString::fromStdString(ConvertToIso(currency)),
-                    tradingSystem,
-                    QString::fromStdString(tradingSystem->GetTitle()),
-                    QString(ConvertToPch(side)).toLower(),
-                    qty,
-                    qtyStr,
-                    ConvertPriceToText(price),
-                    QString(ConvertToPch(tif)).toUpper(),
-                    ConvertToUiString(ORDER_STATUS_OPENED),
-                    ConvertPriceToText(0),
-                    qtyStr,
-                    qTime};
+  OrderItem order{std::move(id),
+                  time,
+                  QString::fromStdString(security->GetSymbol().GetSymbol()),
+                  tradingSystem,
+                  QString::fromStdString(tradingSystem->GetTitle()),
+                  ConvertToUiString(*side),
+                  qty,
+                  qtyStr,
+                  ConvertPriceToText(price),
+                  QString(ConvertToPch(tif)).toUpper(),
+                  ConvertToUiString(OrderStatus::Opened),
+                  ConvertPriceToText(0),
+                  qtyStr,
+                  time,
+                  {}};
   {
     const auto index = static_cast<int>(m_pimpl->m_orders.size());
     beginInsertRows(QModelIndex(), index, index);
@@ -129,36 +123,32 @@ void OrderListModel::OnOrderSubmitted(const OrderId &id,
   }
 }
 
-void OrderListModel::OnOrderSubmitError(const pt::ptime &time,
-                                        const Security *security,
-                                        const Currency &currency,
-                                        const TradingSystem *tradingSystem,
-                                        const OrderSide &side,
-                                        const Qty &qty,
-                                        const boost::optional<Price> &price,
-                                        const TimeInForce &tif,
-                                        const QString &error) {
-  const auto qTime = ConvertToQDateTime(time);
+void OrderListModel::SubmitOrderError(
+    const QDateTime &time,
+    const Security *security,
+    const Currency &,
+    const TradingSystem *tradingSystem,
+    const boost::shared_ptr<const OrderSide> &side,
+    Qty qty,
+    const boost::optional<Price> &price,
+    const TimeInForce &tif,
+    const QString &error) {
   const auto qtyStr = ConvertQtyToText(qty);
-  static boost::uuids::random_generator generateOrderId;
-  const auto &id = generateOrderId();
-  const Order order{
-      QString::fromStdString(boost::lexical_cast<std::string>(id)),
-      qTime,
-      security,
+  const OrderItem order{
+      QUuid::createUuid().toString(),
+      time,
       QString::fromStdString(security->GetSymbol().GetSymbol()),
-      QString::fromStdString(ConvertToIso(currency)),
       tradingSystem,
       QString::fromStdString(tradingSystem->GetTitle()),
-      QString(ConvertToUiString(side)),
-      qty,
+      ConvertToUiString(*side),
+      std::move(qty),
       qtyStr,
       ConvertPriceToText(price),
       ConvertToUiString(tif),
-      ConvertToUiString(ORDER_STATUS_ERROR),
+      ConvertToUiString(OrderStatus::Error),
       ConvertPriceToText(0),
       qtyStr,
-      qTime,
+      time,
       !error.isEmpty() ? tr("Failed to submit order: %1").arg(error)
                        : tr("Unknown submit error")};
   {
@@ -169,20 +159,20 @@ void OrderListModel::OnOrderSubmitError(const pt::ptime &time,
   }
 }
 
-void OrderListModel::OnOrderUpdated(const trdk::OrderId &id,
-                                    const TradingSystem *tradingSystem,
-                                    const pt::ptime &time,
-                                    const OrderStatus &status,
-                                    const Qty &remainingQty) {
+void OrderListModel::UpdateOrder(
+    const QString &id,
+    const TradingSystem *tradingSystem,
+    QDateTime time,
+    const boost::shared_ptr<const OrderStatus> &status,
+    const Qty &remainingQty) {
   auto &orders = m_pimpl->m_orders.get<ById>();
-  auto it = orders.find(
-      boost::make_tuple(tradingSystem, QString::fromStdString(id.GetValue())));
+  auto it = orders.find(boost::make_tuple(tradingSystem, boost::cref(id)));
   if (it == orders.cend()) {
     // Maybe this is operation order.
     return;
   }
-  it->status = ConvertToUiString(status);
-  it->lastTime = ConvertToQDateTime(time);
+  it->status = ConvertToUiString(*status);
+  it->lastTime = std::move(time);
   it->filledQty = ConvertQtyToText(it->qty - remainingQty);
   it->remainingQty = ConvertQtyToText(remainingQty);
   {
@@ -192,59 +182,6 @@ void OrderListModel::OnOrderUpdated(const trdk::OrderId &id,
     emit dataChanged(createIndex(index, 0),
                      createIndex(index, numberOfColumns - 1),
                      {Qt::DisplayRole});
-  }
-}
-
-void OrderListModel::OnOrder(const OrderId &id,
-                             const TradingSystem *tradingSystem,
-                             const std::string &symbol,
-                             const OrderStatus &status,
-                             const Qty &qty,
-                             const Qty &remainingQty,
-                             const boost::optional<Price> &price,
-                             const OrderSide &side,
-                             const TimeInForce &tif,
-                             const pt::ptime &openTime,
-                             const pt::ptime &updateTime) {
-  auto &orders = m_pimpl->m_orders.get<ById>();
-  auto it = orders.find(
-      boost::make_tuple(tradingSystem, QString::fromStdString(id.GetValue())));
-  if (it == orders.cend()) {
-    const Order order{QString::fromStdString(id.GetValue()),
-                      ConvertToQDateTime(openTime),
-                      nullptr,
-                      QString::fromStdString(symbol),
-                      QString(),
-                      tradingSystem,
-                      QString::fromStdString(tradingSystem->GetTitle()),
-                      QString(ConvertToPch(side)).toUpper(),
-                      qty,
-                      ConvertQtyToText(qty),
-                      ConvertPriceToText(price),
-                      QString(ConvertToPch(tif)).toUpper(),
-                      ConvertToUiString(status),
-                      ConvertPriceToText(qty - remainingQty),
-                      ConvertPriceToText(remainingQty),
-                      ConvertToQDateTime(updateTime)};
-    {
-      const auto index = static_cast<int>(m_pimpl->m_orders.size());
-      beginInsertRows(QModelIndex(), index, index);
-      Verify(m_pimpl->m_orders.emplace(std::move(order)).second);
-      endInsertRows();
-    }
-  } else {
-    it->status = ConvertToUiString(status);
-    it->filledQty = ConvertPriceToText(qty - remainingQty);
-    it->remainingQty = ConvertPriceToText(remainingQty);
-    it->lastTime = ConvertToQDateTime(updateTime);
-    {
-      const auto &sequence = m_pimpl->m_orders.get<BySequence>();
-      const auto index = static_cast<int>(std::distance(
-          sequence.cbegin(), m_pimpl->m_orders.project<BySequence>(it)));
-      emit dataChanged(createIndex(index, 0),
-                       createIndex(index, numberOfColumns - 1),
-                       {Qt::DisplayRole});
-    }
   }
 }
 
@@ -280,8 +217,9 @@ QVariant OrderListModel::headerData(int section,
       return tr("Time In Force");
     case COLUMN_ID:
       return tr("ID");
+    default:
+      return "";
   }
-  return "";
 }
 
 QVariant OrderListModel::data(const QModelIndex &index, int role) const {
@@ -320,18 +258,18 @@ QVariant OrderListModel::data(const QModelIndex &index, int role) const {
         case COLUMN_TIF:
           return order.tif;
         case COLUMN_ID:
-          if (order.submitError.isEmpty()) {
-            return order.id;
-          } else {
-            return QVariant();
+          if (!order.submitError.isEmpty()) {
+            {};
           }
+          return order.id;
+        default:
+          return {};
       }
     case Qt::ToolTipRole:
-      if (!order.submitError.isEmpty()) {
-        return order.submitError;
-      } else {
-        return QVariant();
+      if (order.submitError.isEmpty()) {
+        return {};
       }
+      return order.submitError;
     case Qt::TextAlignmentRole:
       return Qt::AlignLeft + Qt::AlignVCenter;
     case ITEM_DATA_ROLE_ITEM_ID:
@@ -340,9 +278,9 @@ QVariant OrderListModel::data(const QModelIndex &index, int role) const {
       return order.tradingSystem->GetIndex();
     case ITEM_DATA_ROLE_TRADING_MODE:
       return order.tradingSystem->GetMode();
+    default:
+      return {};
   }
-
-  return QVariant();
 }
 
 QModelIndex OrderListModel::index(int row,

@@ -12,12 +12,15 @@
 
 namespace trdk {
 
-class OrderTransactionContext : boost::noncopyable {
+class OrderTransactionContext {
  public:
   explicit OrderTransactionContext(TradingSystem& tradingSystem,
-                                   OrderId&& orderId)
+                                   OrderId orderId)
       : m_tradingSystem(tradingSystem), m_orderId(std::move(orderId)) {}
-
+  OrderTransactionContext(OrderTransactionContext&&) = default;
+  OrderTransactionContext(const OrderTransactionContext&) = default;
+  OrderTransactionContext& operator=(OrderTransactionContext&&) = default;
+  OrderTransactionContext& operator=(const OrderTransactionContext&) = default;
   virtual ~OrderTransactionContext() = default;
 
   TradingSystem& GetTradingSystem() { return m_tradingSystem; }

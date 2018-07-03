@@ -182,7 +182,7 @@ class TradingSystem::Implementation {
             order->security, order->currency, order->qty, order->price, params,
             order->side, order->tif);
         Assert(order->transactionContext);
-        ReportNewOrder(*order, ConvertToPch(ORDER_STATUS_SENT));
+        ReportNewOrder(*order, (+OrderStatus::Sent)._to_string());
         RegisterCallback(order);
       }
       m_self.OnTransactionSent(*order->transactionContext);
@@ -200,14 +200,14 @@ class TradingSystem::Implementation {
         m_log.Error("Error while sending order transaction: \"%1%\".",
                     ex.what());
       }
-      ConfirmOrder(*order, ORDER_STATUS_ERROR, boost::none);
+      ConfirmOrder(*order, OrderStatus::Error, boost::none);
       throw;
     } catch (...) {
       m_tradingLog.Write(
           "{'order': {'sendError': {'reason': 'Unknown exception'}}}");
       m_log.Error("Unknown error while sending order transaction.");
       AssertFailNoException();
-      ConfirmOrder(*order, ORDER_STATUS_ERROR, boost::none);
+      ConfirmOrder(*order, OrderStatus::Error, boost::none);
       throw;
     }
 
@@ -279,7 +279,7 @@ class TradingSystem::Implementation {
   }
 
   RiskControlOperationId CheckNewOrder(const Order &order) {
-    const auto &check = order.side == ORDER_SIDE_BUY
+    const auto &check = order.side == +OrderSide::Buy
                             ? &RiskControl::CheckNewBuyOrder
                             : &RiskControl::CheckNewSellOrder;
     return (m_context.GetRiskControl(m_mode).*check)(
@@ -290,7 +290,7 @@ class TradingSystem::Implementation {
   void ConfirmOrder(const Order &order,
                     const OrderStatus &status,
                     const boost::optional<Trade> &trade) {
-    const auto &check = order.side == ORDER_SIDE_BUY
+    const auto &check = order.side == +OrderSide::Buy
                             ? &RiskControl::ConfirmBuyOrder
                             : &RiskControl::ConfirmSellOrder;
     (m_context.GetRiskControl(m_mode).*check)(
@@ -348,10 +348,10 @@ class TradingSystem::Implementation {
     Assert(!order.isOpened);
     order.isOpened = true;
     ReportOrderUpdate(id, order, "opened", 0, boost::none);
-    ConfirmOrder(order, ORDER_STATUS_OPENED, boost::none);
+    ConfirmOrder(order, OrderStatus::Opened, boost::none);
     order.handler->OnOpened();
     m_context.InvokeDropCopy([&](DropCopy &dropCopy) {
-      dropCopy.CopyOrderStatus(id, m_self, time, ORDER_STATUS_OPENED,
+      dropCopy.CopyOrderStatus(id, m_self, time, OrderStatus::Opened,
                                order.remainingQty);
     });
   }
@@ -368,13 +368,13 @@ class TradingSystem::Implementation {
       order->sumOfTradePrices += trade.price;
 
       ReportOrderUpdate(orderId, *order, "trade", 0, trade);
-      ConfirmOrder(*order, ORDER_STATUS_OPENED, trade);
+      ConfirmOrder(*order, OrderStatus::Opened, trade);
       order->handler->OnTrade(trade);
       remainingQty = order->remainingQty;
       order.Unlock();
     }
     m_context.InvokeDropCopy([&](DropCopy &dropCopy) {
-      dropCopy.CopyOrderStatus(orderId, m_self, time, ORDER_STATUS_OPENED,
+      dropCopy.CopyOrderStatus(orderId, m_self, time, OrderStatus::Opened,
                                remainingQty);
       dropCopy.CopyTrade(time, trade.id, orderId, m_self, trade.price,
                          trade.qty);
@@ -396,8 +396,8 @@ class TradingSystem::Implementation {
     // false.
     Verify(callback(*order.transactionContext));
     AssertLe(remaningQty, order.remainingQty);
-    if (remaningQty == 0 && status != ORDER_STATUS_FILLED_FULLY) {
-      status = ORDER_STATUS_FILLED_FULLY;
+    if (remaningQty == 0 && status != +OrderStatus::FilledFully) {
+      status = OrderStatus::FilledFully;
       statusName = "filled forced";
     }
     const auto &tradeQty = order.remainingQty - remaningQty;
@@ -417,7 +417,7 @@ class TradingSystem::Implementation {
             % trade->qty;           // 3
         trade->qty = tradeQty;
         statusName = "error";
-        status = ORDER_STATUS_ERROR;
+        status = OrderStatus::Error;
         handler = &OrderStatusHandler::OnError;
       }
       ++order.numberOfTrades;
@@ -469,7 +469,7 @@ class TradingSystem::Implementation {
       Order &order,
       const boost::optional<Volume> &commission,
       const boost::function<bool(trdk::OrderTransactionContext &)> &callback) {
-    FinalizeOrder(time, id, order, ORDER_STATUS_FILLED_FULLY, "filled", 0,
+    FinalizeOrder(time, id, order, OrderStatus::FilledFully, "filled", 0,
                   commission, &OrderStatusHandler::OnFilled, callback);
   }
 
@@ -478,7 +478,7 @@ class TradingSystem::Implementation {
                        Order &order,
                        const boost::optional<Qty> &remainingQty,
                        const boost::optional<Volume> &commission) {
-    auto status = ORDER_STATUS_CANCELED;
+    auto status = OrderStatus::Canceled;
     const auto *statusName = "canceled";
     auto handler = &OrderStatusHandler::OnCanceled;
     if (!order.isCancelRequestSent) {
@@ -487,7 +487,7 @@ class TradingSystem::Implementation {
         case TIME_IN_FORCE_DAY:
         case TIME_IN_FORCE_GTC:
         case TIME_IN_FORCE_OPG:
-          status = ORDER_STATUS_REJECTED;
+          status = OrderStatus::Rejected;
           statusName = "canceled without request";
           handler = &OrderStatusHandler::OnRejected;
         default:
@@ -505,7 +505,7 @@ class TradingSystem::Implementation {
                        const boost::optional<Qty> &remainingQty,
                        const boost::optional<Volume> &commission) {
     Assert(!remainingQty || *remainingQty > 0);
-    FinalizeOrder(time, id, order, ORDER_STATUS_REJECTED, "rejected",
+    FinalizeOrder(time, id, order, OrderStatus::Rejected, "rejected",
                   remainingQty.get_value_or(order.remainingQty), commission,
                   &OrderStatusHandler::OnRejected,
                   emptyOrderTransactionContextCallback);
@@ -675,8 +675,8 @@ boost::shared_ptr<const OrderTransactionContext> TradingSystem::SendOrder(
   const auto &order = boost::make_shared<Order>(
       security, currency, side, std::move(handler), qty, qty, price,
       price ? *price
-            : side == ORDER_SIDE_BUY ? security.GetAskPrice()
-                                     : security.GetBidPrice(),
+            : side == +OrderSide::Buy ? security.GetAskPrice()
+                                      : security.GetBidPrice(),
       tif, delayMeasurement, riskControlScope, nullptr);
   try {
     m_pimpl->SendOrder(order, params);
@@ -712,8 +712,8 @@ boost::shared_ptr<const OrderTransactionContext> TradingSystem::SendOrder(
       security, position->GetCurrency(), side, std::move(handler), qty, qty,
       price,
       price ? *price
-            : side == ORDER_SIDE_BUY ? security.GetAskPrice()
-                                     : security.GetBidPrice(),
+            : side == +OrderSide::Buy ? security.GetAskPrice()
+                                      : security.GetBidPrice(),
       tif, delayMeasurement, position->GetStrategy().GetRiskControlScope(),
       // Order record should hold position object to guarantee that
       // operation end event will be raised only after last order will
@@ -870,7 +870,7 @@ void TradingSystem::OnOrderOpened(
     const OrderId &id,
     const boost::function<bool(trdk::OrderTransactionContext &)> &callback) {
   const auto &order = m_pimpl->GetOrder(id);
-  static_assert(numberOfOrderStatuses == 7, "List changed");
+  static_assert(OrderStatus::_size_constant == 7, "List changed");
   if (order->isOpened || !callback(*order->transactionContext)) {
     return;
   }
@@ -989,7 +989,7 @@ void TradingSystem::OnOrderFilled(
     const boost::optional<Volume> &commission,
     const boost::function<bool(trdk::OrderTransactionContext &)> &callback) {
   m_pimpl->FinalizeOrder(
-      time, id, *m_pimpl->TakeOrder(id), ORDER_STATUS_FILLED_FULLY, "filled", 0,
+      time, id, *m_pimpl->TakeOrder(id), OrderStatus::FilledFully, "filled", 0,
       commission, std::move(trade), &OrderStatusHandler::OnFilled, callback);
 }
 
@@ -1018,7 +1018,7 @@ void TradingSystem::OnOrderError(const pt::ptime &time,
                  id,      // 1
                  error);  // 2
   auto order = m_pimpl->TakeOrder(id);
-  m_pimpl->FinalizeOrder(time, id, *order, ORDER_STATUS_ERROR, "error",
+  m_pimpl->FinalizeOrder(time, id, *order, OrderStatus::Error, "error",
                          remainingQty.get_value_or(order->remainingQty),
                          commission, &OrderStatusHandler::OnError,
                          emptyOrderTransactionContextCallback);

@@ -10,9 +10,6 @@
 
 #pragma once
 
-#include "Api.h"
-#include "Fwd.hpp"
-
 namespace trdk {
 namespace FrontEnd {
 
@@ -26,21 +23,19 @@ class TRDK_FRONTEND_LIB_API BalanceListModel : public QAbstractItemModel {
   ~BalanceListModel() override;
 
   QVariant headerData(int section, Qt::Orientation, int role) const override;
-  QVariant data(const QModelIndex &index, int role) const override;
-  QModelIndex index(int row,
-                    int column,
-                    const QModelIndex &parent) const override;
-  QModelIndex parent(const QModelIndex &index) const override;
-  int rowCount(const QModelIndex &parent) const override;
-  int columnCount(const QModelIndex &parent) const override;
+  QVariant data(const QModelIndex &, int role) const override;
+  QModelIndex index(int row, int column, const QModelIndex &) const override;
+  QModelIndex parent(const QModelIndex &) const override;
+  int rowCount(const QModelIndex &) const override;
+  int columnCount(const QModelIndex &) const override;
 
   Qt::ItemFlags flags(const QModelIndex &) const override;
 
  private slots:
-  void OnUpdate(const TradingSystem *,
-                const std::string &symbol,
-                const Volume &available,
-                const Volume &locked);
+  void Update(const TradingSystem *,
+              const QString &symbol,
+              const Volume &available,
+              const Volume &locked);
 
  private:
   class Implementation;

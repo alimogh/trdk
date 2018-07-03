@@ -37,7 +37,7 @@ struct CryptopiaProduct {
   OrderSide NormalizeSide(const OrderSide &side) const {
     return !isReversed
                ? side
-               : side == ORDER_SIDE_BUY ? ORDER_SIDE_SELL : ORDER_SIDE_BUY;
+               : side == +OrderSide::Buy ? OrderSide::Sell : OrderSide::Buy;
   }
 };
 

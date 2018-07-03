@@ -34,10 +34,12 @@
 #include <boost/unordered_map.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_io.hpp>
+#include <enum.h>
+#include <bitset>
+
 #if defined(BOOST_GCC)
 #include <signal.h>
 #endif
-#include <bitset>
 
 #include "Currency.hpp"
 #include "Dll.hpp"

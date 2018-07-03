@@ -59,7 +59,7 @@ class MarketmakingPnlContainer : public PnlContainer {
       default:
         throw MethodIsNotImplementedException(
             "Security type is not supported by P&L container");
-      case SECURITY_TYPE_CRYPTO: {
+      case SecurityType::Crypto: {
         Update(security.GetSymbol().GetQuoteSymbol(), 0, commission);
       }
     }
@@ -122,11 +122,12 @@ class MarketmakingPnlContainer : public PnlContainer {
       default:
         throw MethodIsNotImplementedException(
             "Security type is not supported by P&L container");
-      case SECURITY_TYPE_CRYPTO: {
-        Update(symbol.GetBaseSymbol(), qty * (side == ORDER_SIDE_BUY ? 1 : -1),
+      case SecurityType::Crypto: {
+        Update(symbol.GetBaseSymbol(), qty * (side == +OrderSide::Buy ? 1 : -1),
                0);
         Update(symbol.GetQuoteSymbol(),
-               ((qty * price) * (side == ORDER_SIDE_BUY ? -1 : 1)), commission);
+               ((qty * price) * (side == +OrderSide::Buy ? -1 : 1)),
+               commission);
       }
     }
   }

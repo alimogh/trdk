@@ -31,8 +31,6 @@ TotalResultsReportSettingsWidget::TotalResultsReportSettingsWidget(
       m_ui->strategies->addItem(name);
     }
   }
-  Verify(connect(&engine, &Engine::OperationUpdate,
-                 [this](const Orm::Operation &) {}));
 }
 
 TotalResultsReportSettingsWidget::~TotalResultsReportSettingsWidget() = default;

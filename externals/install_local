@@ -1,15 +1,10 @@
 
-git clone https://github.com/msgpack/msgpack-c msgpack-c
-cd msgpack-c
-git checkout cpp-1.4.0
-cd -
-
-git clone https://github.com/crossbario/autobahn-cpp.git autobahn
-cd autobahn
-git reset --hard 72aa1b56b026a24a7361593f5afa1265a9d37815
-cd -
-
 git clone https://github.com/google/googletest.git googletest
 cd googletest
 git reset --hard ff5ffd457e032c8be8a64a7a94c824063c8b11e3
+cd -
+
+git clone https://github.com/aantron/better-enums.git better-enums
+cd better-enums
+git reset --hard 2fad3f60eea97cf3b75339a1562ab13d5e0cc4f7
 cd -

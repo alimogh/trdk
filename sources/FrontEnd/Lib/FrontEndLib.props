@@ -2,16 +2,15 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <_PropertySheetDisplayName>Front-end Library</_PropertySheetDisplayName>
-    <IncludePath>$(SolutionDir)..\externals\QxOrm\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)..\externals\QxOrm\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)..\externals\odb-2.4.0;$(SolutionDir)..\externals\SQLite\sqlite-amalgamation-3240000;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)..\externals\odb-2.4.0\lib64;$(LibraryPath)</LibraryPath>
+    <ExecutablePath>$(SolutionDir)..\externals\odb-2.4.0\bin;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <ItemDefinitionGroup>
-    <Link>
-      <ModuleDefinitionFile>FrontEndLib.def</ModuleDefinitionFile>
-    </Link>
+    <Link />
     <ClCompile />
     <ClCompile>
-      <PreprocessorDefinitions>TRDK_FRONTEND_LIB;_BUILDING_TRDK_FRONTEND_LIB_ORM;_QX_UNITY_BUILD;_QX_ENABLE_BOOST;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>TRDK_FRONTEND_LIB;LIBODB_STATIC_LIB;LIBODB_SQLITE_STATIC_LIB;LIBODB_QT_STATIC_LIB;LIBODB_BOOST_STATIC_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
 </Project>

@@ -322,11 +322,11 @@ ExcambiorexTradingSystem::SendOrderTransaction(
 
   boost::format requestParams(
       "pair=%1%&type=%2%&amount=%3%&rate=%4%&feecoin=%5%&allowpartial=1");
-  requestParams % product.directId                 // 1
-      % (side == ORDER_SIDE_BUY ? "buy" : "sell")  // 2
-      % qty                                        // 3
-      % *price                                     // 4
-      % security.GetSymbol().GetQuoteSymbol();     // 5
+  requestParams % product.directId                  // 1
+      % (side == +OrderSide::Buy ? "buy" : "sell")  // 2
+      % qty                                         // 3
+      % *price                                      // 4
+      % security.GetSymbol().GetQuoteSymbol();      // 5
 
   OrderRequest request("SubmitOrder", requestParams.str(), m_settings,
                        GetContext(), GetLog(), GetTradingLog());
@@ -334,9 +334,9 @@ ExcambiorexTradingSystem::SendOrderTransaction(
   const auto response = boost::get<1>(request.Send(m_tradingSession));
 
   SubsctibeAtOrderUpdates(
-      (side == ORDER_SIDE_BUY &&
+      (side == +OrderSide::Buy &&
        product.buyCoinAlias == security.GetSymbol().GetBaseSymbol()) ||
-              (side == ORDER_SIDE_SELL &&
+              (side == +OrderSide::Sell &&
                product.sellCoinAlias == security.GetSymbol().GetBaseSymbol())
           ? product
           : *product.oppositeProduct);

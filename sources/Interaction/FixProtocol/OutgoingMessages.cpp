@@ -35,7 +35,7 @@ std::string ConvertToTagValue(const pt::ptime &source) {
   return gr::to_iso_string(source.date()) + "-" +
          pt::to_simple_string(source.time_of_day());
 }
-}
+}  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -209,7 +209,7 @@ std::string ResolveSecurityFixId(const trdk::Security &security) {
   }
   return fixSecurity->GetFixIdCode();
 }
-}
+}  // namespace
 
 SecurityMessage::SecurityMessage(const trdk::Security &security,
                                  StandardHeader &standardHeader)
@@ -316,7 +316,7 @@ std::string DoubleLexicalCast(const Double &source) {
   ss << std::fixed << source.Get();
   return ss.str();
 }
-}
+}  // namespace
 
 NewOrderSingle::NewOrderSingle(const trdk::Security &security,
                                const OrderSide &side,
@@ -324,7 +324,7 @@ NewOrderSingle::NewOrderSingle(const trdk::Security &security,
                                const Price &price,
                                StandardHeader &standardHeader)
     : Base(security, standardHeader),
-      m_side(side == ORDER_SIDE_BUY ? '1' : '2'),
+      m_side(side == +OrderSide::Buy ? '1' : '2'),
       m_qty(DoubleLexicalCast(qty)),
       m_price(DoubleLexicalCast(price)),
       m_transactTime(ConvertToTagValue(

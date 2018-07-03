@@ -12,24 +12,23 @@
 #include "BalanceItem.hpp"
 
 using namespace trdk;
-using namespace trdk::FrontEnd::Detail;
+using namespace FrontEnd::Detail;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-BalanceRecord::BalanceRecord(const std::string &symbol,
-                             const Volume &available,
-                             const Volume &locked,
-                             bool isUsed)
-    : symbol(QString::fromStdString(symbol)),
-      available(available),
-      locked(locked),
+BalanceRecord::BalanceRecord(QString symbol,
+                             Volume available,
+                             Volume locked,
+                             const bool isUsed)
+    : symbol(std::move(symbol)),
+      available(std::move(available)),
+      locked(std::move(locked)),
       time(QDateTime::currentDateTime().time()),
       isUsed(isUsed) {}
 
-void BalanceRecord::Update(const Volume &newAvailable,
-                           const Volume &newLocked) {
-  available = newAvailable;
-  locked = newLocked;
+void BalanceRecord::Update(Volume newAvailable, Volume newLocked) {
+  available = std::move(newAvailable);
+  locked = std::move(newLocked);
   time = QDateTime::currentDateTime().time();
 }
 
@@ -105,7 +104,7 @@ QVariant BalanceTradingSystemItem::GetData(const int column) const {
     case BALANCE_COLUMN_EXCHANGE_OR_SYMBOL:
       return m_data;
     default:
-      return QVariant();
+      return {};
   }
 }
 

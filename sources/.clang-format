@@ -66,8 +66,17 @@ IncludeCategories:
   - Regex:           '^".+"$'
     Priority:        191
 
-  - Regex:           '^<[^.]+\.h[p]*>$'
+  - Regex:           '^<odb/pre.hxx>$'
     Priority:        401
+
+  - Regex:           '^<odb/post.hxx>$'
+    Priority:        403
+
+  - Regex:           '^<odb/.+>$'
+    Priority:        402
+
+  - Regex:           '^<[^.]+\.h[p]*>$'
+    Priority:        411
 
   - Regex:           '^<[^.]+>$'
     Priority:        499

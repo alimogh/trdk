@@ -14,5 +14,6 @@
 using namespace trdk::Lib;
 
 extern "C" void GetTrdkModuleVersionInfoV1(VersionInfoV1 *result) {
+#pragma comment(linker, "/EXPORT:" __FUNCTION__ "=" __FUNCDNAME__)
   *result = VersionInfoV1(TRDK_FRONTEND_LIB_FILE_NAME);
 }

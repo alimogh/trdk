@@ -215,10 +215,10 @@ Exmo::TradingSystem::SendOrderTransaction(trdk::Security &security,
   const auto &product = productIt->second;
 
   boost::format requestParams("pair=%1%&quantity=%2%&price=%3%&type=%4%");
-  requestParams % product.id                        // 1
-      % qty                                         // 2
-      % *price                                      // 3
-      % (side == ORDER_SIDE_BUY ? "buy" : "sell");  // 4
+  requestParams % product.id                         // 1
+      % qty                                          // 2
+      % *price                                       // 3
+      % (side == +OrderSide::Buy ? "buy" : "sell");  // 4
 
   TradingRequest request("order_create", requestParams.str(), GetContext(),
                          m_settings, m_nonces, GetLog(), GetTradingLog());

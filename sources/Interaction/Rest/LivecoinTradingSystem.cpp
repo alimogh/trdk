@@ -349,7 +349,7 @@ boost::optional<OrderCheckError> LivecoinTradingSystem::CheckOrder(
   const auto &vol = *price * qty;
 
   const auto &symbol = security.GetSymbol();
-  if (symbol.GetCurrency() == CURRENCY_BTC) {
+  if (symbol.GetCurrency() == +Currency::BTC) {
     if (vol < minBtcVolume) {
       return OrderCheckError{boost::none, boost::none, minBtcVolume};
     }
@@ -362,7 +362,7 @@ boost::optional<OrderCheckError> LivecoinTradingSystem::CheckOrder(
     AssertEq(GetInstanceName(), marketDataSource.GetInstanceName());
     const auto *const btcSecurity = marketDataSource.FindSecurity(
         Symbol(security.GetSymbol().GetBaseSymbol() + "_BTC",
-               SECURITY_TYPE_CRYPTO, CURRENCY_BTC));
+               {SecurityType::Crypto}, {Currency::BTC}));
     if (!btcSecurity) {
       GetLog().Warn(
           "Failed find BTC-security to check order volume for \"%1%\".",
@@ -419,7 +419,7 @@ LivecoinTradingSystem::SendOrderTransaction(trdk::Security &security,
                 << price->Get() << "&quantity=" << qty;
 
   TradingRequest request(
-      side == ORDER_SIDE_BUY ? "/exchange/buylimit" : "/exchange/selllimit",
+      side == +OrderSide::Buy ? "/exchange/buylimit" : "/exchange/selllimit",
       m_settings, requestParams.str(), GetContext(), GetLog(),
       &GetTradingLog());
   const auto response = boost::get<1>(request.Send(m_tradingSession));
@@ -433,7 +433,8 @@ LivecoinTradingSystem::SendOrderTransaction(trdk::Security &security,
     }
 #endif
     return boost::make_unique<LivecoinOrderTransactionContext>(
-        *this, product->second.requestId, response.get<std::string>("orderId"));
+        *this, product->second.requestId,
+        OrderId{response.get<std::string>("orderId")});
   } catch (const ptr::ptree_error &ex) {
     boost::format error(
         "Wrong server response to the request \"%1%\" (%2%): \"%3%\"");

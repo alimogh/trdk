@@ -10,9 +10,6 @@
 
 #pragma once
 
-#include "OperationModelUtils.hpp"
-#include "OrderModelUtils.hpp"
-
 namespace trdk {
 namespace FrontEnd {
 namespace Detail {
@@ -22,13 +19,13 @@ namespace Detail {
 enum OperationColumn {
   OPERATION_COLUMN_OPERATION_NUMBER_OR_ORDER_LEG,
   OPERATION_COLUMN_OPERATION_TIME_OR_ORDER_SIDE,
-  OPERATION_COLUMN_OPERATION_END_TIME_OR_ORDER_TIME,
+  OPERATION_COLUMN_OPERATION_END_TIME_OR_ORDER_SUBMIT_TIME,
   OPERATION_COLUMN_OPERATION_STATUS_OR_ORDER_SYMBOL,
   OPERATION_COLUMN_OPERATION_FINANCIAL_RESULT_OR_ORDER_EXCHANGE,
   OPERATION_COLUMN_OPERATION_COMMISSION_OR_ORDER_STATUS,
   OPERATION_COLUMN_OPERATION_TOTAL_RESULT_OR_ORDER_PRICE,
   OPERATION_COLUMN_OPERATION_STRATEGY_NAME_OR_ORDER_QTY,
-  OPERATION_COLUMN_OPERATION_STRATEGY_PARAMS_OR_ORDER_VOLUME,
+  OPERATION_COLUMN_ORDER_VOLUME,
   OPERATION_COLUMN_ORDER_REMAINING_QTY,
   OPERATION_COLUMN_ORDER_FILLED_QTY,
   OPERATION_COLUMN_ORDER_TIF,
@@ -45,23 +42,27 @@ inline Qt::AlignmentFlag GetOperationFieldAligment(
   switch (column) {
     case OPERATION_COLUMN_OPERATION_TOTAL_RESULT_OR_ORDER_PRICE:
     case OPERATION_COLUMN_OPERATION_STRATEGY_NAME_OR_ORDER_QTY:
-    case OPERATION_COLUMN_OPERATION_STRATEGY_PARAMS_OR_ORDER_VOLUME:
+    case OPERATION_COLUMN_ORDER_VOLUME:
     case OPERATION_COLUMN_ORDER_REMAINING_QTY:
     case OPERATION_COLUMN_ORDER_FILLED_QTY:
       return Qt::AlignRight;
+    default:
+      return Qt::AlignLeft;
   }
-  return Qt::AlignLeft;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class OperationItem : private boost::noncopyable {
+class OperationItem {
  public:
-  OperationItem();
+  OperationItem() = default;
+  OperationItem(OperationItem &&) = default;
+  OperationItem(const OperationItem &) = delete;
+  OperationItem &operator=(OperationItem &&) = delete;
+  OperationItem &operator=(const OperationItem &) = delete;
   virtual ~OperationItem() = default;
 
- public:
-  void AppendChild(const boost::shared_ptr<OperationItem> &);
+  void AppendChild(boost::shared_ptr<OperationItem>);
   void RemoveChild(const boost::shared_ptr<OperationItem> &);
   void RemoveAllChildren();
   int GetRow() const;
@@ -73,35 +74,47 @@ class OperationItem : private boost::noncopyable {
   virtual bool HasErrors() const;
 
  private:
-  OperationItem *m_parent;
-  int m_row;
-  std::vector<boost::shared_ptr<OperationItem>> m_childItems;
+  OperationItem *m_parent = nullptr;
+  int m_row = -1;
+  std::vector<boost::shared_ptr<OperationItem>> m_childItems{};
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 
 class OperationNodeItem : public OperationItem {
  public:
-  explicit OperationNodeItem(OperationRecord &&);
-  virtual ~OperationNodeItem() override = default;
+  explicit OperationNodeItem(boost::shared_ptr<const OperationRecord>);
+  OperationNodeItem(OperationNodeItem &&) = default;
+  OperationNodeItem(const OperationNodeItem &) = delete;
+  OperationNodeItem &operator=(OperationNodeItem &&) = delete;
+  OperationNodeItem &operator=(const OperationNodeItem &) = delete;
+  ~OperationNodeItem() override = default;
 
- public:
-  OperationRecord &GetRecord();
   const OperationRecord &GetRecord() const;
-  virtual QVariant GetData(int column) const override;
+
+  QVariant GetData(int column) const override;
+
+  void Update(boost::shared_ptr<const OperationRecord>);
 
  private:
-  OperationRecord m_record;
+  boost::shared_ptr<const OperationRecord> m_record;
+  QString m_financialResult;
+  QString m_commission;
+  QString m_totalResult;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 
 class OperationOrderHeadItem : public OperationItem {
  public:
-  virtual ~OperationOrderHeadItem() override = default;
+  OperationOrderHeadItem() = default;
+  OperationOrderHeadItem(OperationOrderHeadItem &&) = default;
+  OperationOrderHeadItem(const OperationOrderHeadItem &) = delete;
+  OperationOrderHeadItem &operator=(OperationOrderHeadItem &&) = delete;
+  OperationOrderHeadItem &operator=(const OperationOrderHeadItem &) = delete;
+  ~OperationOrderHeadItem() override = default;
 
- public:
-  virtual QVariant GetData(int column) const override;
+  QVariant GetData(int column) const override;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -110,19 +123,25 @@ class OperationOrderItem : public OperationItem {
  public:
   typedef OperationItem Base;
 
- public:
-  explicit OperationOrderItem(OrderRecord &&record);
-  virtual ~OperationOrderItem() override = default;
+  explicit OperationOrderItem(boost::shared_ptr<const OrderRecord>,
+                              const Engine &);
+  OperationOrderItem(OperationOrderItem &&) = default;
+  OperationOrderItem(const OperationOrderItem &) = delete;
+  OperationOrderItem &operator=(OperationOrderItem &&) = delete;
+  OperationOrderItem &operator=(const OperationOrderItem &) = delete;
+  ~OperationOrderItem() override = default;
 
- public:
-  OrderRecord &GetRecord();
+  void Update(boost::shared_ptr<const OrderRecord>);
+
   const OrderRecord &GetRecord() const;
-  virtual QVariant GetData(int column) const override;
-  virtual QVariant GetToolTip() const override;
-  virtual bool HasErrors() const override;
+
+  QVariant GetData(int column) const override;
+  QVariant GetToolTip() const override;
+  bool HasErrors() const override;
 
  private:
-  OrderRecord m_record;
+  boost::shared_ptr<const OrderRecord> m_record;
+  const Engine &m_engine;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
