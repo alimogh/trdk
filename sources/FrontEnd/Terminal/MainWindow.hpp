@@ -45,6 +45,7 @@ class MainWindow : public QMainWindow {
   void CreateNewStrategyOperationsWindow();
   void CreateNewStandaloneOrderListWindow();
   void CreateNewTotalResultsReportWindow();
+  void CreateNewOrderWindows(Security &);
 
   void EditExchangeList();
   void AddSymbol();
@@ -52,6 +53,8 @@ class MainWindow : public QMainWindow {
   Engine &m_engine;
   Ui::MainWindow m_ui;
   std::vector<std::unique_ptr<Lib::Dll>> &m_moduleDlls;
+
+  boost::unordered_map<const Security *, QWidget *> m_orderWindows;
 };
 }  // namespace Terminal
 }  // namespace FrontEnd

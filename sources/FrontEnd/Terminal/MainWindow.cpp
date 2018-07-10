@@ -20,6 +20,7 @@
 #include "Lib/OperationListView.hpp"
 #include "Lib/OrderListModel.hpp"
 #include "Lib/OrderListView.hpp"
+#include "Lib/OrderWindow.hpp"
 #include "Lib/SecurityListModel.hpp"
 #include "Lib/SecurityListView.hpp"
 #include "Lib/SortFilterProxyModel.hpp"
@@ -31,15 +32,16 @@
 #include "Lib/TotalResultsReportSettingsWidget.hpp"
 #include "Lib/TotalResultsReportView.hpp"
 
-using namespace trdk::Lib;
-using namespace trdk::FrontEnd;
+using namespace trdk;
+using namespace Lib;
+using namespace FrontEnd;
 using namespace Charts;
 using namespace Terminal;
 namespace pt = boost::posix_time;
 namespace ptr = boost::property_tree;
 namespace fs = boost::filesystem;
 
-MainWindow::MainWindow(Engine &engine,
+MainWindow::MainWindow(FrontEnd::Engine &engine,
                        std::vector<std::unique_ptr<Dll>> &moduleDlls,
                        QWidget *parent)
     : QMainWindow(parent),
@@ -123,9 +125,9 @@ void MainWindow::ConnectSignals() {
                  this, &MainWindow::CreateNewTotalResultsReportWindow));
 }
 
-Engine &MainWindow::GetEngine() { return m_engine; }
+FrontEnd::Engine &MainWindow::GetEngine() { return m_engine; }
 
-const Engine &MainWindow::GetEngine() const {
+const FrontEnd::Engine &MainWindow::GetEngine() const {
   return const_cast<MainWindow *>(this)->GetEngine();
 }
 
@@ -138,9 +140,9 @@ void MainWindow::LoadModule(const fs::path &path) {
   }
   StrategyMenuActionList actions;
   try {
-    actions =
-        m_moduleDlls.back()->GetFunction<StrategyMenuActionList(Engine &)>(
-            "CreateMenuActions")(m_engine);
+    actions = m_moduleDlls.back()
+                  ->GetFunction<StrategyMenuActionList(FrontEnd::Engine &)>(
+                      "CreateMenuActions")(m_engine);
   } catch (const std::exception &ex) {
     const auto &error =
         QString(tr("Failed to load module front-end: \"%1\".")).arg(ex.what());
@@ -331,6 +333,24 @@ void MainWindow::CreateNewChartWindow(const QString &symbol) {
   window.release();
 }
 
+void MainWindow::CreateNewOrderWindows(Security &security) {
+  {
+    const auto &it = m_orderWindows.find(&security);
+    if (it != m_orderWindows.cend()) {
+      it->second->activateWindow();
+      it->second->raise();
+      return;
+    }
+  }
+  auto window = boost::make_unique<OrderWindow>(security, m_engine, this);
+  Verify(connect(&*window, &OrderWindow::Closed,
+                 [this, &security]() { m_orderWindows.erase(&security); }));
+  window->show();
+  m_orderWindows.emplace(&security, &*window);
+  window->setAttribute(Qt::WA_DeleteOnClose);
+  window.release();
+}
+
 void MainWindow::CreateNewStrategyOperationsWindow() {
   auto &tab = *new QWidget(this);
   {
@@ -396,6 +416,8 @@ void MainWindow::InitSecurityListWindow() {
     }
     m_ui.securities->setWidget(&view);
     m_ui.securities->setWindowTitle(view.windowTitle());
+    Verify(connect(&view, &SecurityListView::OrderRequested, this,
+                   &MainWindow::CreateNewOrderWindows));
     Verify(connect(&view, &SecurityListView::ChartRequested, this,
                    &MainWindow::CreateNewChartWindow));
   }

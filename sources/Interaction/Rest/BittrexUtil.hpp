@@ -16,6 +16,7 @@ namespace Rest {
 
 struct BittrexProduct {
   std::string id;
+  Qty minQty;
 };
 
 boost::unordered_map<std::string, BittrexProduct> RequestBittrexProductList(

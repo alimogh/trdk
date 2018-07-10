@@ -26,6 +26,7 @@ class TRDK_FRONTEND_LIB_API SecurityListView : public QTableView {
 
  signals:
   void ChartRequested(const QString &symbol);
+  void OrderRequested(Security &);
 
  private:
   class Implementation;

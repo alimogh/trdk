@@ -138,63 +138,14 @@ boost::optional<OrderCheckError> BittrexTradingSystem::CheckOrder(
       return result;
     }
   }
-  const auto &symbol = security.GetSymbol();
-  switch (symbol.GetCurrency()) {
-    case CURRENCY_BTC: {
-      {
-        const auto minVolume = 0.001;
-        if (price && qty * *price < minVolume) {
-          return OrderCheckError{boost::none, boost::none, minVolume};
-        }
-      }
-      {
-        const auto minQty = symbol.GetBaseSymbol() == "ETH"
-                                ? 0.015
-                                : symbol.GetBaseSymbol() == "BCH" ? 0.0033 : 0;
-        if (qty < minQty) {
-          return OrderCheckError{minQty};
-        }
-      }
-      break;
-    }
-    case CURRENCY_ETH: {
-      {
-        const auto minVolume = 0.0005;
-        if (price && qty * *price < minVolume) {
-          return OrderCheckError{boost::none, boost::none, minVolume};
-        }
-      }
-      {
-        const auto minQty = symbol.GetBaseSymbol() == "LTC"
-                                ? 0.06
-                                : symbol.GetBaseSymbol() == "BCH" ? 0.0033 : 0;
-        if (qty < minQty) {
-          return OrderCheckError{minQty};
-        }
-      }
-      break;
-    }
-    case CURRENCY_USD:
-    case CURRENCY_USDT: {
-      {
-        const auto minVolume = 0.0005;
-        if (price && qty * *price < minVolume) {
-          return OrderCheckError{boost::none, boost::none, minVolume};
-        }
-      }
-      {
-        const auto minQty =
-            symbol.GetBaseSymbol() == "BTC"
-                ? 0.000281
-                : symbol.GetBaseSymbol() == "ETH"
-                      ? 0.0034
-                      : symbol.GetBaseSymbol() == "BCH" ? 0.00214425 : 0;
-        if (qty < minQty) {
-          return OrderCheckError{minQty};
-        }
-      }
-      break;
-    }
+  const auto &product = m_products.find(security.GetSymbol().GetSymbol());
+  if (product == m_products.cend()) {
+    GetLog().Error(R"(Failed find product for "%1%" to check order.)",
+                   security);
+    throw Exception("Symbol is not supported by exchange");
+  }
+  if (qty < product->second.minQty) {
+    return OrderCheckError{product->second.minQty};
   }
   return boost::none;
 }

@@ -341,8 +341,9 @@ boost::optional<OrderCheckError> LivecoinTradingSystem::CheckOrder(
 
   const auto &productIt = m_products.find(security.GetSymbol().GetSymbol());
   if (productIt == m_products.cend()) {
-    GetLog().Warn("Failed find product for \"%1%\" to check order.", security);
-    return boost::none;
+    GetLog().Error(R"(Failed find product for "%1%" to check order.)",
+                   security);
+    throw Exception("Symbol is not supported by exchange");
   }
   const auto &minBtcVolume = productIt->second.minBtcVolume;
   const auto &vol = *price * qty;

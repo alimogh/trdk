@@ -303,7 +303,8 @@ class FrontEnd::Engine::Implementation : boost::noncopyable {
         const auto& error = db::fetch_by_id(operation, m_db);
         if (error.isValid()) {
           m_engine->GetContext().GetLog().Error(
-              (QString("Failed to fetch operation from DB to insert order: \"%1\".)")
+              (QString("Failed to fetch operation from DB to insert order: "
+                       "\"%1\".)")
                    .arg(error.text())
                    .toStdString())
                   .c_str());
@@ -825,18 +826,7 @@ void FrontEnd::Engine::StoreConfig(const Strategy& strategy,
                                    const bool isActive) {
   auto strategyOrm = boost::make_shared<Orm::StrategyInstance>(
       ConvertToQUuid(strategy.GetId()));
-  {
-    const auto& error = db::fetch_by_id(strategyOrm, m_pimpl->m_db);
-    if (error.isValid()) {
-      m_pimpl->m_engine->GetContext().GetLog().Error(
-          (QString("Failed to fetch strategy instance from DB to store "
-                   "strategy config: \"%1\".")
-               .arg(error.text())
-               .toStdString())
-              .c_str());
-      Assert(!error.isValid());
-    }
-  }
+  db::fetch_by_id(strategyOrm, m_pimpl->m_db);
   strategyOrm->setTypeId(ConvertToQUuid(strategy.GetTypeId()));
   strategyOrm->setName(QString::fromStdString(strategy.GetInstanceName()));
   {

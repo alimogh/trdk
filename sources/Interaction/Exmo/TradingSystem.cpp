@@ -144,8 +144,9 @@ boost::optional<OrderCheckError> Exmo::TradingSystem::CheckOrder(
   }
   const auto &product = m_products.find(security.GetSymbol().GetSymbol());
   if (product == m_products.cend()) {
-    GetLog().Error("Failed find product for \"%1%\" to check order.", security);
-    throw Exception("Product is unknown");
+    GetLog().Error(R"(Failed find product for "%1%" to check order.)",
+                   security);
+    throw Exception("Symbol is not supported by exchange");
   }
 
   if (qty < product->second.minQty) {
