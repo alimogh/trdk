@@ -337,9 +337,9 @@ class CoinbaseExchange : public TradingSystem, public MarketDataSource {
 
     const auto& productIt = m_products.find(security.GetSymbol().GetSymbol());
     if (productIt == m_products.cend()) {
-      GetTsLog().Warn("Failed find product for \"%1%\" to check order.",
-                      security);
-      return boost::none;
+      GetTsLog().Error(R"(Failed find product for "%1%" to check order.)",
+                       security);
+      throw Exception("Symbol is not supported by exchange");
     }
     const auto& product = productIt->second;
 

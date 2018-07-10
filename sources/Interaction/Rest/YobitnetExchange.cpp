@@ -111,6 +111,10 @@ boost::optional<std::pair<Level1TickValue, Level1TickValue>> ReadTopOfBook(
 struct Product {
   std::string id;
   uintmax_t precisionPower;
+  Price minPrice;
+  Price maxPrice;
+  Qty minQty;
+  double feeRatio;
 };
 
 class Request : public Rest::Request {
@@ -160,7 +164,7 @@ class TradeRequest : public Request {
 
   explicit TradeRequest(const std::string& method,
                         Auth& auth,
-                        bool isPriority,
+                        const bool isPriority,
                         const std::string& uriParams,
                         const Context& context,
                         ModuleEventsLog& log,
@@ -421,8 +425,12 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   Volume CalcCommission(const Qty& qty,
                         const Price& price,
                         const OrderSide&,
-                        const trdk::Security&) const override {
-    return (qty * price) * (0.2 / 100);
+                        const trdk::Security& security) const override {
+    const auto& product = m_products.find(security.GetSymbol().GetSymbol());
+    if (product == m_products.cend()) {
+      throw Exception("Symbol is not supported by exchange");
+    }
+    return (qty * price) * product->second.feeRatio;
   }
 
   boost::optional<OrderCheckError> CheckOrder(
@@ -438,21 +446,25 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         return result;
       }
     }
-    {
-      const auto& minVolume = 0.0001;
-      if (price && qty * *price < minVolume) {
-        return OrderCheckError{boost::none, boost::none, minVolume};
+    const auto& productIt = m_products.find(security.GetSymbol().GetSymbol());
+    if (productIt == m_products.cend()) {
+      GetTsLog().Error(R"(Failed find product for "%1%" to check order.)",
+                       security);
+      throw Exception("Symbol is not supported by exchange");
+    }
+    const auto& product = productIt->second;
+    boost::optional<OrderCheckError> result;
+    if (qty < product.minQty) {
+      result->qty = product.minQty;
+    }
+    if (price) {
+      if (*price < product.minPrice) {
+        result->price = product.minPrice;
+      } else if (*price > product.maxPrice) {
+        result->price = product.maxPrice;
       }
     }
-    {
-      const auto& symbol = security.GetSymbol().GetSymbol();
-      const auto& minQty =
-          symbol == "ETH_BTC" ? 0.005 : symbol == "LTC_ETH" ? 0.0001 : 0;
-      if (qty < minQty) {
-        return OrderCheckError{minQty};
-      }
-    }
-    return boost::none;
+    return result;
   }
 
   bool CheckSymbol(const std::string& symbol) const override {
@@ -638,22 +650,24 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
                             .Send(m_marketDataSession));
       for (const auto& node : response.get_child("pairs")) {
         const auto& exchangeSymbol = boost::to_upper_copy(node.first);
-        const auto& symbol = NormilizeSymbol(exchangeSymbol);
-        Product product = {NormilizeProductId(exchangeSymbol)};
+        auto symbol = NormilizeSymbol(exchangeSymbol);
         const auto& info = node.second;
-        const auto& decimalPlaces = info.get<uintmax_t>("decimal_places");
-        product.precisionPower =
-            static_cast<uintmax_t>(std::pow(10, decimalPlaces));
-        const auto& productIt =
-            products.emplace(std::move(symbol), std::move(product));
+        const auto& productIt = products.emplace(
+            std::move(symbol),
+            Product{NormilizeProductId(exchangeSymbol),
+                    static_cast<uintmax_t>(
+                        std::pow(10, info.get<uintmax_t>("decimal_places"))),
+                    info.get<Price>("min_price"), info.get<Price>("max_price"),
+                    info.get<Qty>("min_amount"),
+                    info.get<Volume>("fee") / 100.0});
         if (!productIt.second) {
-          GetTsLog().Error("Product duplicate: \"%1%\"",
+          GetTsLog().Error(R"(Product duplicate: "%1%")",
                            productIt.first->first);
           Assert(productIt.second);
         }
       }
     } catch (const std::exception& ex) {
-      boost::format error("Failed to read supported product list: \"%1%\"");
+      boost::format error(R"(Failed to read supported product list: "%1%")");
       error % ex.what();
       throw Exception(error.str().c_str());
     }

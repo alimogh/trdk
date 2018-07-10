@@ -140,8 +140,9 @@ boost::optional<OrderCheckError> BittrexTradingSystem::CheckOrder(
   }
   const auto &product = m_products.find(security.GetSymbol().GetSymbol());
   if (product == m_products.cend()) {
-    GetLog().Warn(R"(Failed find product for "%1%" to check order.)", security);
-    return boost::none;
+    GetLog().Error(R"(Failed find product for "%1%" to check order.)",
+                   security);
+    throw Exception("Symbol is not supported by exchange");
   }
   if (qty < product->second.minQty) {
     return OrderCheckError{product->second.minQty};
