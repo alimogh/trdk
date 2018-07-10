@@ -23,7 +23,6 @@ class BittrexRequest : public Request {
  public:
   typedef Request Base;
 
- public:
   explicit BittrexRequest(const std::string &uri,
                           const std::string &name,
                           const std::string &uriParams,
@@ -37,13 +36,12 @@ class BittrexRequest : public Request {
              context,
              log,
              tradingLog) {}
-  virtual ~BittrexRequest() override = default;
+  ~BittrexRequest() override = default;
 
- public:
   Response Send(std::unique_ptr<Poco::Net::HTTPSClientSession> &) override;
 
  protected:
-  virtual FloodControl &GetFloodControl() const override;
+  FloodControl &GetFloodControl() const override;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -55,10 +53,10 @@ class BittrexPublicRequest : public BittrexRequest {
                                 const Context &context,
                                 ModuleEventsLog &log)
       : BittrexRequest("/public/" + name, name, uriParams, context, log) {}
-  virtual ~BittrexPublicRequest() override = default;
+  ~BittrexPublicRequest() override = default;
 
  protected:
-  virtual bool IsPriority() const override { return false; }
+  bool IsPriority() const override { return false; }
 };
 
 ////////////////////////////////////////////////////////////////////////////////

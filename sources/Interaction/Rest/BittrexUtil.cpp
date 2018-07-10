@@ -53,14 +53,18 @@ Rest::RequestBittrexProductList(
     const auto response = boost::get<1>(request.Send(session));
     for (const auto &node : response) {
       const auto &data = node.second;
-      BittrexProduct product = {data.get<std::string>("MarketName")};
-      const auto &symbol = NormilizeSymbol(product.id, context.GetSettings());
+      BittrexProduct product = {data.get<std::string>("MarketName"),
+                                data.get<Qty>("MinTradeSize")};
+      auto symbol = NormilizeSymbol(product.id, context.GetSettings());
+      if (!data.get<bool>("IsActive")) {
+        log.Warn(R"(Symbol "%1%" is inactive.)", symbol);
+        continue;
+      }
       const auto &productIt =
           result.emplace(std::move(symbol), std::move(product));
       if (!productIt.second) {
         log.Error("Product duplicate: \"%1%\"", productIt.first->first);
         Assert(productIt.second);
-        continue;
       }
     }
   } catch (const std::exception &ex) {
