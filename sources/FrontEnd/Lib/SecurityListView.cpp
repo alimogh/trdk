@@ -21,6 +21,15 @@ class SecurityListView::Implementation {
   void InitContextMenu() {
     m_self.setContextMenuPolicy(Qt::ActionsContextMenu);
     {
+      auto &action = *new QAction(m_self.tr("Order"), &m_self);
+      Verify(m_self.connect(&action, &QAction::triggered, [this]() {
+        ForEachSelectedSecurity([this](Security &security) {
+          emit m_self.OrderRequested(security);
+        });
+      }));
+      m_self.addAction(&action);
+    }
+    {
       auto &action = *new QAction(m_self.tr("Chart"), &m_self);
       Verify(m_self.connect(&action, &QAction::triggered, [this]() {
         ForEachSelectedSecurity([this](Security &security) {
@@ -80,7 +89,10 @@ SecurityListView::SecurityListView(QWidget *parent)
   setSelectionMode(ExtendedSelection);
   verticalHeader()->setVisible(false);
   setItemDelegate(new ItemDelegate(this));
-
+  Verify(connect(this, &SecurityListView::doubleClicked,
+                 [this](const QModelIndex &index) {
+                   emit OrderRequested(ResolveModelIndexItem<Security>(index));
+                 }));
   m_pimpl->InitContextMenu();
 }
 SecurityListView::~SecurityListView() = default;
