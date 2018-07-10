@@ -12,8 +12,8 @@
 #include "BittrexRequest.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Interaction::Rest;
+using namespace Lib;
+using namespace Interaction::Rest;
 
 namespace net = Poco::Net;
 
@@ -44,9 +44,11 @@ BittrexRequest::Response BittrexRequest::Send(
       if (message) {
         if (*message == "ORDER_NOT_OPEN") {
           throw OrderIsUnknownException(error.str().c_str());
-        } else if (*message == "INSUFFICIENT_FUNDS") {
+        }
+        if (*message == "INSUFFICIENT_FUNDS") {
           throw InsufficientFundsException(error.str().c_str());
-        } else if (*message == "MIN_TRADE_REQUIREMENT_NOT_MET") {
+        }
+        if (*message == "MIN_TRADE_REQUIREMENT_NOT_MET") {
           throw CommunicationError(error.str().c_str());
         }
       }

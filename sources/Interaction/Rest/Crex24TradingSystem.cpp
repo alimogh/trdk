@@ -270,7 +270,7 @@ boost::optional<OrderCheckError> Crex24TradingSystem::CheckOrder(
     if (product == m_products.cend()) {
       GetLog().Error("Failed find product for \"%1%\" to check order.",
                      security);
-      throw Exception("Product is unknown");
+      throw Exception("Symbol is not supported by exchange");
     }
     if (qty < product->second.minQty) {
       return OrderCheckError{product->second.minQty};

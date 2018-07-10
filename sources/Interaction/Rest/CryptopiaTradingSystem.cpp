@@ -234,11 +234,12 @@ boost::optional<OrderCheckError> CryptopiaTradingSystem::CheckOrder(
   const auto &productIndex = m_products.get<BySymbol>();
   const auto &productIt = productIndex.find(security.GetSymbol().GetSymbol());
   if (productIt == productIndex.cend()) {
-    GetLog().Error("Failed find product for \"%1%\" to check order.", security);
-    throw Exception("Product is unknown");
+    GetLog().Error(R"(Failed find product for "%1%" to check order.)",
+                   security);
+    throw Exception("Symbol is not supported by exchange");
   }
 
-  const CryptopiaProduct &product = *productIt;
+  const auto &product = *productIt;
   const auto &price = product.NormalizePrice(*internalPrice, security);
 
   if (price < product.minMaxPrice.first) {
