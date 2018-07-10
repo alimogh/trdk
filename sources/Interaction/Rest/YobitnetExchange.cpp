@@ -453,18 +453,25 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       throw Exception("Symbol is not supported by exchange");
     }
     const auto& product = productIt->second;
-    boost::optional<OrderCheckError> result;
+    OrderCheckError warns{};
+    auto hasWarns = false;
     if (qty < product.minQty) {
-      result->qty = product.minQty;
+      warns.qty = product.minQty;
+      hasWarns = true;
     }
     if (price) {
       if (*price < product.minPrice) {
-        result->price = product.minPrice;
+        warns.price = product.minPrice;
+        hasWarns = true;
       } else if (*price > product.maxPrice) {
-        result->price = product.maxPrice;
+        warns.price = product.maxPrice;
+        hasWarns = true;
       }
     }
-    return result;
+    if (hasWarns) {
+      return warns;
+    }
+    return boost::none;
   }
 
   bool CheckSymbol(const std::string& symbol) const override {
