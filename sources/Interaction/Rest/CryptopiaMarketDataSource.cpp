@@ -63,20 +63,40 @@ void CryptopiaMarketDataSource::SubscribeToSecurities() {
     return;
   }
 
-  std::vector<std::string> uriSymbolsPath;
-  uriSymbolsPath.reserve(m_securities.size());
-  for (const auto &security : m_securities) {
-    uriSymbolsPath.emplace_back(
-        boost::lexical_cast<std::string>(security.first));
+  const auto maxSymbolsPerRequest = 5;
+
+  auto requests = boost::make_shared<
+      std::vector<boost::shared_ptr<CryptopiaPublicRequest>>>();
+  requests->reserve((m_securities.size() / maxSymbolsPerRequest) + 1);
+  for (auto securityIt = m_securities.begin();
+       securityIt != m_securities.cend();) {
+    static_assert(maxSymbolsPerRequest > 0,
+                  "Empty request and loop without end.");
+    std::vector<std::string> uriSymbolsPath;
+    uriSymbolsPath.reserve(maxSymbolsPerRequest);
+    while (uriSymbolsPath.size() < maxSymbolsPerRequest &&
+           securityIt != m_securities.cend()) {
+      uriSymbolsPath.emplace_back(
+          boost::lexical_cast<std::string>(securityIt->first));
+      ++securityIt;
+    }
+    if (uriSymbolsPath.empty()) {
+      Assert(securityIt == m_securities.cend());
+      break;
+    }
+    requests->emplace_back(boost::make_shared<CryptopiaPublicRequest>(
+        "GetMarketOrderGroups", boost::join(uriSymbolsPath, "-") + "/1",
+        GetContext(), GetLog()));
   }
-  const auto &request = boost::make_shared<CryptopiaPublicRequest>(
-      "GetMarketOrderGroups", boost::join(uriSymbolsPath, "-") + "/1",
-      GetContext(), GetLog());
+  Assert(!requests->empty());
+  requests->shrink_to_fit();
 
   m_pollingTask->ReplaceTask(
       "Prices", 1,
-      [this, request]() {
-        UpdatePrices(*request);
+      [this, requests]() {
+        for (const auto &request : *requests) {
+          UpdatePrices(*request);
+        }
         return true;
       },
       m_settings.pollingSetttings.GetPricesRequestFrequency(), false);

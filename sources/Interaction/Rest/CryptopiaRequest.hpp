@@ -23,7 +23,6 @@ class CryptopiaRequest : public Request {
  public:
   typedef Request Base;
 
- public:
   explicit CryptopiaRequest(const std::string &name,
                             const std::string &uri,
                             const std::string &method,
@@ -39,13 +38,12 @@ class CryptopiaRequest : public Request {
              log,
              tradingLog,
              contentType) {}
-  virtual ~CryptopiaRequest() override = default;
+  ~CryptopiaRequest() override = default;
 
- public:
   Response Send(std::unique_ptr<Poco::Net::HTTPSClientSession> &) override;
 
  protected:
-  virtual FloodControl &GetFloodControl() const override;
+  FloodControl &GetFloodControl() const override;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -62,10 +60,10 @@ class CryptopiaPublicRequest : public CryptopiaRequest {
                          std::string(),
                          context,
                          log) {}
-  virtual ~CryptopiaPublicRequest() override = default;
+  ~CryptopiaPublicRequest() override = default;
 
  protected:
-  virtual bool IsPriority() const override { return false; }
+  bool IsPriority() const override { return false; }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
