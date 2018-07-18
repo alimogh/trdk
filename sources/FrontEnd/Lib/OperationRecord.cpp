@@ -32,10 +32,14 @@ class OperationRecord::Implementation {
   std::vector<boost::shared_ptr<const PnlRecord>> m_pnl;
 
   Implementation() = default;
-  Implementation(const QUuid &id, QDateTime startTime, OperationStatus status)
+  Implementation(const QUuid &id,
+                 QDateTime startTime,
+                 boost::shared_ptr<StrategyInstanceRecord> strategyInstance,
+                 const OperationStatus &status)
       : m_id(id),
-        m_status(std::move(status)),
-        m_startTime(std::move(startTime)) {}
+        m_status(status),
+        m_startTime(std::move(startTime)),
+        m_strategyInstance(std::move(strategyInstance)) {}
   Implementation(Implementation &&) = default;
   Implementation(const Implementation &) = default;
   Implementation &operator=(Implementation &&) = delete;
@@ -46,11 +50,15 @@ class OperationRecord::Implementation {
 OperationRecord::OperationRecord()
     : m_pimpl(boost::make_unique<Implementation>()) {}
 
-OperationRecord::OperationRecord(const QUuid &id,
-                                 QDateTime startTime,
-                                 OperationStatus status)
+OperationRecord::OperationRecord(
+    const QUuid &id,
+    QDateTime startTime,
+    boost::shared_ptr<StrategyInstanceRecord> strategyInstance,
+    const OperationStatus &status)
     : m_pimpl(boost::make_unique<Implementation>(
-          id, std::move(startTime), std::move(status))) {}
+          id, std::move(startTime), std::move(strategyInstance), status)) {
+  m_pimpl->m_strategyInstance->AddOperation();
+}
 OperationRecord::OperationRecord(OperationRecord &&) noexcept = default;
 OperationRecord::OperationRecord(const OperationRecord &rhs)
     : m_pimpl(boost::make_unique<Implementation>(*rhs.m_pimpl)) {}
@@ -71,8 +79,8 @@ void OperationRecord::SetIdValue(const QUuid &id) { m_pimpl->m_id = id; }
 const OperationStatus &OperationRecord::GetStatus() const {
   return m_pimpl->m_status;
 }
-void OperationRecord::SetStatus(OperationStatus status) {
-  m_pimpl->m_status = std::move(status);
+void OperationRecord::SetStatus(const OperationStatus &status) {
+  m_pimpl->m_status = status;
 }
 
 const QDateTime &OperationRecord::GetStartTime() const {

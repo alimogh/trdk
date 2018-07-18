@@ -30,7 +30,10 @@ class OperationRecord {
   OperationRecord();
 
  public:
-  explicit OperationRecord(const QUuid &, QDateTime startTime, OperationStatus);
+  explicit OperationRecord(const QUuid &,
+                           QDateTime startTime,
+                           boost::shared_ptr<StrategyInstanceRecord>,
+                           const OperationStatus &);
   OperationRecord(OperationRecord &&) noexcept;
   OperationRecord(const OperationRecord &);
   OperationRecord &operator=(OperationRecord &&) noexcept;
@@ -41,7 +44,7 @@ class OperationRecord {
   const QUuid &GetId() const;
 
   const OperationStatus &GetStatus() const;
-  void SetStatus(OperationStatus);
+  void SetStatus(const OperationStatus &);
 
   const QDateTime &GetStartTime() const;
   const boost::optional<QDateTime> &GetEndTime() const;

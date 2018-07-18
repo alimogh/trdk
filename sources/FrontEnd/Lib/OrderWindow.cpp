@@ -86,7 +86,7 @@ class OrderWindow::Implementation {
             m_security, m_security.GetSymbol().GetCurrency(), m_ui.qty->value(),
             Price{m_ui.price->value()}, params,
             boost::make_unique<OrderStatusNotifier>(),
-            m_engine.GetRiskControl(TRADING_MODE_LIVE), ORDER_SIDE_BUY,
+            m_engine.GetRiskControl(TRADING_MODE_LIVE), OrderSide::Buy,
             TIME_IN_FORCE_GTC, {});
         break;
       } catch (const std::exception &ex) {
@@ -115,7 +115,7 @@ class OrderWindow::Implementation {
             m_security, m_security.GetSymbol().GetCurrency(), m_ui.qty->value(),
             Price{m_ui.price->value()}, params,
             boost::make_unique<OrderStatusNotifier>(),
-            m_engine.GetRiskControl(TRADING_MODE_LIVE), ORDER_SIDE_SELL,
+            m_engine.GetRiskControl(TRADING_MODE_LIVE), OrderSide::Sell,
             TIME_IN_FORCE_GTC, {});
         break;
       } catch (const std::exception &ex) {
@@ -157,7 +157,7 @@ OrderWindow::OrderWindow(Security &security,
                  },
                  Qt::QueuedConnection));
 
-  Verify(connect(&m_pimpl->m_engine, &FrontEnd::Engine::PriceUpdate, this,
+  Verify(connect(&m_pimpl->m_engine, &FrontEnd::Engine::PriceUpdated, this,
                  [this](const Security *security) {
                    if (&m_pimpl->m_security != security) {
                      return;
