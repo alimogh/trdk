@@ -69,7 +69,7 @@ boost::unordered_map<std::string, Crex24Product> Rest::RequestCrex24ProductList(
     }
   } catch (const std::exception &ex) {
     log.Error(
-        "Failed to read supported product list: \"%1%\". Message: \"%2%\".",
+        R"(Failed to read supported product list: "%1%". Message: "%2%".)",
         ex.what(),                          // 1
         ConvertToString(response, false));  // 2
     throw Exception(ex.what());
