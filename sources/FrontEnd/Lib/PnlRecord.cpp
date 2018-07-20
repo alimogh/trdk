@@ -23,7 +23,9 @@ class PnlRecord::Implementation {
   Volume m_commission = 0;
 
   Implementation() = default;
-  explicit Implementation(QString symbol) : m_symbol(std::move(symbol)) {}
+  explicit Implementation(QString symbol,
+                          boost::shared_ptr<const OperationRecord> operation)
+      : m_symbol(std::move(symbol)), m_operation(std::move(operation)) {}
   Implementation(Implementation&&) = default;
   Implementation(const Implementation&) = default;
   Implementation& operator=(Implementation&&) = default;
@@ -32,8 +34,10 @@ class PnlRecord::Implementation {
 };
 
 PnlRecord::PnlRecord() : m_pimpl(boost::make_unique<Implementation>()) {}
-PnlRecord::PnlRecord(QString symbol)
-    : m_pimpl(boost::make_unique<Implementation>(std::move(symbol))) {}
+PnlRecord::PnlRecord(QString symbol,
+                     boost::shared_ptr<const OperationRecord> operation)
+    : m_pimpl(boost::make_unique<Implementation>(std::move(symbol),
+                                                 std::move(operation))) {}
 PnlRecord::PnlRecord(PnlRecord&&) noexcept = default;
 PnlRecord::PnlRecord(const PnlRecord& rhs)
     : m_pimpl(boost::make_unique<Implementation>(*rhs.m_pimpl)) {}

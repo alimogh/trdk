@@ -33,16 +33,6 @@ namespace sig = boost::signals2;
 
 namespace {
 
-void UpdatePnl(OperationRecord& operation, const Pnl::Data& pnlSet) {
-  for (const auto& pnl : pnlSet) {
-    auto record =
-        boost::make_shared<PnlRecord>(QString::fromStdString(pnl.first));
-    record->SetFinancialResult(pnl.second.financialResult);
-    record->SetCommission(pnl.second.commission);
-    operation.SetPnl(std::move(record));
-  }
-}
-
 OperationStatus GetOperationStatus(const Pnl::Result& source) {
   static_assert(Pnl::numberOfResults == 5, "List changed");
   switch (source) {
@@ -317,15 +307,16 @@ class FrontEnd::Engine::Implementation : boost::noncopyable {
                             const TimeInForce& timeInForce,
                             const OrderStatus& status,
                             boost::optional<QString> additionalInfo) {
-    const auto& order = boost::make_shared<OrderRecord>(
-        std::move(orderRemoteId), subOperationId,
-        QString::fromStdString(security.GetSymbol().GetSymbol()), currency,
-        QString::fromStdString(tradingSystem.GetInstanceName()), side, qty,
-        std::move(price), timeInForce, std::move(submitTime), status);
-    order->SetAdditionalInfo(std::move(additionalInfo));
+    boost::shared_ptr<OrderRecord> order;
     {
       odb::transaction transaction(m_db->begin());
       auto operation = m_db->load<OperationRecord>(operationId);
+      order = boost::make_shared<OrderRecord>(
+          std::move(orderRemoteId), subOperationId, operation,
+          QString::fromStdString(security.GetSymbol().GetSymbol()), currency,
+          QString::fromStdString(tradingSystem.GetInstanceName()), side, qty,
+          std::move(price), timeInForce, std::move(submitTime), status);
+      order->SetAdditionalInfo(std::move(additionalInfo));
       operation->AddOrder(order);
       m_db->update(operation);
       transaction.commit();
@@ -338,18 +329,17 @@ class FrontEnd::Engine::Implementation : boost::noncopyable {
                        const Security& security,
                        const Currency& currency,
                        const TradingSystem& tradingSystem,
-                       OrderSide orderSide,
+                       const OrderSide& orderSide,
                        const Qty& qty,
                        boost::optional<Price> price,
                        const TimeInForce& timeInForce,
-                       OrderStatus status,
+                       const OrderStatus& status,
                        boost::optional<QString> additionalInfo) {
     auto order = boost::make_shared<OrderRecord>(
         std::move(remoteId),
         QString::fromStdString(security.GetSymbol().GetSymbol()), currency,
-        QString::fromStdString(tradingSystem.GetInstanceName()),
-        std::move(orderSide), qty, std::move(price), timeInForce,
-        std::move(submitTime), std::move(status));
+        QString::fromStdString(tradingSystem.GetInstanceName()), orderSide, qty,
+        std::move(price), timeInForce, std::move(submitTime), status);
     order->SetAdditionalInfo(std::move(additionalInfo));
     {
       odb::transaction transaction(m_db->begin());
@@ -390,12 +380,13 @@ class FrontEnd::Engine::Implementation : boost::noncopyable {
   void StartOperation(const QUuid& id,
                       const QDateTime& time,
                       const Strategy* strategySource) {
-    const auto& operation =
-        boost::make_shared<OperationRecord>(id, time, OperationStatus::Active);
+    boost::shared_ptr<OperationRecord> operation;
     {
       odb::transaction transaction(m_db->begin());
       const auto& strategy = m_db->load<StrategyInstanceRecord>(
           ConvertToQUuid(strategySource->GetId()));
+      operation = boost::make_shared<OperationRecord>(id, time, strategy,
+                                                      OperationStatus::Active);
       strategy->AddOperation(operation);
       m_db->persist(operation);
       m_db->update(strategy);
@@ -407,7 +398,7 @@ class FrontEnd::Engine::Implementation : boost::noncopyable {
   void UpdateOperation(const QUuid& id, const Pnl::Data& pnl) {
     odb::transaction transaction(m_db->begin());
     const auto& operation = m_db->load<OperationRecord>(id);
-    UpdatePnl(*operation, pnl);
+    UpdatePnl(operation, pnl);
     m_db->update(operation);
     transaction.commit();
     emit m_self.OperationUpdated(operation);
@@ -420,10 +411,37 @@ class FrontEnd::Engine::Implementation : boost::noncopyable {
     auto operation = m_db->load<OperationRecord>(id);
     operation->SetEndTime(time);
     operation->SetStatus(GetOperationStatus(pnl->GetResult()));
-    UpdatePnl(*operation, pnl->GetData());
+    UpdatePnl(operation, pnl->GetData());
     m_db->update(operation);
     transaction.commit();
     emit m_self.OperationUpdated(operation);
+  }
+
+  void UpdatePnl(const boost::shared_ptr<OperationRecord>& operation,
+                 const Pnl::Data& pnlSet) {
+    for (const auto& pnlUpdate : pnlSet) {
+      auto isExistinet = false;
+      for (auto& operationPnl : operation->GetPnl()) {
+        if (operationPnl->GetSymbol() == pnlUpdate.first.c_str()) {
+          auto record = boost::make_shared<PnlRecord>(*operationPnl);
+          record->SetFinancialResult(pnlUpdate.second.financialResult);
+          record->SetCommission(pnlUpdate.second.commission);
+          operationPnl = record;
+          m_db->update(record);
+          isExistinet = true;
+          break;
+        }
+      }
+      if (isExistinet) {
+        continue;
+      }
+      auto record = boost::make_shared<PnlRecord>(
+          QString::fromStdString(pnlUpdate.first), operation);
+      record->SetFinancialResult(pnlUpdate.second.financialResult);
+      record->SetCommission(pnlUpdate.second.commission);
+      m_db->persist(record);
+      operation->GetPnl().emplace_back(std::move(record));
+    }
   }
 };
 

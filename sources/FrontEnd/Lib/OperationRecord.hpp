@@ -32,7 +32,7 @@ class OperationRecord {
  public:
   explicit OperationRecord(const QUuid &,
                            QDateTime startTime,
-                           boost::shared_ptr<StrategyInstanceRecord>,
+                           boost::shared_ptr<const StrategyInstanceRecord>,
                            const OperationStatus &);
   OperationRecord(OperationRecord &&) noexcept;
   OperationRecord(const OperationRecord &);
@@ -57,7 +57,7 @@ class OperationRecord {
   void AddOrder(const boost::shared_ptr<const OrderRecord> &);
 
   const std::vector<boost::shared_ptr<const PnlRecord>> &GetPnl() const;
-  void SetPnl(boost::shared_ptr<const PnlRecord>);
+  std::vector<boost::shared_ptr<const PnlRecord>> &GetPnl();
 
  private:
   void SetIdValue(const QUuid &);

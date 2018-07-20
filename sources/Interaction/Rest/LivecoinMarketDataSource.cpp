@@ -173,12 +173,13 @@ boost::optional<std::pair<Level1TickValue, Level1TickValue>> ReadTopPrice(
   boost::optional<Level1TickValue> qty;
   for (const auto &level : *source) {
     for (const auto &node : level.second) {
-      const auto &value = node.second.get_value<Double>();
+      const auto &value = node.second.template get_value<Double>();
       Assert(!qty);
       if (!price) {
         price = Level1TickValue::Create<priceType>(value);
       } else {
         qty = Level1TickValue::Create<qtyType>(value);
+        break;
       }
     }
     break;

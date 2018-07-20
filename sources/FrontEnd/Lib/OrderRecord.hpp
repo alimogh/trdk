@@ -34,25 +34,26 @@ class OrderRecord {
  public:
   explicit OrderRecord(QString remoteId,
                        QString symbol,
-                       Lib::Currency,
+                       const Lib::Currency &,
                        QString tradingSystemInstanceName,
-                       OrderSide,
+                       const OrderSide &,
                        const Qty &,
                        boost::optional<Price>,
                        const TimeInForce &,
                        QDateTime submitTime,
-                       OrderStatus);
+                       const OrderStatus &);
   explicit OrderRecord(QString remoteId,
                        const SubOperationId &,
+                       boost::shared_ptr<const OperationRecord>,
                        QString symbol,
-                       Lib::Currency,
+                       const Lib::Currency &,
                        QString tradingSystemInstanceName,
-                       OrderSide,
+                       const OrderSide &,
                        const Qty &,
                        boost::optional<Price>,
                        const TimeInForce &,
                        QDateTime submitTime,
-                       OrderStatus);
+                       const OrderStatus &);
   OrderRecord(OrderRecord &&) noexcept;
   OrderRecord(const OrderRecord &);
   OrderRecord &operator=(OrderRecord &&) noexcept;
@@ -89,7 +90,7 @@ class OrderRecord {
   void SetUpdateTime(QDateTime) const;
 
   const OrderStatus &GetStatus() const;
-  void SetStatus(OrderStatus);
+  void SetStatus(const OrderStatus &);
 
   const boost::optional<QString> &GetAdditionalInfo() const;
   void SetAdditionalInfo(boost::optional<QString>);
@@ -103,11 +104,11 @@ class OrderRecord {
 
   void SetSymbolValue(QString);
 
-  void SetCurrencyValue(Lib::Currency);
+  void SetCurrencyValue(const Lib::Currency &);
 
   void SetTradingSystemInstanceNameValue(QString);
 
-  void SetSideValue(OrderSide);
+  void SetSideValue(const OrderSide &);
 
   void SetQtyValue(const Qty &);
 

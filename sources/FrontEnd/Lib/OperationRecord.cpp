@@ -34,12 +34,8 @@ class OperationRecord::Implementation {
   Implementation() = default;
   Implementation(const QUuid &id,
                  QDateTime startTime,
-                 boost::shared_ptr<StrategyInstanceRecord> strategyInstance,
                  const OperationStatus &status)
-      : m_id(id),
-        m_status(status),
-        m_startTime(std::move(startTime)),
-        m_strategyInstance(std::move(strategyInstance)) {}
+      : m_id(id), m_status(status), m_startTime(std::move(startTime)) {}
   Implementation(Implementation &&) = default;
   Implementation(const Implementation &) = default;
   Implementation &operator=(Implementation &&) = delete;
@@ -50,15 +46,11 @@ class OperationRecord::Implementation {
 OperationRecord::OperationRecord()
     : m_pimpl(boost::make_unique<Implementation>()) {}
 
-OperationRecord::OperationRecord(
-    const QUuid &id,
-    QDateTime startTime,
-    boost::shared_ptr<StrategyInstanceRecord> strategyInstance,
-    const OperationStatus &status)
+OperationRecord::OperationRecord(const QUuid &id,
+                                 QDateTime startTime,
+                                 const OperationStatus &status)
     : m_pimpl(boost::make_unique<Implementation>(
-          id, std::move(startTime), std::move(strategyInstance), status)) {
-  m_pimpl->m_strategyInstance->AddOperation();
-}
+          id, std::move(startTime), status)) {}
 OperationRecord::OperationRecord(OperationRecord &&) noexcept = default;
 OperationRecord::OperationRecord(const OperationRecord &rhs)
     : m_pimpl(boost::make_unique<Implementation>(*rhs.m_pimpl)) {}
@@ -123,17 +115,8 @@ const std::vector<boost::shared_ptr<const PnlRecord>> &OperationRecord::GetPnl()
     const {
   return m_pimpl->m_pnl;
 }
-void OperationRecord::SetPnl(boost::shared_ptr<const PnlRecord> newPnl) {
-  const auto &it = std::find_if(
-      m_pimpl->m_pnl.begin(), m_pimpl->m_pnl.end(),
-      [&newPnl](const boost::shared_ptr<const PnlRecord> &actualPnl) {
-        return actualPnl->GetSymbol() == newPnl->GetSymbol();
-      });
-  if (it != m_pimpl->m_pnl.cend()) {
-    *it = std::move(newPnl);
-  } else {
-    m_pimpl->m_pnl.emplace_back(std::move(newPnl));
-  }
+std::vector<boost::shared_ptr<const PnlRecord>> &OperationRecord::GetPnl() {
+  return m_pimpl->m_pnl;
 }
 void OperationRecord::SetPnlValue(
     std::vector<boost::shared_ptr<const PnlRecord>> pnl) {

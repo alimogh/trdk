@@ -31,7 +31,7 @@ class PnlRecord {
   PnlRecord();
 
  public:
-  explicit PnlRecord(QString symbol);
+  explicit PnlRecord(QString symbol, boost::shared_ptr<const OperationRecord>);
   PnlRecord(PnlRecord&&) noexcept;
   PnlRecord(const PnlRecord&);
   PnlRecord& operator=(PnlRecord&&) noexcept;

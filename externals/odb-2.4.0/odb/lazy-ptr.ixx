@@ -1110,7 +1110,17 @@ namespace odb
   template <class T>
   template <class Y>
   inline lazy_shared_ptr<T>::
+  lazy_shared_ptr (const ::boost::shared_ptr<Y>& r): p_ (r) {}
+
+  template <class T>
+  template <class Y>
+  inline lazy_shared_ptr<T>::
   lazy_shared_ptr (std::shared_ptr<Y>&& r): p_ (std::move (r)) {}
+
+  template <class T>
+  template <class Y>
+  inline lazy_shared_ptr<T>::
+  lazy_shared_ptr (::boost::shared_ptr<Y>&& r): p_ (std::move (r)) {}
 
   template <class T>
   template <class Y>
@@ -1121,6 +1131,16 @@ namespace odb
   template <class Y>
   inline lazy_shared_ptr<T>& lazy_shared_ptr<T>::
   operator= (const std::shared_ptr<Y>& r)
+  {
+    p_ = r;
+    i_.reset ();
+    return *this;
+  }
+
+  template <class T>
+  template <class Y>
+  inline lazy_shared_ptr<T>& lazy_shared_ptr<T>::
+  operator= (const ::boost::shared_ptr<Y>& r)
   {
     p_ = r;
     i_.reset ();

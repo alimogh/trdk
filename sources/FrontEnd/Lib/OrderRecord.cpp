@@ -45,25 +45,27 @@ class OrderRecord::Implementation {
 
   Implementation() = default;
   Implementation(QString remoteId,
+                 boost::shared_ptr<const OperationRecord> operation,
                  QString symbol,
-                 Currency currency,
+                 const Currency &currency,
                  QString tradingSystemInstanceName,
-                 OrderSide side,
+                 const OrderSide &side,
                  const Qty &qty,
                  boost::optional<Price> price,
                  const TimeInForce &timeInForce,
                  QDateTime submitTime,
-                 OrderStatus status)
+                 const OrderStatus &status)
       : m_remoteId(std::move(remoteId)),
+        m_operation(std::move(operation)),
         m_symbol(std::move(symbol)),
-        m_currency(std::move(currency)),
+        m_currency(currency),
         m_tradingSystemInstanceName(std::move(tradingSystemInstanceName)),
-        m_side(std::move(side)),
+        m_side(side),
         m_qty(qty),
         m_price(std::move(price)),
         m_timeInForce(timeInForce),
         m_submitTime(std::move(submitTime)),
-        m_status(std::move(status)) {}
+        m_status(status) {}
   Implementation(QString remoteId,
                  const SubOperationId &subOperationId,
                  QString symbol,
@@ -96,48 +98,49 @@ class OrderRecord::Implementation {
 OrderRecord::OrderRecord() : m_pimpl(boost::make_unique<Implementation>()) {}
 OrderRecord::OrderRecord(QString remoteId,
                          QString symbol,
-                         Currency currency,
+                         const Currency &currency,
                          QString tradingSystemInstanceName,
-                         OrderSide side,
+                         const OrderSide &side,
                          const Qty &qty,
                          boost::optional<Price> price,
                          const TimeInForce &timeInForce,
                          QDateTime submitTime,
-                         OrderStatus status)
+                         const OrderStatus &status)
     : m_pimpl(boost::make_unique<Implementation>(
           std::move(remoteId),
           std::move(symbol),
-          std::move(currency),
+          currency,
           std::move(tradingSystemInstanceName),
-          std::move(side),
+          side,
           qty,
           std::move(price),
           timeInForce,
           std::move(submitTime),
-          std::move(status))) {}
+          status)) {}
 OrderRecord::OrderRecord(QString remoteId,
                          const SubOperationId &subOperationId,
+                         boost::shared_ptr<const OperationRecord> operation,
                          QString symbol,
-                         Currency currency,
+                         const Currency &currency,
                          QString tradingSystemInstanceName,
-                         OrderSide side,
+                         const OrderSide &side,
                          const Qty &qty,
                          boost::optional<Price> price,
                          const TimeInForce &timeInForce,
                          QDateTime submitTime,
-                         OrderStatus status)
+                         const OrderStatus &status)
     : m_pimpl(boost::make_unique<Implementation>(
           std::move(remoteId),
           subOperationId,
           std::move(symbol),
-          std::move(currency),
+          currency,
           std::move(tradingSystemInstanceName),
-          std::move(side),
+          side,
           qty,
           std::move(price),
           timeInForce,
           std::move(submitTime),
-          std::move(status))) {}
+          status)) {}
 OrderRecord::OrderRecord(OrderRecord &&) noexcept = default;
 OrderRecord::OrderRecord(const OrderRecord &rhs)
     : m_pimpl(boost::make_unique<Implementation>(*rhs.m_pimpl)) {}

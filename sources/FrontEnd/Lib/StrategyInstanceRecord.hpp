@@ -19,7 +19,6 @@ class StrategyInstanceRecord {
 #ifdef TRDK_FRONTEND_LIB
   friend class odb::access;
 #endif
-  friend class OperationRecord;
 
   StrategyInstanceRecord();
 
@@ -43,6 +42,7 @@ class StrategyInstanceRecord {
 
   const std::vector<odb::lazy_weak_ptr<const OperationRecord>> &GetOperations()
       const;
+  void AddOperation(const boost::shared_ptr<const OperationRecord> &);
 
   const boost::property_tree::ptree &GetConfig() const;
   void SetConfig(const boost::property_tree::ptree &);
@@ -52,8 +52,6 @@ class StrategyInstanceRecord {
   void SetTypeIdValue(const QUuid &);
   void SetOperationsValue(
       std::vector<odb::lazy_weak_ptr<const OperationRecord>>);
-
-  void AddOperation(const boost::shared_ptr<const OperationRecord> &);
 
   QString GetConfigValue() const;
   void SetConfigValue(const QString &);
