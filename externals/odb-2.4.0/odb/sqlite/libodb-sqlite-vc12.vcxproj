@@ -44,14 +44,14 @@
     <LinkIncremental>true</LinkIncremental>
     <OutDir>..\..\lib64\</OutDir>
     <TargetName>odb-sqlite-d-2.4-vc15</TargetName>
-    <IncludePath>A:\Projects\trdk\externals\SQLite\sqlite-amalgamation-3240000;$(IncludePath)</IncludePath>
+    <IncludePath>..\..\..\SQLite\sqlite-amalgamation-3240000;$(IncludePath)</IncludePath>
     <IntDir>..\..\int64\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>..\..\lib64\</OutDir>
     <TargetName>odb-sqlite-2.4-vc15</TargetName>
-    <IncludePath>A:\Projects\trdk\externals\SQLite\sqlite-amalgamation-3240000;$(IncludePath)</IncludePath>
+    <IncludePath>..\..\..\SQLite\sqlite-amalgamation-3240000;$(IncludePath)</IncludePath>
     <IntDir>..\..\int64\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
