@@ -144,10 +144,24 @@ boost::optional<OrderCheckError> BittrexTradingSystem::CheckOrder(
                    security);
     throw Exception("Symbol is not supported by exchange");
   }
+  boost::optional<OrderCheckError> result;
   if (qty < product->second.minQty) {
-    return OrderCheckError{product->second.minQty};
+    result.emplace(OrderCheckError{product->second.minQty});
   }
-  return boost::none;
+  if (price) {
+    // DUST_TRADE_DISALLOWED_MIN_VALUE_50K_SAT, see
+    // https://support.bittrex.com/hc/en-us/articles/115000240791-Error-Codes-Troubleshooting-common-error-codes
+    const auto minVolume = 0.0005;
+    if (*price * qty < 0.0005) {
+      if (!result) {
+        result.emplace(OrderCheckError{boost::none, boost::none, minVolume});
+      } else {
+        result->volume = minVolume;
+      }
+    }
+  }
+
+  return result;
 }
 
 bool BittrexTradingSystem::CheckSymbol(const std::string &symbol) const {
