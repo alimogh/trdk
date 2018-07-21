@@ -5,6 +5,7 @@
   <PropertyGroup>
     <_PropertySheetDisplayName>Front-end</_PropertySheetDisplayName>
     <IncludePath>$(SolutionDir)FrontEnd;$(IncludePath)</IncludePath>
+    <ExecutablePath>..\..\..\externals\SQLite;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <ItemDefinitionGroup />
   <ItemGroup />

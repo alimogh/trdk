@@ -45,7 +45,6 @@ class OrderRecord::Implementation {
 
   Implementation() = default;
   Implementation(QString remoteId,
-                 boost::shared_ptr<const OperationRecord> operation,
                  QString symbol,
                  const Currency &currency,
                  QString tradingSystemInstanceName,
@@ -56,7 +55,6 @@ class OrderRecord::Implementation {
                  QDateTime submitTime,
                  const OrderStatus &status)
       : m_remoteId(std::move(remoteId)),
-        m_operation(std::move(operation)),
         m_symbol(std::move(symbol)),
         m_currency(currency),
         m_tradingSystemInstanceName(std::move(tradingSystemInstanceName)),
@@ -68,26 +66,28 @@ class OrderRecord::Implementation {
         m_status(status) {}
   Implementation(QString remoteId,
                  const SubOperationId &subOperationId,
+                 boost::shared_ptr<const OperationRecord> operation,
                  QString symbol,
-                 Currency currency,
+                 const Currency &currency,
                  QString tradingSystemInstanceName,
-                 OrderSide side,
+                 const OrderSide &side,
                  const Qty &qty,
                  boost::optional<Price> price,
                  const TimeInForce &timeInForce,
                  QDateTime submitTime,
-                 OrderStatus status)
+                 const OrderStatus &status)
       : m_remoteId(std::move(remoteId)),
         m_subOperationId(subOperationId),
+        m_operation(std::move(operation)),
         m_symbol(std::move(symbol)),
-        m_currency(std::move(currency)),
+        m_currency(currency),
         m_tradingSystemInstanceName(std::move(tradingSystemInstanceName)),
-        m_side(std::move(side)),
+        m_side(side),
         m_qty(qty),
         m_price(std::move(price)),
         m_timeInForce(timeInForce),
         m_submitTime(std::move(submitTime)),
-        m_status(std::move(status)) {}
+        m_status(status) {}
   Implementation(Implementation &&) = default;
   Implementation(const Implementation &) = default;
   Implementation &operator=(Implementation &&) = default;
@@ -132,6 +132,7 @@ OrderRecord::OrderRecord(QString remoteId,
     : m_pimpl(boost::make_unique<Implementation>(
           std::move(remoteId),
           subOperationId,
+          std::move(operation),
           std::move(symbol),
           currency,
           std::move(tradingSystemInstanceName),
@@ -185,8 +186,8 @@ void OrderRecord::SetSymbolValue(QString symbol) {
 }
 
 const Currency &OrderRecord::GetCurrency() const { return m_pimpl->m_currency; }
-void OrderRecord::SetCurrencyValue(Currency currency) {
-  m_pimpl->m_currency = std::move(currency);
+void OrderRecord::SetCurrencyValue(const Currency &currency) {
+  m_pimpl->m_currency = currency;
 }
 
 const QString &OrderRecord::GetTradingSystemInstanceName() const {
@@ -197,7 +198,7 @@ void OrderRecord::SetTradingSystemInstanceNameValue(QString instanceName) {
 }
 
 const OrderSide &OrderRecord::GetSide() const { return m_pimpl->m_side; }
-void OrderRecord::SetSideValue(OrderSide side) {
+void OrderRecord::SetSideValue(const OrderSide &side) {
   m_pimpl->m_side = std::move(side);
 }
 
@@ -249,8 +250,8 @@ void OrderRecord::SetUpdateTime(QDateTime time) const {
 }
 
 const OrderStatus &OrderRecord::GetStatus() const { return m_pimpl->m_status; }
-void OrderRecord::SetStatus(OrderStatus status) {
-  m_pimpl->m_status = std::move(status);
+void OrderRecord::SetStatus(const OrderStatus &status) {
+  m_pimpl->m_status = status;
 }
 
 const boost::optional<QString> &OrderRecord::GetAdditionalInfo() const {

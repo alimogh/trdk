@@ -2,9 +2,9 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <_PropertySheetDisplayName>Front-end Library</_PropertySheetDisplayName>
-    <IncludePath>$(SolutionDir)..\externals\odb-2.4.0;$(SolutionDir)..\externals\SQLite\sqlite-amalgamation-3240000;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)..\externals\odb-2.4.0\lib64;$(LibraryPath)</LibraryPath>
-    <ExecutablePath>$(SolutionDir)..\externals\odb-2.4.0\bin;$(ExecutablePath)</ExecutablePath>
+    <IncludePath>$(SolutionDir)..\externals\odb;$(SolutionDir)..\externals\SQLite\sqlite-amalgamation-3240000;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)..\externals\odb\lib64;$(LibraryPath)</LibraryPath>
+    <ExecutablePath>$(SolutionDir)..\externals\odb\bin;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <Link />

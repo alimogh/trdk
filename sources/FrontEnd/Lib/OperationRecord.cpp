@@ -10,7 +10,6 @@
 
 #include "Prec.hpp"
 #include "OperationRecord.hpp"
-#include "OperationStatus.hpp"
 #include "PnlRecord.hpp"
 
 using namespace trdk;
@@ -32,10 +31,15 @@ class OperationRecord::Implementation {
   std::vector<boost::shared_ptr<const PnlRecord>> m_pnl;
 
   Implementation() = default;
-  Implementation(const QUuid &id,
-                 QDateTime startTime,
-                 const OperationStatus &status)
-      : m_id(id), m_status(status), m_startTime(std::move(startTime)) {}
+  Implementation(
+      const QUuid &id,
+      QDateTime startTime,
+      boost::shared_ptr<const StrategyInstanceRecord> strategyInstance,
+      const OperationStatus &status)
+      : m_id(id),
+        m_status(status),
+        m_startTime(std::move(startTime)),
+        m_strategyInstance(std::move(strategyInstance)) {}
   Implementation(Implementation &&) = default;
   Implementation(const Implementation &) = default;
   Implementation &operator=(Implementation &&) = delete;
@@ -46,11 +50,13 @@ class OperationRecord::Implementation {
 OperationRecord::OperationRecord()
     : m_pimpl(boost::make_unique<Implementation>()) {}
 
-OperationRecord::OperationRecord(const QUuid &id,
-                                 QDateTime startTime,
-                                 const OperationStatus &status)
+OperationRecord::OperationRecord(
+    const QUuid &id,
+    QDateTime startTime,
+    boost::shared_ptr<const StrategyInstanceRecord> strategyInstance,
+    const OperationStatus &status)
     : m_pimpl(boost::make_unique<Implementation>(
-          id, std::move(startTime), status)) {}
+          id, std::move(startTime), std::move(strategyInstance), status)) {}
 OperationRecord::OperationRecord(OperationRecord &&) noexcept = default;
 OperationRecord::OperationRecord(const OperationRecord &rhs)
     : m_pimpl(boost::make_unique<Implementation>(*rhs.m_pimpl)) {}
