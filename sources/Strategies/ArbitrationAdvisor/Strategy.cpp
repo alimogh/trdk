@@ -130,7 +130,7 @@ class SignalSession : private boost::noncopyable {
 const ids::uuid aa::Strategy::typeId =
     ids::string_generator()("{39FBFFDA-10D7-462D-BA82-0D8BA9CA7A09}");
 
-class aa::Strategy::Implementation : private boost::noncopyable {
+class aa::Strategy::Implementation : boost::noncopyable {
  public:
   aa::Strategy &m_self;
 

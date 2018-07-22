@@ -12,20 +12,19 @@
 #include "Operation.hpp"
 
 using namespace trdk;
-using namespace trdk::TradingLib;
-using namespace trdk::Strategies::ArbitrageAdvisor;
+using namespace TradingLib;
+using namespace Strategies::ArbitrageAdvisor;
 
 namespace pt = boost::posix_time;
-namespace aa = trdk::Strategies::ArbitrageAdvisor;
+namespace aa = Strategies::ArbitrageAdvisor;
 
-aa::Operation::Operation(
-    trdk::Strategy &strategy,
-    Security &sellTarget,
-    Security &buyTarget,
-    const Qty &maxQty,
-    const Price &sellPrice,
-    const Price &buyPrice,
-    const boost::optional<pt::time_duration> &&stopLossDelay)
+aa::Operation::Operation(trdk::Strategy &strategy,
+                         Security &sellTarget,
+                         Security &buyTarget,
+                         const Qty &maxQty,
+                         const Price &sellPrice,
+                         const Price &buyPrice,
+                         boost::optional<pt::time_duration> stopLossDelay)
     : Base(strategy, boost::make_unique<PnlOneSymbolContainer>()),
       m_openOrderPolicy(sellPrice, buyPrice),
       m_sellTarget(sellTarget),
@@ -50,17 +49,15 @@ void aa::Operation::Setup(Position &position,
    public:
     typedef TradingLib::StopLossOrder Base;
 
-   public:
     explicit StopLoss(const Price &controlPrice,
                       Position &position,
                       PositionController &controller,
                       const pt::time_duration &stopLossDelay)
         : Base(stopLossDelay, position, controller),
           m_controlPrice(controlPrice) {}
-    virtual ~StopLoss() override = default;
+    ~StopLoss() override = default;
 
-   public:
-    virtual void Report(const char *action) const override {
+    void Report(const char *action) const override {
       GetTradingLog().Write(
           "{'algo': {'action': '%6%', 'type': '%1%', 'params': {'price': "
           "'%7% %2%'}, 'delayTime': '%3%', 'position': {'side': '%8%', "
@@ -77,7 +74,7 @@ void aa::Operation::Setup(Position &position,
           });
     }
 
-    virtual bool IsWatching() const override {
+    bool IsWatching() const override {
       if (!GetPosition().HasOpenedOpenOrders()) {
         return false;
       }
@@ -102,15 +99,13 @@ void aa::Operation::Setup(Position &position,
     }
 
    protected:
-    virtual const char *GetName() const override {
-      return "opening stop price";
-    }
-    virtual const pt::ptime &GetStartTime() const override {
+    const char *GetName() const override { return "opening stop price"; }
+    const pt::ptime &GetStartTime() const override {
       Assert(m_startTime != pt::not_a_date_time);
       return m_startTime;
     }
 
-    virtual bool Activate() override {
+    bool Activate() override {
       const auto &currentPrice = GetPosition().GetMarketOpenPrice();
       if (GetPosition().IsLong()) {
         if (currentPrice <= m_controlPrice) {
