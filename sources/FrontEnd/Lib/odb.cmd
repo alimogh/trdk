@@ -1,5 +1,5 @@
 odb.exe ^
-	--generate-query --generate-schema  ^
+	--generate-query --generate-schema  --generate-session ^
 	--database sqlite ^
 	--std c++14 ^
 	--profile qt --profile boost ^

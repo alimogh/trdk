@@ -14,7 +14,7 @@
 #include "I18n.hpp"
 #include "OperationRecord.hpp"
 #include "OrderRecord.hpp"
-#include "PnlRecordOrm.hpp"
+#include "PnlRecord.hpp"
 #include "StrategyInstanceRecord.hpp"
 
 using namespace trdk::FrontEnd;
@@ -90,12 +90,8 @@ void OperationNodeItem::Update(
   m_commission.clear();
   m_totalResult.clear();
 
-  boost::optional<odb::transaction> transaction;
   for (const auto &pnlPtr : m_record->GetPnl()) {
-    if (!transaction) {
-      transaction.emplace(pnlPtr.database().begin());
-    }
-    const auto &pnl = pnlPtr.load();
+    const auto &pnl = pnlPtr.lock();
     const auto &addToBalanceString = [&pnl](const Volume &value,
                                             const bool showPlus,
                                             QString &destination) {

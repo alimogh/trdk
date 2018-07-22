@@ -424,7 +424,7 @@ class FrontEnd::Engine::Implementation : boost::noncopyable {
     for (const auto& pnlUpdate : pnlSet) {
       auto isExistinet = false;
       for (auto& operationPnlPtr : operation->GetPnl()) {
-        const auto& operationPnl = operationPnlPtr.load();
+        const auto& operationPnl = operationPnlPtr.lock();
         if (operationPnl->GetSymbol() == pnlUpdate.first.c_str()) {
           auto record = boost::make_shared<PnlRecord>(*operationPnl);
           record->SetFinancialResult(pnlUpdate.second.financialResult);

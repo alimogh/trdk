@@ -40,7 +40,7 @@ class StrategyInstanceRecord {
   const QString &GetName() const;
   void SetName(QString);
 
-  const std::vector<odb::lazy_weak_ptr<const OperationRecord>> &GetOperations()
+  const std::vector<boost::weak_ptr<const OperationRecord>> &GetOperations()
       const;
   void AddOperation(const boost::shared_ptr<const OperationRecord> &);
 
@@ -50,8 +50,7 @@ class StrategyInstanceRecord {
  private:
   void SetIdValue(const QUuid &);
   void SetTypeIdValue(const QUuid &);
-  void SetOperationsValue(
-      std::vector<odb::lazy_weak_ptr<const OperationRecord>>);
+  void SetOperationsValue(std::vector<boost::weak_ptr<const OperationRecord>>);
 
   QString GetConfigValue() const;
   void SetConfigValue(const QString &);
@@ -76,7 +75,7 @@ class StrategyInstanceRecord {
   QString name;
 #pragma db get(GetOperations) set(SetOperationsValue(std::move(?))) \
     inverse(strategyInstance) value_not_null unordered
-  std::vector<odb::lazy_weak_ptr<const OperationRecord>> operations;
+  std::vector<boost::weak_ptr<const OperationRecord>> operations;
 #pragma db get(GetConfigValue) set(SetConfigValue) null
   QString config;
 

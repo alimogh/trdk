@@ -1105,17 +1105,7 @@ namespace odb
   template <class T>
   template <class Y>
   inline lazy_shared_ptr<T>::
-  lazy_shared_ptr (const std::shared_ptr<Y>& r): p_ (r) {}
-
-  template <class T>
-  template <class Y>
-  inline lazy_shared_ptr<T>::
   lazy_shared_ptr (const ::boost::shared_ptr<Y>& r): p_ (r) {}
-
-  template <class T>
-  template <class Y>
-  inline lazy_shared_ptr<T>::
-  lazy_shared_ptr (std::shared_ptr<Y>&& r): p_ (std::move (r)) {}
 
   template <class T>
   template <class Y>
@@ -1125,17 +1115,7 @@ namespace odb
   template <class T>
   template <class Y>
   inline lazy_shared_ptr<T>::
-  lazy_shared_ptr (const std::weak_ptr<Y>& r): p_ (r) {}
-
-  template <class T>
-  template <class Y>
-  inline lazy_shared_ptr<T>& lazy_shared_ptr<T>::
-  operator= (const std::shared_ptr<Y>& r)
-  {
-    p_ = r;
-    i_.reset ();
-    return *this;
-  }
+  lazy_shared_ptr (const ::boost::weak_ptr<Y>& r): p_ (r) {}
 
   template <class T>
   template <class Y>
@@ -1150,7 +1130,7 @@ namespace odb
   template <class T>
   template <class Y>
   inline lazy_shared_ptr<T>& lazy_shared_ptr<T>::
-  operator= (std::shared_ptr<Y>&& r)
+  operator= (::boost::shared_ptr<Y>&& r)
   {
     p_ = std::move (r);
     i_.reset ();
@@ -1166,7 +1146,7 @@ namespace odb
   }
 
   template <class T>
-  inline std::shared_ptr<T> lazy_shared_ptr<T>::
+  inline ::boost::shared_ptr<T> lazy_shared_ptr<T>::
   load () const
   {
     if (!p_ && i_)
@@ -1191,7 +1171,7 @@ namespace odb
   }
 
   template <class T>
-  inline std::shared_ptr<T> lazy_shared_ptr<T>::
+  inline ::boost::shared_ptr<T> lazy_shared_ptr<T>::
   get_eager () const
   {
     return p_;
@@ -1245,7 +1225,7 @@ namespace odb
   template <class T>
   template <class DB, class Y>
   inline lazy_shared_ptr<T>::
-  lazy_shared_ptr (DB& db, const std::shared_ptr<Y>& r)
+  lazy_shared_ptr (DB& db, const ::boost::shared_ptr<Y>& r)
       : p_ (r)
   {
     if (p_)
@@ -1255,7 +1235,7 @@ namespace odb
   template <class T>
   template <class DB, class Y>
   inline lazy_shared_ptr<T>::
-  lazy_shared_ptr (DB& db, std::shared_ptr<Y>&& r)
+  lazy_shared_ptr (DB& db, ::boost::shared_ptr<Y>&& r)
       : p_ (std::move (r))
   {
     if (p_)
@@ -1265,7 +1245,7 @@ namespace odb
   template <class T>
   template <class DB, class Y>
   inline lazy_shared_ptr<T>::
-  lazy_shared_ptr (DB& db, const std::weak_ptr<Y>& r)
+  lazy_shared_ptr (DB& db, const ::boost::weak_ptr<Y>& r)
       : p_ (r)
   {
     if (p_)
@@ -1336,7 +1316,7 @@ namespace odb
   template <class T>
   template <class DB, class Y>
   inline void lazy_shared_ptr<T>::
-  reset (DB& db, const std::shared_ptr<Y>& r)
+  reset (DB& db, const ::boost::shared_ptr<Y>& r)
   {
     p_ = r;
 
@@ -1349,7 +1329,7 @@ namespace odb
   template <class T>
   template <class DB, class Y>
   inline void lazy_shared_ptr<T>::
-  reset (DB& db, std::shared_ptr<Y>&& r)
+  reset (DB& db, ::boost::shared_ptr<Y>&& r)
   {
     p_ = std::move (r);
 
@@ -1524,47 +1504,17 @@ namespace odb
   template <class T>
   template <class Y>
   inline lazy_weak_ptr<T>::
-  lazy_weak_ptr (const std::weak_ptr<Y>& r): p_ (r) {}
+  lazy_weak_ptr (const ::boost::weak_ptr<Y>& r): p_ (r) {}
 
   template <class T>
   template <class Y>
   inline lazy_weak_ptr<T>::
-  lazy_weak_ptr (const  ::boost::weak_ptr<Y>& r): p_ (r) {}
-
-  template <class T>
-  template <class Y>
-  inline lazy_weak_ptr<T>::
-  lazy_weak_ptr (const std::shared_ptr<Y>& r): p_ (r) {}
-
-  template <class T>
-  template <class Y>
-  inline lazy_weak_ptr<T>::
-  lazy_weak_ptr (const  ::boost::shared_ptr<Y>& r): p_ (r) {}
+  lazy_weak_ptr (const ::boost::shared_ptr<Y>& r): p_ (r) {}
 
   template <class T>
   template <class Y>
   inline lazy_weak_ptr<T>& lazy_weak_ptr<T>::
-  operator= (const std::weak_ptr<Y>& r)
-  {
-    p_ = r;
-    i_.reset ();
-    return *this;
-  }
-
-  template <class T>
-  template <class Y>
-  inline lazy_weak_ptr<T>& lazy_weak_ptr<T>::
-  operator= (const  ::boost::weak_ptr<Y>& r)
-  {
-    p_ = r;
-    i_.reset ();
-    return *this;
-  }
-
-  template <class T>
-  template <class Y>
-  inline lazy_weak_ptr<T>& lazy_weak_ptr<T>::
-  operator= (const std::shared_ptr<Y>& r)
+  operator= (const ::boost::weak_ptr<Y>& r)
   {
     p_ = r;
     i_.reset ();
@@ -1590,14 +1540,14 @@ namespace odb
   }
 
   template <class T>
-  inline boost::shared_ptr<T> lazy_weak_ptr<T>::
+  inline ::boost::shared_ptr<T> lazy_weak_ptr<T>::
   load () const
   {
-    boost::shared_ptr<T> r (p_.lock ());
+     ::boost::shared_ptr<T> r (p_.lock ());
 
     if (!r && i_)
     {
-      r.reset(i_.template load<T> (false)); // Keep id.
+      r = i_.template load<T> (false); // Keep id.
       p_ = r;
     }
 
@@ -1614,7 +1564,7 @@ namespace odb
   }
 
   template <class T>
-  inline std::weak_ptr<T> lazy_weak_ptr<T>::
+  inline ::boost::weak_ptr<T> lazy_weak_ptr<T>::
   get_eager () const
   {
     return p_;
@@ -1628,7 +1578,7 @@ namespace odb
   template <class T>
   template <class DB, class Y>
   inline lazy_weak_ptr<T>::
-  lazy_weak_ptr (DB& db, const std::shared_ptr<Y>& r)
+  lazy_weak_ptr (DB& db, const ::boost::shared_ptr<Y>& r)
       : p_ (r)
   {
     typedef typename object_traits<T>::object_type object_type;
@@ -1640,26 +1590,12 @@ namespace odb
   template <class T>
   template <class DB, class Y>
   inline lazy_weak_ptr<T>::
-  lazy_weak_ptr (DB& db, const std::weak_ptr<Y>& r)
+  lazy_weak_ptr (DB& db, const ::boost::weak_ptr<Y>& r)
       : p_ (r)
   {
     typedef typename object_traits<T>::object_type object_type;
 
-    std::shared_ptr<T> sp (p_.lock ());
-
-    if (sp)
-      i_.reset (db, object_traits<object_type>::id (*sp));
-  }
-
-  template <class T>
-  template <class DB, class Y>
-  inline lazy_weak_ptr<T>::
-  lazy_weak_ptr (DB& db, const boost::weak_ptr<Y>& r)
-      : p_ (r)
-  {
-    typedef typename object_traits<T>::object_type object_type;
-
-    std::shared_ptr<T> sp (p_.lock ());
+    ::boost::shared_ptr<T> sp (p_.lock ());
 
     if (sp)
       i_.reset (db, object_traits<object_type>::id (*sp));
@@ -1677,7 +1613,7 @@ namespace odb
   template <class T>
   template <class DB, class Y>
   inline void lazy_weak_ptr<T>::
-  reset (DB& db, const std::shared_ptr<Y>& r)
+  reset (DB& db, const ::boost::shared_ptr<Y>& r)
   {
     typedef typename object_traits<T>::object_type object_type;
 
@@ -1692,27 +1628,12 @@ namespace odb
   template <class T>
   template <class DB, class Y>
   inline void lazy_weak_ptr<T>::
-  reset (DB& db, const boost::shared_ptr<Y>& r)
+  reset (DB& db, const ::boost::weak_ptr<Y>& r)
   {
     typedef typename object_traits<T>::object_type object_type;
 
     p_ = r;
-
-    if (r)
-      i_.reset (db, object_traits<object_type>::id (*r));
-    else
-      i_.reset ();
-  }
-
-  template <class T>
-  template <class DB, class Y>
-  inline void lazy_weak_ptr<T>::
-  reset (DB& db, const std::weak_ptr<Y>& r)
-  {
-    typedef typename object_traits<T>::object_type object_type;
-
-    p_ = r;
-    std::shared_ptr<T> sp (p_.lock ());
+    ::boost::shared_ptr<T> sp (p_.lock ());
 
     if (sp)
       i_.reset (db, object_traits<object_type>::id (*sp));
@@ -1727,7 +1648,7 @@ namespace odb
   {
     typedef typename object_traits<T>::object_type object_type;
 
-    std::shared_ptr<T> sp (p_.lock ());
+    ::boost::shared_ptr<T> sp (p_.lock ());
     return sp
       ? object_traits<object_type>::id (*sp)
       : i_.template object_id<O> ();

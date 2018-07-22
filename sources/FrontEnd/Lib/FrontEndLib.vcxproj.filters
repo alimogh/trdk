@@ -485,12 +485,6 @@
     <ClInclude Include="GeneratedFiles\Orm\StrategyInstanceViews-odb.hxx">
       <Filter>Generated Files\ORM</Filter>
     </ClInclude>
-    <ClInclude Include="PnlRecordOrm.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="OrderRecordOrm.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resources\FrontEndLib.rc">

@@ -64,7 +64,7 @@ class OrderRecord {
   const Id &GetId() const;
   const QString &GetRemoteId() const;
 
-  const odb::lazy_shared_ptr<const OperationRecord> &GetOperation() const;
+  const boost::shared_ptr<const OperationRecord> &GetOperation() const;
   const boost::optional<SubOperationId> &GetSubOperationId() const;
 
   const QString &GetSymbol() const;
@@ -99,7 +99,7 @@ class OrderRecord {
   void SetIdValue(const Id &);
   void SetRemoteIdValue(QString);
 
-  void SetOperationValue(odb::lazy_shared_ptr<const OperationRecord>);
+  void SetOperationValue(boost::shared_ptr<const OperationRecord>);
   void SetSubOperationIdValue(boost::optional<SubOperationId>);
 
   void SetSymbolValue(QString);
@@ -135,7 +135,7 @@ class OrderRecord {
   QString remoteId;
 #pragma db get(GetOperation) \
     set(SetOperationValue(std::move(?))) value_not_null null
-  odb::lazy_shared_ptr<const OperationRecord> operation;
+  boost::shared_ptr<const OperationRecord> operation;
 #pragma db column("sub_operation_id") get(GetSubOperationId) \
     set(SetSubOperationIdValue(std::move(?))) null
   boost::optional<SubOperationId> subOperationId;

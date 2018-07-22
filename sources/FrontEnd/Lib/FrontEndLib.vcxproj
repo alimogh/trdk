@@ -846,7 +846,6 @@
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">odb.cmd;%(FullPath);%(AdditionalInputs)</AdditionalInputs>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">odb.cmd;%(FullPath);%(AdditionalInputs)</AdditionalInputs>
     </CustomBuild>
-    <ClInclude Include="OrderRecordOrm.hpp" />
     <ClInclude Include="PnlOrm.hpp" />
     <CustomBuild Include="StrategyInstanceViews.hpp">
       <Command Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">call odb.cmd "%(FullPath)"</Command>
@@ -876,7 +875,6 @@
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">.\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp" "-fPrec.hpp" "-f../../%(Filename)%(Extension)"  -DNDEBUG -DNTEST -DBOOST_DISABLE_ASSERTS -DQT_NO_DEBUG -DTRDK_FRONTEND_LIB -D_BUILDING_TRDK_FRONTEND_LIB_ORM -D_QX_UNITY_BUILD -D_QX_ENABLE_BOOST -DDISTRIBUTION_STANDALONE -DUNICODE -DWIN64 -DQT_DLL -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB -DWIN32 -D_WINDOWS -D_WIN32_WINNT=0x0600 -DWINVER=0x0600 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS -D_WINDLL "-I.\GeneratedFiles" "-I." "-I$(QTDIR)\include" "-I.\GeneratedFiles\$(ConfigurationName)\." "-I$(QTDIR)\include\QtCore" "-I$(QTDIR)\include\QtGui" "-I$(QTDIR)\include\QtWidgets"</Command>
     </CustomBuild>
-    <ClInclude Include="PnlRecordOrm.hpp" />
     <ClInclude Include="StrategyInstanceOrm.hpp" />
     <ClInclude Include="Types.hpp" />
     <ClInclude Include="Util.hpp" />

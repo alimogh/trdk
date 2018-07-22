@@ -22,7 +22,7 @@ class StrategyInstanceRecord::Implementation {
   QUuid m_typeId;
   bool m_isActive = false;
   QString m_name;
-  std::vector<odb::lazy_weak_ptr<const OperationRecord>> m_operations;
+  std::vector<boost::weak_ptr<const OperationRecord>> m_operations;
   ptr::ptree m_config;
 
   Implementation() = default;
@@ -79,12 +79,12 @@ void StrategyInstanceRecord::SetName(QString name) {
   m_pimpl->m_name = std::move(name);
 }
 
-const std::vector<odb::lazy_weak_ptr<const OperationRecord>>
+const std::vector<boost::weak_ptr<const OperationRecord>>
     &StrategyInstanceRecord::GetOperations() const {
   return m_pimpl->m_operations;
 }
 void StrategyInstanceRecord::SetOperationsValue(
-    std::vector<odb::lazy_weak_ptr<const OperationRecord>> operations) {
+    std::vector<boost::weak_ptr<const OperationRecord>> operations) {
   m_pimpl->m_operations = std::move(operations);
 }
 void StrategyInstanceRecord::AddOperation(

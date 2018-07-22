@@ -384,7 +384,7 @@ namespace odb
   bool operator!= (std::nullptr_t, const lazy_unique_ptr<T, D>&) /*noexcept*/;
 #endif
 
-  // C++11 std::shared_ptr lazy version.
+  // C++11 ::boost::shared_ptr lazy version.
   //
   template <class T>
   class lazy_weak_ptr;
@@ -441,7 +441,7 @@ namespace odb
 #ifdef ODB_CXX11_EXPLICIT_CONVERSION_OPERATOR
     explicit operator bool () const /*noexcept*/;
 #else
-    typedef std::shared_ptr<T> lazy_shared_ptr::*unspecified_bool_type;
+    typedef ::boost::shared_ptr<T> lazy_shared_ptr::*unspecified_bool_type;
     operator unspecified_bool_type () const
     {
       return (p_ || i_) ? &lazy_shared_ptr::p_ : 0;
@@ -453,16 +453,11 @@ namespace odb
     // Initialization/assignment from shared_ptr and weak_ptr.
     //
   public:
-    template <class Y> lazy_shared_ptr (const std::shared_ptr<Y>&);
     template <class Y> lazy_shared_ptr (const ::boost::shared_ptr<Y>&);
-    template <class Y> lazy_shared_ptr (std::shared_ptr<Y>&&);
     template <class Y> lazy_shared_ptr (::boost::shared_ptr<Y>&&);
-    template <class Y> explicit lazy_shared_ptr (const std::weak_ptr<Y>&);
     template <class Y> explicit lazy_shared_ptr (const ::boost::weak_ptr<Y>&);
 
-    template <class Y> lazy_shared_ptr& operator= (const std::shared_ptr<Y>&);
     template <class Y> lazy_shared_ptr& operator= (const ::boost::shared_ptr<Y>&);
-    template <class Y> lazy_shared_ptr& operator= (std::shared_ptr<Y>&&);
     template <class Y> lazy_shared_ptr& operator= (::boost::shared_ptr<Y>&&);
 
     // Lazy loading interface.
@@ -479,7 +474,7 @@ namespace odb
     //
     bool loaded () const;
 
-    std::shared_ptr<T> load () const;
+    ::boost::shared_ptr<T> load () const;
 
     // Unload the pointer. For transient objects this function is
     // equivalent to reset().
@@ -489,18 +484,15 @@ namespace odb
     // Get the underlying eager pointer. If this is an unloaded pointer
     // to a persistent object, then the returned pointer will be NULL.
     //
-    std::shared_ptr<T> get_eager () const;
+    ::boost::shared_ptr<T> get_eager () const;
 
     template <class DB, class ID> lazy_shared_ptr (DB&, const ID&);
     template <class DB, class Y> lazy_shared_ptr (DB&, Y*);
     template <class DB, class Y, class D> lazy_shared_ptr (DB&, Y*, D);
     template <class DB, class Y, class D, class A> lazy_shared_ptr (DB&, Y*, D, A);
     template <class DB, class Y> lazy_shared_ptr (DB&, std::auto_ptr<Y>&&);
-    template <class DB, class Y> lazy_shared_ptr (DB&, const std::shared_ptr<Y>&);
     template <class DB, class Y> lazy_shared_ptr (DB&, const ::boost::shared_ptr<Y>&);
-    template <class DB, class Y> lazy_shared_ptr (DB&, std::shared_ptr<Y>&&);
     template <class DB, class Y> lazy_shared_ptr (DB&, ::boost::shared_ptr<Y>&&);
-    template <class DB, class Y> lazy_shared_ptr (DB&, const std::weak_ptr<Y>&);
     template <class DB, class Y> lazy_shared_ptr (DB&, const ::boost::weak_ptr<Y>&);
 
     template <class DB, class ID> void reset (DB&, const ID&);
@@ -508,9 +500,7 @@ namespace odb
     template <class DB, class Y, class D> void reset (DB&, Y*, D);
     template <class DB, class Y, class D, class A> void reset (DB&, Y*, D, A);
     template <class DB, class Y> void reset (DB&, std::auto_ptr<Y>&&);
-    template <class DB, class Y> void reset (DB&, const std::shared_ptr<Y>&);
     template <class DB, class Y> void reset (DB&, const ::boost::shared_ptr<Y>&);
-    template <class DB, class Y> void reset (DB&, std::shared_ptr<Y>&&);
     template <class DB, class Y> void reset (DB&, ::boost::shared_ptr<Y>&&);
 
 #ifdef ODB_CXX11_FUNCTION_TEMPLATE_DEFAULT_ARGUMENT
@@ -562,7 +552,7 @@ namespace odb
   bool operator!= (std::nullptr_t, const lazy_shared_ptr<T>&) /*noexcept*/;
 #endif
 
-  // C++11 std::weak_ptr lazy version.
+  // C++11 ::boost::weak_ptr lazy version.
   //
   template <class T>
   class lazy_weak_ptr
@@ -596,14 +586,10 @@ namespace odb
     // Initialization/assignment from shared_ptr and weak_ptr.
     //
   public:
-    template <class Y> lazy_weak_ptr (const std::weak_ptr<Y>&);
     template <class Y> lazy_weak_ptr (const ::boost::weak_ptr<Y>&);
-    template <class Y> lazy_weak_ptr (const std::shared_ptr<Y>&);
     template <class Y> lazy_weak_ptr (const ::boost::shared_ptr<Y>&);
 
-    template <class Y> lazy_weak_ptr& operator= (const std::weak_ptr<Y>&);
     template <class Y> lazy_weak_ptr& operator= (const ::boost::weak_ptr<Y>&);
-    template <class Y> lazy_weak_ptr& operator= (const std::shared_ptr<Y>&);
     template <class Y> lazy_weak_ptr& operator= (const ::boost::shared_ptr<Y>&);
 
     // Lazy loading interface.
@@ -632,18 +618,14 @@ namespace odb
     // Get the underlying eager pointer. If this is an unloaded pointer
     // to a persistent object, then the returned pointer will be NULL.
     //
-    std::weak_ptr<T> get_eager () const;
+    ::boost::weak_ptr<T> get_eager () const;
 
     template <class DB, class ID> lazy_weak_ptr (DB&, const ID&);
-    template <class DB, class Y> lazy_weak_ptr (DB&, const std::shared_ptr<Y>&);
     template <class DB, class Y> lazy_weak_ptr (DB&, const ::boost::shared_ptr<Y>&);
-    template <class DB, class Y> lazy_weak_ptr (DB&, const std::weak_ptr<Y>&);
     template <class DB, class Y> lazy_weak_ptr (DB&, const ::boost::weak_ptr<Y>&);
 
     template <class DB, class ID> void reset (DB&, const ID&);
-    template <class DB, class Y> void reset (DB&, const std::shared_ptr<Y>&);
     template <class DB, class Y> void reset (DB&, const ::boost::shared_ptr<Y>&);
-    template <class DB, class Y> void reset (DB&, const std::weak_ptr<Y>&);
     template <class DB, class Y> void reset (DB&, const ::boost::weak_ptr<Y>&);
 
     // The object_id() function can only be called when the object is

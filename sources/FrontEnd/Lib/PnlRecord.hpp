@@ -43,7 +43,7 @@ class PnlRecord {
 
   const QString& GetSymbol() const;
 
-  const odb::lazy_shared_ptr<const OperationRecord>& GetOperation() const;
+  const boost::shared_ptr<const OperationRecord>& GetOperation() const;
 
   const Volume& GetFinancialResult() const;
   void SetFinancialResult(Volume);
@@ -55,7 +55,7 @@ class PnlRecord {
   void SetIdValue(const Id&);
   void SetSymbolValue(QString);
 
-  void SetOperationValue(odb::lazy_shared_ptr<const OperationRecord>);
+  void SetOperationValue(boost::shared_ptr<const OperationRecord>);
 
 #ifndef ODB_COMPILER
 
@@ -77,7 +77,7 @@ class PnlRecord {
   Volume::ValueType commission;
 #pragma db get(GetOperation) \
     set(SetOperationValue(std::move(?))) value_not_null not_null
-  odb::lazy_shared_ptr<const OperationRecord> operation;
+  boost::shared_ptr<const OperationRecord> operation;
 
 #pragma db index("unique_pnl_index") unique members(operation, symbol)
 

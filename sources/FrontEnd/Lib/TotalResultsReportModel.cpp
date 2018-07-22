@@ -13,7 +13,7 @@
 #include "Engine.hpp"
 #include "OperationRecord.hpp"
 #include "OperationStatus.hpp"
-#include "PnlRecordOrm.hpp"
+#include "PnlRecord.hpp"
 
 using namespace trdk::FrontEnd;
 namespace mi = boost::multi_index;
@@ -110,10 +110,10 @@ class TotalResultsReportModel::Implementation : boost::noncopyable {
   explicit Implementation(TotalResultsReportModel& self, const Engine& engine)
       : m_self(self), m_engine(engine) {}
 
-  void Update(const std::vector<odb::lazy_weak_ptr<const PnlRecord>>& update) {
+  void Update(const std::vector<boost::weak_ptr<const PnlRecord>>& update) {
     auto& data = m_data.get<BySymbol>();
     for (const auto& pnlPtr : update) {
-      auto pnl = pnlPtr.load();
+      const auto& pnl = pnlPtr.lock();
       const auto& it = data.find(pnl->GetSymbol());
       if (it == data.cend()) {
         const auto index = static_cast<int>(m_data.size());

@@ -18,7 +18,7 @@ class PnlRecord::Implementation {
  public:
   QString m_symbol;
   Id m_id = std::numeric_limits<Id>::max();
-  odb::lazy_shared_ptr<const OperationRecord> m_operation;
+  boost::shared_ptr<const OperationRecord> m_operation;
   Volume m_financialResult = 0;
   Volume m_commission = 0;
 
@@ -57,12 +57,12 @@ void PnlRecord::SetSymbolValue(QString symbol) {
   m_pimpl->m_symbol = std::move(symbol);
 }
 
-const odb::lazy_shared_ptr<const OperationRecord>& PnlRecord::GetOperation()
+const boost::shared_ptr<const OperationRecord>& PnlRecord::GetOperation()
     const {
   return m_pimpl->m_operation;
 }
 void PnlRecord::SetOperationValue(
-    odb::lazy_shared_ptr<const OperationRecord> operation) {
+    boost::shared_ptr<const OperationRecord> operation) {
   m_pimpl->m_operation = std::move(operation);
 }
 

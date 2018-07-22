@@ -14,7 +14,7 @@
 #include "OperationItem.hpp"
 #include "OperationRecord.hpp"
 #include "OperationStatus.hpp"
-#include "OrderRecordOrm.hpp"
+#include "OrderRecord.hpp"
 
 using namespace trdk;
 using namespace Lib;
@@ -106,7 +106,7 @@ class OperationListModel::Implementation {
                                 m_isErrorsIncluded, m_isCancelsIncluded)) {
       m_self.UpdateOperation(operation);
       for (const auto& order : operation->GetOrders()) {
-        m_self.UpdateOrder(order.load());
+        m_self.UpdateOrder(order.lock());
       }
     }
   }

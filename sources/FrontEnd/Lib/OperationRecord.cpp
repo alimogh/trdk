@@ -24,11 +24,11 @@ class OperationRecord::Implementation {
   QDateTime m_startTime;
   boost::optional<QDateTime> m_endTime;
 
-  odb::lazy_shared_ptr<const StrategyInstanceRecord> m_strategyInstance;
+  boost::shared_ptr<const StrategyInstanceRecord> m_strategyInstance;
 
-  std::vector<odb::lazy_weak_ptr<const OrderRecord>> m_orders;
+  std::vector<boost::weak_ptr<const OrderRecord>> m_orders;
 
-  std::vector<odb::lazy_weak_ptr<const PnlRecord>> m_pnl;
+  std::vector<boost::weak_ptr<const PnlRecord>> m_pnl;
 
   Implementation() = default;
   Implementation(
@@ -95,36 +95,35 @@ void OperationRecord::SetEndTime(boost::optional<QDateTime> time) {
   m_pimpl->m_endTime = std::move(time);
 }
 
-const odb::lazy_shared_ptr<const StrategyInstanceRecord>
+const boost::shared_ptr<const StrategyInstanceRecord>
     &OperationRecord::GetStrategyInstance() const {
   return m_pimpl->m_strategyInstance;
 }
 void OperationRecord::SetStrategyInstanceValue(
-    odb::lazy_shared_ptr<const StrategyInstanceRecord> strategyInstance) {
+    boost::shared_ptr<const StrategyInstanceRecord> strategyInstance) {
   m_pimpl->m_strategyInstance = std::move(strategyInstance);
 }
 
-const std::vector<odb::lazy_weak_ptr<const OrderRecord>>
+const std::vector<boost::weak_ptr<const OrderRecord>>
     &OperationRecord::GetOrders() const {
   return m_pimpl->m_orders;
 }
-void OperationRecord::AddOrder(
-    const boost::shared_ptr<const OrderRecord> &order) {
-  m_pimpl->m_orders.emplace_back(order);
+void OperationRecord::AddOrder(boost::weak_ptr<const OrderRecord> order) {
+  m_pimpl->m_orders.emplace_back(std::move(order));
 }
 void OperationRecord::SetOrdersValue(
-    std::vector<odb::lazy_weak_ptr<const OrderRecord>> list) {
+    std::vector<boost::weak_ptr<const OrderRecord>> list) {
   m_pimpl->m_orders = std::move(list);
 }
 
-const std::vector<odb::lazy_weak_ptr<const PnlRecord>>
-    &OperationRecord::GetPnl() const {
+const std::vector<boost::weak_ptr<const PnlRecord>> &OperationRecord::GetPnl()
+    const {
   return m_pimpl->m_pnl;
 }
-std::vector<odb::lazy_weak_ptr<const PnlRecord>> &OperationRecord::GetPnl() {
+std::vector<boost::weak_ptr<const PnlRecord>> &OperationRecord::GetPnl() {
   return m_pimpl->m_pnl;
 }
 void OperationRecord::SetPnlValue(
-    std::vector<odb::lazy_weak_ptr<const PnlRecord>> pnl) {
+    std::vector<boost::weak_ptr<const PnlRecord>> pnl) {
   m_pimpl->m_pnl = std::move(pnl);
 }

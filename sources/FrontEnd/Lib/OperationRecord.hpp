@@ -20,9 +20,6 @@
 namespace trdk {
 namespace FrontEnd {
 
-class OrderRecord;
-class OperationRecord;
-
 class OperationRecord {
 #ifdef TRDK_FRONTEND_LIB
   friend class odb::access;
@@ -50,14 +47,14 @@ class OperationRecord {
   const boost::optional<QDateTime> &GetEndTime() const;
   void SetEndTime(boost::optional<QDateTime>);
 
-  const odb::lazy_shared_ptr<const StrategyInstanceRecord>
-      &GetStrategyInstance() const;
+  const boost::shared_ptr<const StrategyInstanceRecord> &GetStrategyInstance()
+      const;
 
-  const std::vector<odb::lazy_weak_ptr<const OrderRecord>> &GetOrders() const;
-  void AddOrder(const boost::shared_ptr<const OrderRecord> &);
+  const std::vector<boost::weak_ptr<const OrderRecord>> &GetOrders() const;
+  void AddOrder(boost::weak_ptr<const OrderRecord>);
 
-  const std::vector<odb::lazy_weak_ptr<const PnlRecord>> &GetPnl() const;
-  std::vector<odb::lazy_weak_ptr<const PnlRecord>> &GetPnl();
+  const std::vector<boost::weak_ptr<const PnlRecord>> &GetPnl() const;
+  std::vector<boost::weak_ptr<const PnlRecord>> &GetPnl();
 
  private:
   void SetIdValue(const QUuid &);
@@ -65,11 +62,11 @@ class OperationRecord {
   void SetStartTimeValue(QDateTime);
 
   void SetStrategyInstanceValue(
-      odb::lazy_shared_ptr<const StrategyInstanceRecord>);
+      boost::shared_ptr<const StrategyInstanceRecord>);
 
-  void SetOrdersValue(std::vector<odb::lazy_weak_ptr<const OrderRecord>>);
+  void SetOrdersValue(std::vector<boost::weak_ptr<const OrderRecord>>);
 
-  void SetPnlValue(std::vector<odb::lazy_weak_ptr<const PnlRecord>>);
+  void SetPnlValue(std::vector<boost::weak_ptr<const PnlRecord>>);
 
 #ifndef ODB_COMPILER
 
@@ -92,13 +89,13 @@ class OperationRecord {
   boost::optional<QDateTime> endTime;
 #pragma db column("strategy_instance") get(GetStrategyInstance) \
     set(SetStrategyInstanceValue(std::move(?))) value_not_null not_null
-  odb::lazy_shared_ptr<const StrategyInstanceRecord> strategyInstance;
+  boost::shared_ptr<const StrategyInstanceRecord> strategyInstance;
 #pragma db get(GetOrders) set(SetOrdersValue(std::move(?))) inverse(operation) \
     value_not_null unordered
-  std::vector<odb::lazy_weak_ptr<const OrderRecord>> orders;
+  std::vector<boost::weak_ptr<const OrderRecord>> orders;
 #pragma db get(GetPnl) \
     set(SetPnlValue(std::move(?))) inverse(operation) value_not_null unordered
-  std::vector<odb::lazy_weak_ptr<const PnlRecord>> pnl;
+  std::vector<boost::weak_ptr<const PnlRecord>> pnl;
 
 #pragma db index("operation_start_time_index") members(startTime)
 #pragma db index("operation_end_time_index") members(endTime)

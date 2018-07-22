@@ -20,7 +20,7 @@ class OrderRecord::Implementation {
   Id m_id = std::numeric_limits<Id>::max();
   QString m_remoteId;
 
-  odb::lazy_shared_ptr<const OperationRecord> m_operation;
+  boost::shared_ptr<const OperationRecord> m_operation;
   boost::optional<SubOperationId> m_subOperationId;
 
   QString m_symbol;
@@ -162,12 +162,12 @@ void OrderRecord::SetRemoteIdValue(QString remoteId) {
   m_pimpl->m_remoteId = std::move(remoteId);
 }
 
-const odb::lazy_shared_ptr<const OperationRecord> &OrderRecord::GetOperation()
+const boost::shared_ptr<const OperationRecord> &OrderRecord::GetOperation()
     const {
   return m_pimpl->m_operation;
 }
 void OrderRecord::SetOperationValue(
-    odb::lazy_shared_ptr<const OperationRecord> operation) {
+    boost::shared_ptr<const OperationRecord> operation) {
   m_pimpl->m_operation = std::move(operation);
 }
 
