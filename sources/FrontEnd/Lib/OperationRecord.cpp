@@ -24,11 +24,11 @@ class OperationRecord::Implementation {
   QDateTime m_startTime;
   boost::optional<QDateTime> m_endTime;
 
-  boost::shared_ptr<const StrategyInstanceRecord> m_strategyInstance;
+  odb::lazy_shared_ptr<const StrategyInstanceRecord> m_strategyInstance;
 
   std::vector<odb::lazy_weak_ptr<const OrderRecord>> m_orders;
 
-  std::vector<boost::shared_ptr<const PnlRecord>> m_pnl;
+  std::vector<odb::lazy_weak_ptr<const PnlRecord>> m_pnl;
 
   Implementation() = default;
   Implementation(
@@ -95,12 +95,12 @@ void OperationRecord::SetEndTime(boost::optional<QDateTime> time) {
   m_pimpl->m_endTime = std::move(time);
 }
 
-const boost::shared_ptr<const StrategyInstanceRecord>
+const odb::lazy_shared_ptr<const StrategyInstanceRecord>
     &OperationRecord::GetStrategyInstance() const {
   return m_pimpl->m_strategyInstance;
 }
 void OperationRecord::SetStrategyInstanceValue(
-    boost::shared_ptr<const StrategyInstanceRecord> strategyInstance) {
+    odb::lazy_shared_ptr<const StrategyInstanceRecord> strategyInstance) {
   m_pimpl->m_strategyInstance = std::move(strategyInstance);
 }
 
@@ -117,14 +117,14 @@ void OperationRecord::SetOrdersValue(
   m_pimpl->m_orders = std::move(list);
 }
 
-const std::vector<boost::shared_ptr<const PnlRecord>> &OperationRecord::GetPnl()
-    const {
+const std::vector<odb::lazy_weak_ptr<const PnlRecord>>
+    &OperationRecord::GetPnl() const {
   return m_pimpl->m_pnl;
 }
-std::vector<boost::shared_ptr<const PnlRecord>> &OperationRecord::GetPnl() {
+std::vector<odb::lazy_weak_ptr<const PnlRecord>> &OperationRecord::GetPnl() {
   return m_pimpl->m_pnl;
 }
 void OperationRecord::SetPnlValue(
-    std::vector<boost::shared_ptr<const PnlRecord>> pnl) {
+    std::vector<odb::lazy_weak_ptr<const PnlRecord>> pnl) {
   m_pimpl->m_pnl = std::move(pnl);
 }

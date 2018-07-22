@@ -13,7 +13,7 @@
 #include "Engine.hpp"
 #include "OperationRecord.hpp"
 #include "OperationStatus.hpp"
-#include "PnlRecord.hpp"
+#include "PnlRecordOrm.hpp"
 
 using namespace trdk::FrontEnd;
 namespace mi = boost::multi_index;
@@ -110,14 +110,15 @@ class TotalResultsReportModel::Implementation : boost::noncopyable {
   explicit Implementation(TotalResultsReportModel& self, const Engine& engine)
       : m_self(self), m_engine(engine) {}
 
-  void Update(const std::vector<boost::shared_ptr<const PnlRecord>>& update) {
+  void Update(const std::vector<odb::lazy_weak_ptr<const PnlRecord>>& update) {
     auto& data = m_data.get<BySymbol>();
-    for (const auto& pnl : update) {
+    for (const auto& pnlPtr : update) {
+      auto pnl = pnlPtr.load();
       const auto& it = data.find(pnl->GetSymbol());
       if (it == data.cend()) {
         const auto index = static_cast<int>(m_data.size());
         m_self.beginInsertRows(QModelIndex(), index, index);
-        data.emplace(ItemContainer{boost::make_shared<Item>(pnl)});
+        data.emplace(ItemContainer{boost::make_shared<Item>(std::move(pnl))});
         m_self.endInsertRows();
       } else {
         const auto index = static_cast<int>(std::distance(

@@ -14,7 +14,7 @@
 #include "OperationItem.hpp"
 #include "OperationRecord.hpp"
 #include "OperationStatus.hpp"
-#include "OrderRecord.hpp"
+#include "OrderRecordOrm.hpp"
 
 using namespace trdk;
 using namespace Lib;

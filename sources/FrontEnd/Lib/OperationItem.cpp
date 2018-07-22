@@ -14,7 +14,7 @@
 #include "I18n.hpp"
 #include "OperationRecord.hpp"
 #include "OrderRecord.hpp"
-#include "PnlRecord.hpp"
+#include "PnlRecordOrm.hpp"
 #include "StrategyInstanceRecord.hpp"
 
 using namespace trdk::FrontEnd;
@@ -25,9 +25,9 @@ using namespace Detail;
 void OperationItem::AppendChild(boost::shared_ptr<OperationItem> child) {
   Assert(!child->m_parent);
   AssertEq(-1, child->m_row);
-  child->m_parent = this;
-  child->m_row = static_cast<int>(m_childItems.size()) - 1;
   m_childItems.emplace_back(std::move(child));
+  m_childItems.back()->m_parent = this;
+  m_childItems.back()->m_row = static_cast<int>(m_childItems.size()) - 1;
 }
 
 void OperationItem::RemoveChild(const boost::shared_ptr<OperationItem> &child) {
@@ -90,34 +90,40 @@ void OperationNodeItem::Update(
   m_commission.clear();
   m_totalResult.clear();
 
-  for (const auto &pnl : m_record->GetPnl()) {
-    const auto &addToBalanceString =
-        [&pnl](const Volume &value, const bool showPlus, QString &destination) {
-          if (!value) {
-            return;
-          }
-          if (!destination.isEmpty()) {
-            destination += ", ";
-          }
-          if (showPlus && value > 0) {
-            destination += '+';
-          }
-          {
-            std::ostringstream os;
-            os << value;
-            auto strValue = os.str();
-            boost::trim_right_if(strValue, [](char ch) { return ch == '0'; });
-            if (!strValue.empty() &&
-                (strValue.back() == '.' || strValue.back() == ',')) {
-              strValue.pop_back();
-            }
-            if (strValue.empty()) {
-              strValue = "0.00000001";
-            }
-            destination += QString::fromStdString(strValue);
-          }
-          destination += " " + pnl->GetSymbol();
-        };
+  boost::optional<odb::transaction> transaction;
+  for (const auto &pnlPtr : m_record->GetPnl()) {
+    if (!transaction) {
+      transaction.emplace(pnlPtr.database().begin());
+    }
+    const auto &pnl = pnlPtr.load();
+    const auto &addToBalanceString = [&pnl](const Volume &value,
+                                            const bool showPlus,
+                                            QString &destination) {
+      if (!value) {
+        return;
+      }
+      if (!destination.isEmpty()) {
+        destination += ", ";
+      }
+      if (showPlus && value > 0) {
+        destination += '+';
+      }
+      {
+        std::ostringstream os;
+        os << value;
+        auto strValue = os.str();
+        boost::trim_right_if(strValue, [](const char ch) { return ch == '0'; });
+        if (!strValue.empty() &&
+            (strValue.back() == '.' || strValue.back() == ',')) {
+          strValue.pop_back();
+        }
+        if (strValue.empty()) {
+          strValue = "0.00000001";
+        }
+        destination += QString::fromStdString(strValue);
+      }
+      destination += " " + pnl->GetSymbol();
+    };
 
     addToBalanceString(pnl->GetFinancialResult(), true, m_financialResult);
     addToBalanceString(pnl->GetCommission(), false, m_commission);

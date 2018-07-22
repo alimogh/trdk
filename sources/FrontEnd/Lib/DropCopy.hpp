@@ -51,7 +51,7 @@ class TRDK_FRONTEND_LIB_API DropCopy : public QObject, public trdk::DropCopy {
                               const TimeInForce &);
   void FreeOrderSubmitError(const QDateTime &,
                             const Security *,
-                            const Lib::Currency &,
+                            const boost::shared_ptr<const Lib::Currency> &,
                             const TradingSystem *,
                             const boost::shared_ptr<const OrderSide> &,
                             const Qty &,
@@ -62,7 +62,7 @@ class TRDK_FRONTEND_LIB_API DropCopy : public QObject, public trdk::DropCopy {
                                  int64_t subOperationId,
                                  const QDateTime &,
                                  const Security *,
-                                 const Lib::Currency &,
+                                 const boost::shared_ptr<const Lib::Currency> &,
                                  const TradingSystem *,
                                  const boost::shared_ptr<const OrderSide> &,
                                  const Qty &,

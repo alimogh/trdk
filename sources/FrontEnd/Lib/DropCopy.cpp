@@ -85,7 +85,8 @@ void FrontEnd::DropCopy::CopyOrderSubmitError(
     const boost::optional<Price>& price,
     const TimeInForce& tif,
     const std::string& error) {
-  emit FreeOrderSubmitError(ConvertToQDateTime(time), &security, currency,
+  emit FreeOrderSubmitError(ConvertToQDateTime(time), &security,
+                            boost::make_shared<Currency>(currency),
                             &tradingSystem, boost::make_shared<OrderSide>(side),
                             qty, price, tif, QString::fromStdString(error));
 }
@@ -101,7 +102,8 @@ void FrontEnd::DropCopy::CopyOrderSubmitError(
   emit OperationOrderSubmitError(
       ConvertToQUuid(position.GetOperation()->GetId()),
       position.GetSubOperationId(), ConvertToQDateTime(time),
-      &position.GetSecurity(), position.GetCurrency(),
+      &position.GetSecurity(),
+      boost::make_shared<Currency>(position.GetCurrency()),
       &position.GetTradingSystem(), boost::make_shared<OrderSide>(side), qty,
       price, tif, QString::fromStdString(error));
 }

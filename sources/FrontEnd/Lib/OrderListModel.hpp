@@ -50,7 +50,7 @@ class TRDK_FRONTEND_LIB_API OrderListModel : public QAbstractItemModel {
                    const TimeInForce &);
   void SubmitOrderError(const QDateTime &,
                         const Security *,
-                        const Lib::Currency &,
+                        const boost::shared_ptr<const Lib::Currency> &,
                         const TradingSystem *,
                         const boost::shared_ptr<const OrderSide> &,
                         Qty,

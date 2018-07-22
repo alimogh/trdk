@@ -126,7 +126,7 @@ void OrderListModel::SubmitOrder(QString id,
 void OrderListModel::SubmitOrderError(
     const QDateTime &time,
     const Security *security,
-    const Currency &,
+    const boost::shared_ptr<const Currency> &,
     const TradingSystem *tradingSystem,
     const boost::shared_ptr<const OrderSide> &side,
     Qty qty,

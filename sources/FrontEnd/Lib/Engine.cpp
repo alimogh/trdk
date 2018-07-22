@@ -184,17 +184,17 @@ class FrontEnd::Engine::Implementation : boost::noncopyable {
         Qt::QueuedConnection));
     Verify(m_self.connect(
         &m_dropCopy, &DropCopy::OperationOrderSubmitError, &m_self,
-        [this](const QUuid& operationId, int64_t subOperationId,
+        [this](const QUuid& operationId, const int64_t subOperationId,
                QDateTime submitTime, const Security* security,
-               const Lib::Currency& currency,
+               const boost::shared_ptr<const Lib::Currency>& currency,
                const TradingSystem* tradingSystem,
                const boost::shared_ptr<const OrderSide>& side, const Qty& qty,
                boost::optional<Price> price, const TimeInForce& timeInForce,
                QString error) {
           SubmitOperationOrder(
               operationId, subOperationId, QUuid::createUuid().toString(),
-              std::move(submitTime), *security, currency, *tradingSystem, *side,
-              qty, std::move(price), timeInForce, OrderStatus::Error,
+              std::move(submitTime), *security, *currency, *tradingSystem,
+              *side, qty, std::move(price), timeInForce, OrderStatus::Error,
               std::move(error));
         },
         Qt::QueuedConnection));
@@ -214,12 +214,13 @@ class FrontEnd::Engine::Implementation : boost::noncopyable {
     Verify(m_self.connect(
         &m_dropCopy, &DropCopy::FreeOrderSubmitError, &m_self,
         [this](QDateTime submitTime, const Security* security,
-               const Currency& currency, const TradingSystem* tradingSystem,
+               const boost::shared_ptr<const Currency>& currency,
+               const TradingSystem* tradingSystem,
                const boost::shared_ptr<const OrderSide>& side, const Qty& qty,
                boost::optional<Price> price, const TimeInForce& timeInForce,
                QString error) {
           SubmitFreeOrder(QUuid::createUuid().toString(), std::move(submitTime),
-                          *security, currency, *tradingSystem, *side, qty,
+                          *security, *currency, *tradingSystem, *side, qty,
                           std::move(price), timeInForce, OrderStatus::Error,
                           std::move(error));
         },
@@ -317,6 +318,7 @@ class FrontEnd::Engine::Implementation : boost::noncopyable {
           QString::fromStdString(tradingSystem.GetInstanceName()), side, qty,
           std::move(price), timeInForce, std::move(submitTime), status);
       order->SetAdditionalInfo(std::move(additionalInfo));
+      m_db->persist(order);
       operation->AddOrder(order);
       m_db->update(operation);
       transaction.commit();
@@ -421,12 +423,13 @@ class FrontEnd::Engine::Implementation : boost::noncopyable {
                  const Pnl::Data& pnlSet) {
     for (const auto& pnlUpdate : pnlSet) {
       auto isExistinet = false;
-      for (auto& operationPnl : operation->GetPnl()) {
+      for (auto& operationPnlPtr : operation->GetPnl()) {
+        const auto& operationPnl = operationPnlPtr.load();
         if (operationPnl->GetSymbol() == pnlUpdate.first.c_str()) {
           auto record = boost::make_shared<PnlRecord>(*operationPnl);
           record->SetFinancialResult(pnlUpdate.second.financialResult);
           record->SetCommission(pnlUpdate.second.commission);
-          operationPnl = record;
+          operationPnlPtr = record;
           m_db->update(record);
           isExistinet = true;
           break;
