@@ -168,7 +168,8 @@ Position *CheckAbsolutePosition(Position &signalPosition) {
       PrepareOperationClose(*oppositePosition);
     }
     return nullptr;
-  } else if (signalPosition.HasActiveOpenOrders()) {
+  }
+  if (signalPosition.HasActiveOpenOrders()) {
     PrepareOperationClose(signalPosition);
     return nullptr;
   }
@@ -188,7 +189,7 @@ Position *CheckAbsolutePosition(Position &signalPosition) {
       oppositePosition->MarkAsCompleted();
     }
     signalPosition.MarkAsCompleted();
-    return false;
+    return nullptr;
   }
 
   struct Positions {
