@@ -73,10 +73,10 @@ class BittrexTradingSystem::OrderTransactionRequest : public PrivateRequest {
                                    ModuleEventsLog &log,
                                    ModuleTradingLog &tradingLog)
       : Base(name, uriParams, settings, context, log, &tradingLog) {}
-  virtual ~OrderTransactionRequest() override = default;
+  ~OrderTransactionRequest() override = default;
 
  protected:
-  virtual bool IsPriority() const override { return true; }
+  bool IsPriority() const override { return true; }
 };
 
 ////////////////////////////////////////////////////////////////////////////////

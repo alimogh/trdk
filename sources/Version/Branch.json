@@ -21,6 +21,7 @@
     "FixProtocol",
     "Rest",
     "Exmo",
+    "Huobi",
     "TestStrategy",
     "ArbitrationAdvisor",
     "MarketMaker",

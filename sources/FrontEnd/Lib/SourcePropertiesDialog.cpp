@@ -45,6 +45,7 @@ class SourcePropertiesDialog::Implementation {
       addExchange("CEX.IO", "Cexio");
       addExchange("Bittrex", "Bittrex");
       addExchange("EXMO", "Exmo");
+      addExchange("Huobi", "Huobi");
       addExchange("Livecoin", "Livecoin");
       addExchange("Cryptopia", "Cryptopia");
       addExchange("YoBit.Net", "Yobitnet");
@@ -78,7 +79,8 @@ class SourcePropertiesDialog::Implementation {
 
   void CheckFieldList() {
     {
-      const auto hasUserId = m_ui.exchange->currentData().toString() == "Cexio";
+      const auto &exchange = m_ui.exchange->currentData().toString();
+      const auto hasUserId = exchange == "Cexio" || exchange == "Huobi";
       m_ui.userId->setEnabled(hasUserId);
       m_ui.userId->setEnabled(hasUserId);
     }
@@ -96,14 +98,18 @@ class SourcePropertiesDialog::Implementation {
     result.add("impl", impl);
     result.add("tradingMode", "live");
     result.add("title", m_ui.exchange->currentText().toStdString());
-    if (impl != "Exmo") {
+    if (impl != "Exmo" && impl != "Huobi") {
       result.add("module", "Rest");
       result.add("factory", "Create" + impl);
     } else {
       result.add("module", impl);
     }
     if (m_ui.userId->isEnabled()) {
-      result.add("config.auth.userId", m_ui.userId->text().toStdString());
+      if (impl == "Huobi") {
+        result.add("config.account", m_ui.userId->text().toStdString());
+      } else {
+        result.add("config.auth.userId", m_ui.userId->text().toStdString());
+      }
     }
     result.add("config.auth.apiKey", m_ui.apiKey->text().toStdString());
     result.add("config.auth.apiSecret", m_ui.apiSecret->text().toStdString());

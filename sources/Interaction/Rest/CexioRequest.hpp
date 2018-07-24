@@ -23,23 +23,19 @@ class CexioRequest : public Request {
  public:
   typedef Request Base;
 
- public:
   explicit CexioRequest(const std::string &name,
                         const std::string &method,
                         const std::string &params,
                         const Context &,
                         ModuleEventsLog &,
                         ModuleTradingLog * = nullptr);
-  virtual ~CexioRequest() override = default;
+  ~CexioRequest() override = default;
 
- public:
-  virtual Response Send(
-      std::unique_ptr<Poco::Net::HTTPSClientSession> &) override;
+  Response Send(std::unique_ptr<Poco::Net::HTTPSClientSession> &) override;
 
  protected:
-  virtual FloodControl &GetFloodControl() const override;
-  virtual void SetUri(const std::string &uri,
-                      Poco::Net::HTTPRequest &) const override;
+  FloodControl &GetFloodControl() const override;
+  void WriteUri(std::string uri, Poco::Net::HTTPRequest &) const override;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -52,10 +48,10 @@ class CexioPublicRequest : public CexioRequest {
                               ModuleEventsLog &log)
       : CexioRequest(
             name, Poco::Net::HTTPRequest::HTTP_GET, params, context, log) {}
-  virtual ~CexioPublicRequest() override = default;
+  ~CexioPublicRequest() override = default;
 
  protected:
-  virtual bool IsPriority() const override { return false; }
+  bool IsPriority() const override { return false; }
 };
 
 ////////////////////////////////////////////////////////////////////////////////

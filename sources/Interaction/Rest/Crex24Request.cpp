@@ -14,9 +14,7 @@
 using namespace trdk;
 using namespace Lib;
 using namespace Interaction::Rest;
-
 namespace net = Poco::Net;
-namespace pt = boost::posix_time;
 
 ////////////////////////////////////////////////////////////////////////////////
 

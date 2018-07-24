@@ -44,8 +44,8 @@ class BalancesContainer::Implementation : private boost::noncopyable {
         m_tradingLog(tradingLog) {}
 
   void Set(const std::string &symbol,
-           boost::optional<Volume> &&available,
-           boost::optional<Volume> &&locked) {
+           boost::optional<Volume> available,
+           boost::optional<Volume> locked) {
     const auto &resolvedSymbol =
         m_tradingSystem.GetContext().GetSettings().ResolveSymbolAlias(symbol);
     const WriteLock lock(m_mutex);
@@ -56,8 +56,8 @@ class BalancesContainer::Implementation : private boost::noncopyable {
   }
 
   void Insert(const std::string &symbol,
-              boost::optional<Volume> &&availableSource,
-              boost::optional<Volume> &&lockedSource) {
+              boost::optional<Volume> availableSource,
+              boost::optional<Volume> lockedSource) {
     auto available = availableSource ? std::move(*availableSource) : 0;
     auto locked = lockedSource ? std::move(*lockedSource) : 0;
 
@@ -83,8 +83,8 @@ class BalancesContainer::Implementation : private boost::noncopyable {
   }
 
   void Update(Storage::value_type &storage,
-              boost::optional<Volume> &&availableSource,
-              boost::optional<Volume> &&lockedSource) {
+              boost::optional<Volume> availableSource,
+              boost::optional<Volume> lockedSource) {
     auto available = availableSource ? std::move(*availableSource)
                                      : storage.second.available;
     auto locked =
@@ -141,18 +141,19 @@ Volume BalancesContainer::GetAvailableToTrade(const std::string &symbol) const {
 }
 
 void BalancesContainer::Set(const std::string &symbol,
-                            Volume &&available,
-                            Volume &&locked) {
-  m_pimpl->Set(symbol, std::move(available), std::move(locked));
+                            const Volume &available,
+                            const Volume &locked) {
+  m_pimpl->Set(symbol, available, locked);
 }
 
 void BalancesContainer::SetAvailableToTrade(const std::string &symbol,
-                                            Volume &&volume) {
-  m_pimpl->Set(symbol, std::move(volume), boost::none);
+                                            const Volume &volume) {
+  m_pimpl->Set(symbol, volume, boost::none);
 }
 
-void BalancesContainer::SetLocked(const std::string &symbol, Volume &&volume) {
-  m_pimpl->Set(symbol, boost::none, std::move(volume));
+void BalancesContainer::SetLocked(const std::string &symbol,
+                                  const Volume &volume) {
+  m_pimpl->Set(symbol, boost::none, volume);
 }
 
 void BalancesContainer::ReduceAvailableToTradeByOrder(

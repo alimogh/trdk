@@ -1,5 +1,5 @@
 ﻿//
-//    Created: 2018/04/07 3:47 PM
+//    Created: 2018/07/26 10:10 PM
 //     Author: Eugene V. Palchukovsky
 //     E-mail: eugene@palchukovsky.com
 // ------------------------------------------
@@ -16,24 +16,24 @@
 using namespace trdk;
 using namespace Lib::TimeMeasurement;
 using namespace Interaction;
-using namespace Exmo;
+using namespace Huobi;
 using namespace Rest;
 using namespace Lib;
 namespace pt = boost::posix_time;
 namespace ptr = boost::property_tree;
 
-Exmo::MarketDataSource::MarketDataSource(const App &,
-                                         Context &context,
-                                         std::string instanceName,
-                                         std::string title,
-                                         const ptr::ptree &conf)
+Huobi::MarketDataSource::MarketDataSource(const App &,
+                                          Context &context,
+                                          std::string instanceName,
+                                          std::string title,
+                                          const ptr::ptree &conf)
     : Base(context, std::move(instanceName), std::move(title)),
       m_settings(conf, GetLog()),
       m_session(CreateSession(m_settings, false)),
       m_pollingTask(boost::make_unique<PollingTask>(m_settings.pollingSetttings,
                                                     GetLog())) {}
 
-Exmo::MarketDataSource::~MarketDataSource() {
+Huobi::MarketDataSource::~MarketDataSource() {
   try {
     m_pollingTask.reset();
   } catch (...) {
@@ -50,12 +50,13 @@ boost::shared_ptr<trdk::MarketDataSource> CreateMarketDataSource(
     std::string instanceName,
     std::string title,
     const ptr::ptree &conf) {
-  return boost::make_shared<Exmo::MarketDataSource>(App::GetInstance(), context,
-                                                    std::move(instanceName),
-                                                    std::move(title), conf);
+#pragma comment(linker, "/EXPORT:" __FUNCTION__ "=" __FUNCDNAME__)
+  return boost::make_shared<Huobi::MarketDataSource>(
+      App::GetInstance(), context, std::move(instanceName), std::move(title),
+      conf);
 }
 
-void Exmo::MarketDataSource::Connect() {
+void Huobi::MarketDataSource::Connect() {
   GetLog().Debug("Creating connection...");
   boost::unordered_map<std::string, Product> products;
   try {
@@ -65,29 +66,29 @@ void Exmo::MarketDataSource::Connect() {
   }
 }
 
-void Exmo::MarketDataSource::SubscribeToSecurities() {
-  std::string requestList;
+void Huobi::MarketDataSource::SubscribeToSecurities() {
+  std::vector<
+      std::pair<boost::shared_ptr<Rest::Security>, boost::shared_ptr<Request>>>
+      requests;
   for (const auto &security : m_securities) {
-    if (!requestList.empty()) {
-      requestList += ',';
-    }
-    requestList += security.first;
+    requests.emplace_back(std::make_pair(
+        security.second,
+        boost::make_shared<PublicRequest>(
+            "market/depth", "symbol=" + security.first + "&type=step1",
+            GetContext(), GetLog())));
   }
-  if (requestList.empty()) {
-    return;
-  }
-  auto request = boost::make_shared<PublicRequest>(
-      "order_book", "limit=0&pair=" + requestList, GetContext(), GetLog());
   m_pollingTask->ReplaceTask(
       "Prices", 1,
-      [this, request]() {
-        UpdatePrices(*request);
+      [this, requests]() {
+        for (const auto &request : requests) {
+          UpdatePrices(*request.first, *request.second);
+        }
         return true;
       },
       m_settings.pollingSetttings.GetPricesRequestFrequency(), false);
 }
 
-trdk::Security &Exmo::MarketDataSource::CreateNewSecurityObject(
+trdk::Security &Huobi::MarketDataSource::CreateNewSecurityObject(
     const Symbol &symbol) {
   const auto &product = m_products.find(symbol.GetSymbol());
   if (product == m_products.cend()) {
@@ -108,34 +109,21 @@ trdk::Security &Exmo::MarketDataSource::CreateNewSecurityObject(
   return *result.first->second;
 }
 
-void Exmo::MarketDataSource::UpdatePrices(Rest::Request &request) {
+void Huobi::MarketDataSource::UpdatePrices(Rest::Security &security,
+                                           Request &request) {
   try {
     const auto &response = request.Send(m_session);
-    const auto &time = boost::get<0>(response);
-    const auto &delayMeasurement = boost::get<2>(response);
-    for (const auto &node : boost::get<1>(response)) {
-      const auto &productId = node.first;
-      const auto &product = m_securities.find(productId);
-      if (product == m_securities.cend()) {
-        GetLog().Error(
-            "Market data source sent price update with unknown product ID "
-            "\"%1%\".",
-            productId);
-        continue;
-      }
-      UpdatePrices(time, node.second, *product->second, delayMeasurement);
-    }
+    UpdatePrices(boost::get<1>(response), security, boost::get<2>(response));
   } catch (const std::exception &ex) {
-    for (auto &security : m_securities) {
-      try {
-        security.second->SetOnline(pt::not_a_date_time, false);
-      } catch (...) {
-        AssertFailNoException();
-        throw;
-      }
+    try {
+      security.SetOnline(pt::not_a_date_time, false);
+    } catch (...) {
+      AssertFailNoException();
+      throw;
     }
-    boost::format error("Failed to read prices: \"%1%\"");
-    error % ex.what();
+    boost::format error("Failed to read prices for %1%: \"%2%\"");
+    error % security  // 1
+        % ex.what();  // 2
     try {
       throw;
     } catch (const CommunicationError &) {
@@ -181,32 +169,27 @@ boost::optional<std::pair<Level1TickValue, Level1TickValue>> ReadTopPrice(
 #pragma warning(pop)
 }
 
-void Exmo::MarketDataSource::UpdatePrices(const pt::ptime &time,
-                                          const ptr::ptree &source,
-                                          Rest::Security &security,
-                                          const Milestones &delayMeasurement) {
-  try {
-    const auto &ask = ReadTopPrice<LEVEL1_TICK_ASK_PRICE, LEVEL1_TICK_ASK_QTY>(
-        source.get_child_optional("ask"));
-    const auto &bid = ReadTopPrice<LEVEL1_TICK_BID_PRICE, LEVEL1_TICK_BID_QTY>(
-        source.get_child_optional("bid"));
+void Huobi::MarketDataSource::UpdatePrices(const ptr::ptree &source,
+                                           Rest::Security &security,
+                                           const Milestones &delayMeasurement) {
+  const auto &time =
+      ConvertToPTimeFromMicroseconds(source.get<int64_t>("ts") * 1000);
 
-    if (bid && ask) {
-      security.SetLevel1(time, bid->first, bid->second, ask->first, ask->second,
-                         delayMeasurement);
-      security.SetOnline(pt::not_a_date_time, true);
-    } else {
-      security.SetOnline(pt::not_a_date_time, false);
-      if (bid) {
-        security.SetLevel1(time, bid->first, bid->second, delayMeasurement);
-      } else if (ask) {
-        security.SetLevel1(time, ask->first, ask->second, delayMeasurement);
-      }
+  const auto &bid = ReadTopPrice<LEVEL1_TICK_BID_PRICE, LEVEL1_TICK_BID_QTY>(
+      source.get_child_optional("tick.bids"));
+  const auto &ask = ReadTopPrice<LEVEL1_TICK_ASK_PRICE, LEVEL1_TICK_ASK_QTY>(
+      source.get_child_optional("tick.asks"));
+
+  if (bid && ask) {
+    security.SetLevel1(time, bid->first, bid->second, ask->first, ask->second,
+                       delayMeasurement);
+    security.SetOnline(pt::not_a_date_time, true);
+  } else {
+    security.SetOnline(pt::not_a_date_time, false);
+    if (bid) {
+      security.SetLevel1(time, bid->first, bid->second, delayMeasurement);
+    } else if (ask) {
+      security.SetLevel1(time, ask->first, ask->second, delayMeasurement);
     }
-  } catch (const std::exception &ex) {
-    boost::format error(R"(Failed to read order book: "%1%" ("%2%").)");
-    error % ex.what()                            // 1
-        % Rest::ConvertToString(source, false);  // 2
-    throw Exception(error.str().c_str());
   }
 }

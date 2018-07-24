@@ -246,6 +246,7 @@ void Engine::Context::Start(
               R"(Failed to connect to trading system %1%: %2%)");
           message % tradingSystem->GetTitle()  // 1
               % ex;                            // 2
+          GetLog().Debug(error.str().c_str());
           if (!startErrorCallback(message.str())) {
             continue;
           }
