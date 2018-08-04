@@ -12,9 +12,8 @@
 #include "LivecoinRequest.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Interaction::Rest;
-
+using namespace Lib;
+using namespace Interaction::Rest;
 namespace pt = boost::posix_time;
 namespace ptr = boost::property_tree;
 namespace net = Poco::Net;
@@ -28,7 +27,7 @@ FloodControl &LivecoinRequest::GetFloodControl() const {
 
 void LivecoinRequest::CheckErrorResponse(const net::HTTPResponse &response,
                                          const std::string &responseContent,
-                                         size_t attemptNumber) const {
+                                         const size_t attemptNumber) const {
   if (response.getStatus() == net::HTTPResponse::HTTP_SERVICE_UNAVAILABLE) {
     ptr::ptree responseTree;
     ios::array_source source(&responseContent[0], responseContent.size());
@@ -53,6 +52,8 @@ void LivecoinRequest::CheckErrorResponse(const net::HTTPResponse &response,
             }
             break;
           }
+          default:
+            break;
         }
       }
     }

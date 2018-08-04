@@ -23,7 +23,6 @@ class LivecoinRequest : public Request {
  public:
   typedef Request Base;
 
- public:
   explicit LivecoinRequest(const std::string &name,
                            const std::string &method,
                            const std::string &params,
@@ -31,14 +30,14 @@ class LivecoinRequest : public Request {
                            ModuleEventsLog &log,
                            ModuleTradingLog *tradingLog = nullptr)
       : Base(name, name, method, params, context, log, tradingLog) {}
-  virtual ~LivecoinRequest() override = default;
+  ~LivecoinRequest() override = default;
 
  protected:
-  virtual FloodControl &GetFloodControl() const override;
+  void CheckErrorResponse(const Poco::Net::HTTPResponse &,
+                          const std::string &responseContent,
+                          size_t attemptNumber) const override;
 
-  virtual void CheckErrorResponse(const Poco::Net::HTTPResponse &,
-                                  const std::string &responseContent,
-                                  size_t attemptNumber) const override;
+  FloodControl &GetFloodControl() const override;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -51,10 +50,10 @@ class LivecoinPublicRequest : public LivecoinRequest {
                                  ModuleEventsLog &log)
       : LivecoinRequest(
             name, Poco::Net::HTTPRequest::HTTP_GET, params, context, log) {}
-  virtual ~LivecoinPublicRequest() override = default;
+  ~LivecoinPublicRequest() override = default;
 
  protected:
-  virtual bool IsPriority() const override { return false; }
+  bool IsPriority() const override { return false; }
 };
 
 ////////////////////////////////////////////////////////////////////////////////

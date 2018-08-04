@@ -11,7 +11,6 @@
 #include "Prec.hpp"
 #include "TradingSystem.hpp"
 #include "Session.hpp"
-#include <boost/unordered/unordered_set.hpp>
 
 using namespace trdk;
 using namespace Interaction;

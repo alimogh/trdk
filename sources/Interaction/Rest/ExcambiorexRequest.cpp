@@ -12,8 +12,8 @@
 #include "ExcambiorexRequest.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Interaction::Rest;
+using namespace Lib;
+using namespace Interaction::Rest;
 
 namespace net = Poco::Net;
 namespace pt = boost::posix_time;
@@ -40,7 +40,7 @@ ExcambiorexRequest::Response ExcambiorexRequest::Send(
   const auto &response = boost::get<1>(result);
 
   {
-    const bool isSuccess = response.get<bool>("success");
+    const auto isSuccess = response.get<bool>("success");
     if (!isSuccess) {
       std::ostringstream error;
       error << "The server returned an error in response to the request \""
@@ -98,9 +98,9 @@ ExcambiorexRequest::Response ExcambiorexRequest::Send(
           case 10005:
           case 10007:
             throw CommunicationError(error.str().c_str());
-            break;
           case 20015:
             throw OrderIsUnknownException(error.str().c_str());
+          default:
             break;
         }
       }
