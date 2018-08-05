@@ -23,21 +23,18 @@ class ExcambiorexRequest : public Request {
  public:
   typedef Request Base;
 
- public:
   explicit ExcambiorexRequest(const std::string &name,
                               const std::string &method,
                               const std::string &params,
                               const Context &,
                               ModuleEventsLog &,
                               ModuleTradingLog * = nullptr);
-  virtual ~ExcambiorexRequest() override = default;
+  ~ExcambiorexRequest() override = default;
 
- public:
-  virtual Response Send(
-      std::unique_ptr<Poco::Net::HTTPSClientSession> &) override;
+  Response Send(std::unique_ptr<Poco::Net::HTTPSClientSession> &) override;
 
  protected:
-  virtual FloodControl &GetFloodControl() const override;
+  FloodControl &GetFloodControl() const override;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -48,10 +45,10 @@ class ExcambiorexPublicRequest : public ExcambiorexRequest {
                                     const std::string &params,
                                     const Context &,
                                     ModuleEventsLog &);
-  virtual ~ExcambiorexPublicRequest() override = default;
+  ~ExcambiorexPublicRequest() override = default;
 
  protected:
-  virtual bool IsPriority() const override;
+  bool IsPriority() const override;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

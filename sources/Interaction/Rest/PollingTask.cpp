@@ -46,29 +46,29 @@ PollingTask::~PollingTask() {
   }
 }
 
-void PollingTask::AddTask(std::string &&name,
-                          size_t priority,
-                          const boost::function<bool()> &&task,
-                          size_t frequency,
-                          bool isAccelerable) {
+void PollingTask::AddTask(std::string name,
+                          const size_t priority,
+                          boost::function<bool()> task,
+                          const size_t frequency,
+                          const bool isAccelerable) {
   ScheduleTaskSetting(std::move(name), priority, std::move(task), frequency,
                       isAccelerable, false);
 }
 
-void PollingTask::ReplaceTask(std::string &&name,
-                              size_t priority,
-                              const boost::function<bool()> &&task,
-                              size_t frequency,
-                              bool isAccelerable) {
+void PollingTask::ReplaceTask(std::string name,
+                              const size_t priority,
+                              boost::function<bool()> task,
+                              const size_t frequency,
+                              const bool isAccelerable) {
   ScheduleTaskSetting(std::move(name), priority, std::move(task), frequency,
                       isAccelerable, true);
 }
 
-void PollingTask::ScheduleTaskSetting(std::string &&name,
-                                      size_t priority,
-                                      const boost::function<bool()> &&task,
-                                      size_t frequency,
-                                      bool isAccelerable,
+void PollingTask::ScheduleTaskSetting(std::string name,
+                                      const size_t priority,
+                                      boost::function<bool()> task,
+                                      const size_t frequency,
+                                      const bool isAccelerable,
                                       bool replace) {
   const Lock lock(m_mutex);
   m_newTasks.emplace_back(Task{std::move(name), priority, isAccelerable,
@@ -95,9 +95,9 @@ void PollingTask::SetTasks() {
         AssertEq(it->priority, newTask.first.priority);
         continue;
       }
-      *it = std::move(newTask.first);
+      *it = newTask.first;
     } else {
-      m_tasks.emplace_back(std::move(newTask.first));
+      m_tasks.emplace_back(newTask.first);
     }
 
     std::sort(m_tasks.begin(), m_tasks.end(), [](const Task &a, const Task &b) {

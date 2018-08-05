@@ -23,7 +23,6 @@ class Crex24Request : public Request {
  public:
   typedef Request Base;
 
- public:
   explicit Crex24Request(const std::string &path,
                          const std::string &name,
                          const std::string &method,
@@ -31,10 +30,10 @@ class Crex24Request : public Request {
                          const Context &,
                          ModuleEventsLog &,
                          ModuleTradingLog * = nullptr);
-  virtual ~Crex24Request() override = default;
+  ~Crex24Request() override = default;
 
  protected:
-  virtual FloodControl &GetFloodControl() const override;
+  FloodControl &GetFloodControl() const override;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -45,10 +44,10 @@ class Crex24PublicRequest : public Crex24Request {
                                const std::string &params,
                                const Context &,
                                ModuleEventsLog &);
-  virtual ~Crex24PublicRequest() override = default;
+  ~Crex24PublicRequest() override = default;
 
  protected:
-  virtual bool IsPriority() const override;
+  bool IsPriority() const override;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

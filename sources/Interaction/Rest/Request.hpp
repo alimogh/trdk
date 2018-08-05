@@ -30,15 +30,19 @@ class TRDK_INTERACTION_REST_API Request {
   };
 
   explicit Request(
-      const std::string &uri,
-      const std::string &name,
+      std::string uri,
+      std::string name,
       const std::string &method,
-      const std::string &uriParams,
+      std::string uriParams,
       const Context &context,
       ModuleEventsLog &log,
       ModuleTradingLog * = nullptr,
       const std::string &contentType = "application/x-www-form-urlencoded",
       const std::string &version = Poco::Net::HTTPMessage::HTTP_1_1);
+  Request(Request &&) = default;
+  Request(const Request &) = delete;
+  Request &operator=(Request &&) = delete;
+  Request &operator=(const Request &) = delete;
   virtual ~Request() = default;
 
   const std::string &GetName() const { return m_name; }
@@ -72,7 +76,9 @@ class TRDK_INTERACTION_REST_API Request {
 
   virtual size_t GetNumberOfAttempts() const { return 2; }
 
-  virtual void SetUri(const std::string &uri, Poco::Net::HTTPRequest &) const;
+  virtual void WriteUri(std::string uri, Poco::Net::HTTPRequest &) const;
+
+  const std::string &GetUri() const;
 
   ModuleEventsLog &GetLog() const;
 

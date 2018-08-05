@@ -12,9 +12,8 @@
 #include "CryptopiaRequest.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Interaction::Rest;
-
+using namespace Lib;
+using namespace Interaction::Rest;
 namespace net = Poco::Net;
 
 CryptopiaRequest::Response CryptopiaRequest::Send(
@@ -50,7 +49,8 @@ CryptopiaRequest::Response CryptopiaRequest::Send(
         if (boost::starts_with(*serverError, "Trade #") &&
             boost::ends_with(*serverError, " does not exist")) {
           throw OrderIsUnknownException(error.str().c_str());
-        } else if (*serverError == "Insufficient Funds.") {
+        }
+        if (*serverError == "Insufficient Funds.") {
           throw InsufficientFundsException(error.str().c_str());
         }
       }

@@ -18,8 +18,8 @@ using namespace trdk::Lib::Crypto;
 ////////////////////////////////////////////////////////////////////////////////
 
 std::string Base64::Encode(const unsigned char *source,
-                           size_t sourceLen,
-                           bool multiline) {
+                           const size_t sourceLen,
+                           const bool multiline) {
   const auto &free = [](BIO *bio) {
     BIO_set_close(bio, BIO_NOCLOSE);
     BIO_free_all(bio);

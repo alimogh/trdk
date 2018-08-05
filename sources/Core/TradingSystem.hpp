@@ -291,7 +291,7 @@ class TRDK_CORE_API TradingSystem : virtual public Interactor {
                         const OrderId &,
                         const boost::optional<Volume> &commission);
 
-  //! Finalize the order by filling.
+  //! Finalizes the order by filling.
   /**
    * All order-events methods should be called from one thread or call should
    * be synchronized. In another case - subscribers may receive notifications
@@ -300,7 +300,7 @@ class TRDK_CORE_API TradingSystem : virtual public Interactor {
   void OnOrderFilled(const boost::posix_time::ptime &,
                      const OrderId &,
                      const boost::optional<Volume> &commission);
-  //! Finalize the order by filling.
+  //! Finalizes the order by filling.
   /**
    * All order-events methods should be called from one thread or call should
    * be synchronized. In another case - subscribers may receive notifications
@@ -310,7 +310,7 @@ class TRDK_CORE_API TradingSystem : virtual public Interactor {
                      const OrderId &,
                      const boost::optional<Volume> &commission,
                      const boost::function<bool(OrderTransactionContext &)> &);
-  //! Finalize the order by filling with trade info.
+  //! Finalizes the order by filling with trade info.
   /**
    * All order-events methods should be called from one thread or call should
    * be synchronized. In another case - subscribers may receive notifications
@@ -320,7 +320,7 @@ class TRDK_CORE_API TradingSystem : virtual public Interactor {
                      const OrderId &,
                      Trade &&,
                      const boost::optional<Volume> &commission);
-  //! Finalize the order by filling with trade info.
+  //! Finalizes the order by filling with trade info.
   /**
    * All order-events methods should be called from one thread or call should
    * be synchronized. In another case - subscribers may receive notifications
@@ -332,7 +332,7 @@ class TRDK_CORE_API TradingSystem : virtual public Interactor {
                      const boost::optional<Volume> &commission,
                      const boost::function<bool(OrderTransactionContext &)> &);
 
-  //! Finalize the order by canceling.
+  //! Finalizes the order by canceling.
   /**
    * All order-events methods should be called from one thread or call should
    * be synchronized. In another case - subscribers may receive notifications
@@ -343,7 +343,7 @@ class TRDK_CORE_API TradingSystem : virtual public Interactor {
                        const boost::optional<Qty> &remainingQty,
                        const boost::optional<Volume> &commission);
 
-  //! Finalize the order by rejecting.
+  //! Finalizes the order by rejecting.
   /**
    * All order-events methods should be called from one thread or call should
    * be synchronized. In another case - subscribers may receive notifications
@@ -354,7 +354,7 @@ class TRDK_CORE_API TradingSystem : virtual public Interactor {
                        const boost::optional<Qty> &remainingQty,
                        const boost::optional<Volume> &commission);
 
-  //! Finalize the order by error.
+  //! Finalizes the order by error.
   /**
    * All order-events methods should be called from one thread or call should
    * be synchronized. In another case - subscribers may receive notifications

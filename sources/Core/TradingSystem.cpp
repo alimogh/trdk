@@ -1017,7 +1017,7 @@ void TradingSystem::OnOrderError(const pt::ptime &time,
   GetLog().Error("Order %1% is rejected with the reason: \"%2%\".",
                  id,      // 1
                  error);  // 2
-  auto order = m_pimpl->TakeOrder(id);
+  const auto order = m_pimpl->TakeOrder(id);
   m_pimpl->FinalizeOrder(time, id, *order, ORDER_STATUS_ERROR, "error",
                          remainingQty.get_value_or(order->remainingQty),
                          commission, &OrderStatusHandler::OnError,
