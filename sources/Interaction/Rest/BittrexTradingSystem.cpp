@@ -61,6 +61,13 @@ void BittrexTradingSystem::PrivateRequest::PrepareRequest(
   Base::PrepareRequest(session, body, request);
 }
 
+void BittrexTradingSystem::PrivateRequest::WriteUri(
+    std::string uri, net::HTTPRequest &request) const {
+  Base::WriteUri(
+      uri + "?nonce=" + to_iso_string(pt::microsec_clock::universal_time()),
+      request);
+}
+
 class BittrexTradingSystem::OrderTransactionRequest : public PrivateRequest {
  public:
   typedef PrivateRequest Base;
