@@ -122,6 +122,7 @@
  </widget>
  <tabstops>
   <tabstop>exchange</tabstop>
+  <tabstop>userId</tabstop>
   <tabstop>apiKey</tabstop>
   <tabstop>apiSecret</tabstop>
   <tabstop>apiPassphrase</tabstop>

@@ -58,8 +58,11 @@ class SourcePropertiesDialog::Implementation {
     if (config) {
       m_ui.exchange->setEnabled(false);
       if (m_ui.userId->isEnabled()) {
-        m_ui.userId->setText(QString::fromStdString(
-            config->get<std::string>("config.auth.userId", "")));
+        const auto &path = m_ui.exchange->currentData().toString() == "Huobi"
+                               ? "config.account"
+                               : "config.auth.userId";
+        m_ui.userId->setText(
+            QString::fromStdString(config->get<std::string>(path, "")));
       }
       m_ui.apiKey->setText(QString::fromStdString(
           config->get<std::string>("config.auth.apiKey", "")));

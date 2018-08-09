@@ -248,7 +248,8 @@ void Request::CheckErrorResponse(const net::HTTPResponse& response,
 void Request::WriteUri(std::string uri, net::HTTPRequest& request) const {
   if (!m_uriParams.empty() &&
       request.getMethod() == net::HTTPRequest::HTTP_GET) {
-    uri += '?' + m_uriParams;
+    uri += uri.find('?') == std::string::npos ? '?' : '&';
+    uri += m_uriParams;
   }
   request.setURI(uri);
 }
