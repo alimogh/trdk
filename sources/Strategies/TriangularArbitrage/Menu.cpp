@@ -16,6 +16,7 @@ using namespace trdk::FrontEnd;
 using namespace trdk::Strategies::TriangularArbitrage;
 
 StrategyMenuActionList CreateMenuActions(Engine &engine) {
+#pragma comment(linker, "/EXPORT:" __FUNCTION__ "=" __FUNCDNAME__)
   return {1,
           {QObject::tr("&Triangular Arbitrage..."),
            [&engine](QWidget *parent) -> StrategyWidgetList {

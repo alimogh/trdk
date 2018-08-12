@@ -548,7 +548,7 @@ class aa::Strategy::Implementation : boost::noncopyable {
                << m_self.GetTradingSystem(checkTarget->GetSource().GetIndex())
                       .GetTitle();
             if (orderError) {
-              os << " requires: ";
+              os << " requires:";
               auto has = false;
               if (orderError->qty) {
                 os << " qty. >= " << *orderError->qty;

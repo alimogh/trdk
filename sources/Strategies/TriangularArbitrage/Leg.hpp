@@ -23,9 +23,8 @@ struct LegConf {
 
 typedef boost::array<LegConf, numberOfLegs> LegsConf;
 
-typedef trdk::Lib::Numeric<
-    Lib::Double::ValueType,
-    trdk::Lib::Detail::DoubleNumericPolicy<Price::PRECISION>>
+typedef Lib::Numeric<Lib::Double::ValueType,
+                     Lib::Detail::DoubleNumericPolicy<Price::PRECISION>>
     Y;
 
 struct Opportunity {
@@ -42,6 +41,7 @@ struct Opportunity {
   Volume pnlVolume;
   const std::string *checkError;
   const TradingSystem *errorTradingSystem;
+  boost::optional<OrderCheckError> orderError;
   bool isSignaled;
 };
 

@@ -18,18 +18,104 @@ using namespace FrontEnd;
 using namespace Strategies::TriangularArbitrage;
 namespace ta = Strategies::TriangularArbitrage;
 namespace ptr = boost::property_tree;
+namespace ids = boost::uuids;
+
+StrategyWidgetList RestoreStrategyWidgets(Engine &engine,
+                                          const QUuid &typeId,
+                                          const QUuid &instanceId,
+                                          const QString &name,
+                                          const ptr::ptree &config,
+                                          QWidget *parent) {
+#pragma comment(linker, "/EXPORT:" __FUNCTION__ "=" __FUNCDNAME__)
+  StrategyWidgetList result;
+  if (ConvertToBoostUuid(typeId) == ta::Strategy::typeId) {
+    result.emplace_back(boost::make_unique<StrategyWindow>(
+        engine, instanceId, name, config, parent));
+  }
+  return result;
+}
 
 StrategyWindow::StrategyWindow(Engine &engine,
                                const LegsConf &legSet,
                                QWidget *parent)
-    : Base(parent),
-      m_engine(engine),
-      m_investCurrency(
-          legSet.front().symbol.right(legSet.front().symbol.indexOf('_'))),
-      m_resultCurrency(
-          legSet.front().symbol.left(legSet.front().symbol.indexOf('_'))),
-      m_maxNumberOfOppotunities(0),
-      m_strategy(CreateStrategyInstance(legSet)) {
+    : Base(parent), m_engine(engine) {
+  std::string legsStr;
+  ptr::ptree legs;
+  ptr::ptree symbols;
+  {
+    auto isFirst = true;
+    for (const auto &leg : legSet) {
+      if (!isFirst) {
+        legsStr += ", ";
+      } else {
+        isFirst = false;
+      }
+      const auto &legStr =
+          (leg.side == ORDER_SIDE_BUY ? '+' : '-') + leg.symbol.toStdString();
+      legsStr += legStr;
+      legs.push_back({"", ptr::ptree().put("", legStr)});
+      symbols.push_back({"", ptr::ptree().put("", leg.symbol)});
+    }
+  }
+
+  static boost::uuids::random_generator generateStrategyId;
+  const auto &id = generateStrategyId();
+
+  m_config.add("module", "TriangularArbitrage");
+  m_config.add("id", id);
+  m_config.add("isEnabled", true);
+  m_config.add("tradingMode", "live");
+  m_config.add("config.isTradingEnabled", false);
+  m_config.add("config.minVolume", 0);
+  m_config.add("config.maxVolume", 1000);
+  m_config.add("config.minProfitRatio", 1.01);
+  m_config.add_child("config.legs", legs);
+  m_config.add_child("requirements.level1Updates.symbols", symbols);
+
+  Init(id, m_engine.GenerateNewStrategyInstanceName("Triangular Arbitrage " +
+                                                    legsStr));
+
+  StoreConfig(true);
+}
+
+StrategyWindow::StrategyWindow(Engine &engine,
+                               const QUuid &strategyId,
+                               const QString &name,
+                               const ptr::ptree &config,
+                               QWidget *parent)
+    : Base(parent), m_engine(engine), m_config(config) {
+  Init(ConvertToBoostUuid(strategyId), name.toStdString());
+}
+
+StrategyWindow::~StrategyWindow() { m_strategy->Stop(); }
+
+void StrategyWindow::Init(const ids::uuid &id,
+                          const std::string &strategyName) {
+  LegsConf legSet = {};
+  {
+    auto it = legSet.begin();
+    for (const auto &node : m_config.get_child("config.legs")) {
+      const auto &legConf = node.second.get_value<std::string>();
+      if (it >= legSet.cend() || legConf.size() < 2 ||
+          (legConf[0] != '-' && legConf[0] != '+')) {
+        throw Exception("Wrong leg configuration in leg set configuration");
+      }
+      it->side = legConf[0] == '+' ? ORDER_SIDE_LONG : ORDER_SIDE_SHORT;
+      it->symbol = QString::fromStdString(legConf.substr(1));
+      ++it;
+    }
+    if (it != legSet.cend()) {
+      throw Exception("Wrong leg configuration in leg set configuration");
+    }
+  }
+
+  m_investCurrency =
+      legSet.front().symbol.right(legSet.front().symbol.indexOf('_'));
+  m_resultCurrency =
+      legSet.front().symbol.left(legSet.front().symbol.indexOf('_'));
+
+  m_strategy = &CreateStrategyInstance(id, strategyName);
+
   m_ui.setupUi(this);
   m_legs = {
       Leg{m_ui.leg1Symbol, m_ui.leg1BestPrice, m_ui.leg1BestExchange,
@@ -49,10 +135,10 @@ StrategyWindow::StrategyWindow(Engine &engine,
                    " - " + QCoreApplication::applicationName());
   }
 
-  m_ui.isActivated->setChecked(m_strategy.IsTradingEnabled());
+  m_ui.isActivated->setChecked(m_strategy->IsTradingEnabled());
 
   {
-    m_strategy.GetContext().ForEachMarketDataSource(
+    m_strategy->GetContext().ForEachMarketDataSource(
         [&](const MarketDataSource &source) {
           const auto name = QString::fromStdString(source.GetTitle());
           const auto &addItem = [&](QListWidget &control) {
@@ -69,11 +155,11 @@ StrategyWindow::StrategyWindow(Engine &engine,
     SetSelectedFinishExchanges();
   }
 
-  m_ui.minVolume->setValue(m_strategy.GetMinVolume());
-  m_ui.maxVolume->setValue(m_strategy.GetMaxVolume());
+  m_ui.minVolume->setValue(m_strategy->GetMinVolume());
+  m_ui.maxVolume->setValue(m_strategy->GetMaxVolume());
   m_ui.volumeSymbol->setText(tr("Volume (%1):").arg(m_investCurrency));
 
-  m_ui.minProfit->setValue((m_strategy.GetMinProfitRatio() - 1) * 100);
+  m_ui.minProfit->setValue((m_strategy->GetMinProfitRatio() - 1) * 100);
 
   {
     m_ui.opportunities->setColumnCount((static_cast<int>(legSet.size()) * 3) +
@@ -86,14 +172,14 @@ StrategyWindow::StrategyWindow(Engine &engine,
           QFontMetrics(font).height() + 8);
     }
 
-    int column = 0;
+    auto column = 0;
     size_t legIndex = 0;
     AssertEq(m_legs.size(), legSet.size());
     for (const auto &leg : legSet) {
-      const auto name =
+      const auto legName =
           QString("%1 %2").arg(ConvertToUiString(leg.side), leg.symbol);
 
-      m_legs[legIndex].symbol->setText(name);
+      m_legs[legIndex].symbol->setText(legName);
       m_legs[legIndex].price->setStyleSheet(leg.side == ORDER_SIDE_SELL
                                                 ? "color:rgb(230,59,1);"
                                                 : "color:rgb(0,195,91);");
@@ -102,11 +188,11 @@ StrategyWindow::StrategyWindow(Engine &engine,
                                       : "border-color:rgb(0,195,91);");
 
       m_ui.opportunities->setHorizontalHeaderItem(
-          column++, new QTableWidgetItem(name + " " + tr("Qty.")));
+          column++, new QTableWidgetItem(legName + " " + tr("Qty.")));
       m_ui.opportunities->setHorizontalHeaderItem(
-          column++, new QTableWidgetItem(name + " " + tr("Price")));
+          column++, new QTableWidgetItem(legName + " " + tr("Price")));
       m_ui.opportunities->setHorizontalHeaderItem(
-          column++, new QTableWidgetItem(name + " " + tr("Exchange")));
+          column++, new QTableWidgetItem(legName + " " + tr("Exchange")));
       ++legIndex;
     }
     m_ui.opportunities->setHorizontalHeaderItem(
@@ -119,13 +205,11 @@ StrategyWindow::StrategyWindow(Engine &engine,
     m_ui.opportunities->setHorizontalHeaderItem(
         column++, new QTableWidgetItem(tr("P&L") + ", " + m_resultCurrency));
     m_ui.opportunities->setHorizontalHeaderItem(
-        column++, new QTableWidgetItem(tr("Signaled")));
+        column, new QTableWidgetItem(tr("Signaled")));
   }
 
   ConnectSignals();
 }
-
-StrategyWindow::~StrategyWindow() { m_strategy.Stop(); }
 
 void StrategyWindow::Disable() {
   m_ui.isActivated->setEnabled(false);
@@ -137,7 +221,7 @@ void StrategyWindow::Disable() {
   m_ui.finishExchanges->setEnabled(false);
 }
 
-void StrategyWindow::OnBlocked(const QString &reason) {
+void StrategyWindow::Block(const QString &reason) {
   Disable();
   ShowBlockedStrategyMessage(reason, this);
 }
@@ -145,28 +229,34 @@ void StrategyWindow::OnBlocked(const QString &reason) {
 void StrategyWindow::ConnectSignals() {
   qRegisterMetaType<std::vector<Opportunity>>("std::vector<Opportunity>");
   Verify(connect(this, &StrategyWindow::OpportunityUpdated, this,
-                 &StrategyWindow::OnOpportunityUpdate, Qt::QueuedConnection));
+                 &StrategyWindow::UpdateOpportunity, Qt::QueuedConnection));
 
-  Verify(connect(this, &StrategyWindow::Blocked, this,
-                 &StrategyWindow::OnBlocked, Qt::QueuedConnection));
+  Verify(connect(this, &StrategyWindow::Blocked, this, &StrategyWindow::Block,
+                 Qt::QueuedConnection));
 
-  Verify(connect(m_ui.isActivated, &QCheckBox::toggled, [this](bool isEnabled) {
-    try {
-      m_strategy.EnableTrading(isEnabled);
-    } catch (const std::exception &ex) {
-      QMessageBox::critical(this, QObject::tr("Failed to activate trading"),
-                            ex.what(), QMessageBox::Ok);
-    }
-    {
-      const QSignalBlocker blocker(*m_ui.isActivated);
-      m_ui.isActivated->setChecked(m_strategy.IsTradingEnabled());
-    }
-  }));
+  Verify(connect(
+      m_ui.isActivated, &QCheckBox::toggled, [this](const bool isEnabled) {
+        try {
+          m_strategy->EnableTrading(isEnabled);
+        } catch (const std::exception &ex) {
+          QMessageBox::critical(this, QObject::tr("Failed to activate trading"),
+                                ex.what(), QMessageBox::Ok);
+        }
+        {
+          const QSignalBlocker blocker(*m_ui.isActivated);
+          m_ui.isActivated->setChecked(m_strategy->IsTradingEnabled());
+        }
+        {
+          m_config.put("config.isTradingEnabled",
+                       m_strategy->IsTradingEnabled());
+          StoreConfig(true);
+        }
+      }));
 
   Verify(connect(
       m_ui.startExchanges, &QListWidget::itemSelectionChanged, [this]() {
         try {
-          m_strategy.SetStartExchanges(GetSelectedStartExchanges());
+          m_strategy->SetStartExchanges(GetSelectedStartExchanges());
         } catch (const std::exception &ex) {
           QMessageBox::critical(this, QObject::tr("Failed to setup strategy"),
                                 ex.what(), QMessageBox::Ok);
@@ -176,7 +266,7 @@ void StrategyWindow::ConnectSignals() {
   Verify(connect(
       m_ui.middleExchanges, &QListWidget::itemSelectionChanged, [this]() {
         try {
-          m_strategy.SetMiddleExchanges(GetSelectedMiddleExchanges());
+          m_strategy->SetMiddleExchanges(GetSelectedMiddleExchanges());
         } catch (const std::exception &ex) {
           QMessageBox::critical(this, QObject::tr("Failed to setup strategy"),
                                 ex.what(), QMessageBox::Ok);
@@ -186,7 +276,7 @@ void StrategyWindow::ConnectSignals() {
   Verify(connect(
       m_ui.finishExchanges, &QListWidget::itemSelectionChanged, [this]() {
         try {
-          m_strategy.SetFinishExchanges(GetSelectedFinishExchanges());
+          m_strategy->SetFinishExchanges(GetSelectedFinishExchanges());
         } catch (const std::exception &ex) {
           QMessageBox::critical(this, QObject::tr("Failed to setup strategy"),
                                 ex.what(), QMessageBox::Ok);
@@ -194,106 +284,89 @@ void StrategyWindow::ConnectSignals() {
         SetSelectedFinishExchanges();
       }));
 
-  Verify(connect(m_ui.minVolume,
-                 static_cast<void (QDoubleSpinBox::*)(double)>(
-                     &QDoubleSpinBox::valueChanged),
-                 [this](double value) {
-                   try {
-                     m_strategy.SetMinVolume(value);
-                   } catch (const std::exception &ex) {
-                     QMessageBox::critical(
-                         this, QObject::tr("Failed to setup strategy"),
-                         ex.what(), QMessageBox::Ok);
-                   }
-                   {
-                     const QSignalBlocker blocker(*m_ui.minVolume);
-                     m_ui.minVolume->setValue(m_strategy.GetMinVolume());
-                   }
-                   {
-                     const QSignalBlocker blocker(*m_ui.maxVolume);
-                     m_ui.maxVolume->setValue(m_strategy.GetMaxVolume());
-                   }
-                 }));
-  Verify(connect(m_ui.maxVolume,
-                 static_cast<void (QDoubleSpinBox::*)(double)>(
-                     &QDoubleSpinBox::valueChanged),
-                 [this](double value) {
-                   try {
-                     m_strategy.SetMaxVolume(value);
-                   } catch (const std::exception &ex) {
-                     QMessageBox::critical(
-                         this, QObject::tr("Failed to setup strategy"),
-                         ex.what(), QMessageBox::Ok);
-                   }
-                   {
-                     const QSignalBlocker blocker(*m_ui.minVolume);
-                     m_ui.minVolume->setValue(m_strategy.GetMinVolume());
-                   }
-                   {
-                     const QSignalBlocker blocker(*m_ui.maxVolume);
-                     m_ui.maxVolume->setValue(m_strategy.GetMaxVolume());
-                   }
-                 }));
+  Verify(connect(
+      m_ui.minVolume,
+      static_cast<void (QDoubleSpinBox::*)(double)>(
+          &QDoubleSpinBox::valueChanged),
+      [this](const double value) {
+        try {
+          m_strategy->SetMinVolume(value);
+        } catch (const std::exception &ex) {
+          QMessageBox::critical(this, QObject::tr("Failed to setup strategy"),
+                                ex.what(), QMessageBox::Ok);
+        }
+        {
+          const QSignalBlocker blocker(*m_ui.minVolume);
+          m_ui.minVolume->setValue(m_strategy->GetMinVolume());
+        }
+        {
+          const QSignalBlocker blocker(*m_ui.maxVolume);
+          m_ui.maxVolume->setValue(m_strategy->GetMaxVolume());
+        }
+        {
+          m_config.put("config.minVolume", m_strategy->GetMinVolume());
+          m_config.put("config.maxVolume", m_strategy->GetMaxVolume());
+          StoreConfig(true);
+        }
+      }));
+  Verify(connect(
+      m_ui.maxVolume,
+      static_cast<void (QDoubleSpinBox::*)(double)>(
+          &QDoubleSpinBox::valueChanged),
+      [this](const double value) {
+        try {
+          m_strategy->SetMaxVolume(value);
+        } catch (const std::exception &ex) {
+          QMessageBox::critical(this, QObject::tr("Failed to setup strategy"),
+                                ex.what(), QMessageBox::Ok);
+        }
+        {
+          const QSignalBlocker blocker(*m_ui.minVolume);
+          m_ui.minVolume->setValue(m_strategy->GetMinVolume());
+        }
+        {
+          const QSignalBlocker blocker(*m_ui.maxVolume);
+          m_ui.maxVolume->setValue(m_strategy->GetMaxVolume());
+        }
+        {
+          m_config.put("config.maxVolume", m_strategy->GetMaxVolume());
+          StoreConfig(true);
+        }
+      }));
 
   Verify(connect(
       m_ui.minProfit,
       static_cast<void (QDoubleSpinBox::*)(double)>(
           &QDoubleSpinBox::valueChanged),
       [this](double value) {
+        value = 1 + (value / 100);
         try {
-          m_strategy.SetMinProfitRatio(1 + (value / 100));
+          m_strategy->SetMinProfitRatio(value);
         } catch (const std::exception &ex) {
           QMessageBox::critical(this, QObject::tr("Failed to setup strategy"),
                                 ex.what(), QMessageBox::Ok);
         }
         {
           const QSignalBlocker blocker(*m_ui.maxVolume);
-          m_ui.minProfit->setValue((m_strategy.GetMinProfitRatio() - 1) * 100);
+          m_ui.minProfit->setValue((m_strategy->GetMinProfitRatio() - 1) * 100);
+        }
+        {
+          m_config.put("config.minProfitRatio",
+                       m_strategy->GetMinProfitRatio());
+          StoreConfig(true);
         }
       }));
 }
 
-ta::Strategy &StrategyWindow::CreateStrategyInstance(const LegsConf &legSet) {
-  static boost::uuids::random_generator generateStrategyId;
-  const auto &strategyId = generateStrategyId();
-  std::string legsStr;
-  ptr::ptree legs;
-  ptr::ptree symbols;
+ta::Strategy &StrategyWindow::CreateStrategyInstance(const ids::uuid &id,
+                                                     const std::string &name) {
   {
-    auto isFirst = true;
-    for (const auto &leg : legSet) {
-      if (!isFirst) {
-        legsStr += ", ";
-      } else {
-        isFirst = false;
-      }
-      const auto &legStr =
-          (leg.side == ORDER_SIDE_BUY ? '+' : '-') + leg.symbol.toStdString();
-      legsStr += legStr;
-      legs.push_back({"", ptr::ptree().put("", legStr)});
-      symbols.push_back({"", ptr::ptree().put("", leg.symbol)});
-    }
-  }
-  {
-    ptr::ptree strategyConfig;
-    strategyConfig.add("module", "TriangularArbitrage");
-    strategyConfig.add("id", strategyId);
-    strategyConfig.add("isEnabled", true);
-    strategyConfig.add("tradingMode", "live");
-    strategyConfig.add("config.isTradingEnabled", false);
-    strategyConfig.add("config.minVolume", 0);
-    strategyConfig.add("config.maxVolume", 1000);
-    strategyConfig.add("config.minProfitRatio", 1.01);
-    strategyConfig.add_child("config.legs", legs);
-    strategyConfig.add_child("requirements.level1Updates.symbols", symbols);
     ptr::ptree strategyTagedConfig;
-    strategyTagedConfig.add_child(m_engine.GenerateNewStrategyInstanceName(
-                                      "Triangular Arbitrage " + legsStr),
-                                  strategyConfig);
+    strategyTagedConfig.add_child(name, m_config);
     m_engine.GetContext().Add(strategyTagedConfig);
   }
   auto &result = *boost::polymorphic_downcast<ta::Strategy *>(
-      &m_engine.GetContext().GetSrategy(strategyId));
+      &m_engine.GetContext().GetSrategy(id));
 
   m_opportunityUpdateConnection = result.SubscribeToOpportunity(
       [this](const std::vector<Opportunity> &opportunities) {
@@ -311,7 +384,7 @@ ta::Strategy &StrategyWindow::CreateStrategyInstance(const LegsConf &legSet) {
   return result;
 }
 
-void StrategyWindow::OnOpportunityUpdate(
+void StrategyWindow::UpdateOpportunity(
     const std::vector<Opportunity> &opportunities) {
   if (!opportunities.empty()) {
     const auto &bestOpportunity = opportunities.front();
@@ -339,7 +412,7 @@ void StrategyWindow::OnOpportunityUpdate(
                   : QString());
     if (bestOpportunity.targets[LEG_1].qty.IsNotNan()) {
       m_ui.investmentVolume->setText(QString(
-          tr("inv.: %1 %2")
+          tr("invt: %1 %2")
               .arg(ConvertVolumeToText(bestOpportunity.targets[LEG_1].qty *
                                        bestOpportunity.targets[LEG_1].price),
                    m_investCurrency)));
@@ -366,9 +439,9 @@ void StrategyWindow::OnOpportunityUpdate(
 
   {
     m_ui.opportunities->setRowCount(static_cast<int>(opportunities.size()));
-    int row = 0;
+    auto row = 0;
     for (const auto &opportunity : opportunities) {
-      int column = 0;
+      auto column = 0;
       for (const auto &target : opportunity.targets) {
         m_ui.opportunities->setItem(
             row, column++,
@@ -406,20 +479,45 @@ void StrategyWindow::OnOpportunityUpdate(
           row, column++,
           new QTableWidgetItem(ConvertVolumeToText(opportunity.pnlVolume)));
       {
-        QString signalState = opportunity.isSignaled ? tr("yes") : "no";
+        auto signalState = opportunity.isSignaled ? tr("yes") : tr("no");
         if (opportunity.checkError) {
-          signalState += ", " + QString::fromStdString(*opportunity.checkError);
-          if (opportunity.errorTradingSystem) {
-            signalState += " (" +
-                           QString::fromStdString(
-                               opportunity.errorTradingSystem->GetTitle()) +
-                           ')';
+          signalState += ", ";
+          if (opportunity.orderError) {
+            std::ostringstream os;
+            os << opportunity.errorTradingSystem->GetTitle() << " requires:";
+            auto has = false;
+            if (opportunity.orderError->qty) {
+              os << " qty. >= " << *opportunity.orderError->qty;
+              has = true;
+            }
+            if (opportunity.orderError->price) {
+              if (has) {
+                os << ',';
+              }
+              os << " price >= " << *opportunity.orderError->price;
+              has = true;
+            }
+            if (opportunity.orderError->volume) {
+              if (has) {
+                os << ',';
+              }
+              os << " volume >= " << *opportunity.orderError->volume;
+            }
+            signalState += QString::fromStdString(os.str());
+          } else {
+            signalState += QString::fromStdString(*opportunity.checkError);
+            if (opportunity.errorTradingSystem) {
+              signalState += " (" +
+                             QString::fromStdString(
+                                 opportunity.errorTradingSystem->GetTitle()) +
+                             ')';
+            }
           }
         } else {
           Assert(!opportunity.errorTradingSystem);
         }
-        m_ui.opportunities->setItem(
-            row, column++, new QTableWidgetItem(std::move(signalState)));
+        m_ui.opportunities->setItem(row, column,
+                                    new QTableWidgetItem(signalState));
       }
       ++row;
     }
@@ -428,13 +526,13 @@ void StrategyWindow::OnOpportunityUpdate(
       m_ui.opportunities->setVisible(false);
       std::vector<QString> headers;
       headers.reserve(m_ui.opportunities->columnCount());
-      for (int i = 0; i < m_ui.opportunities->columnCount(); ++i) {
+      for (auto i = 0; i < m_ui.opportunities->columnCount(); ++i) {
         auto &header = *m_ui.opportunities->horizontalHeaderItem(i);
         headers.emplace_back(header.text());
         header.setText("");
       }
       m_ui.opportunities->resizeColumnsToContents();
-      for (int i = 0; i < m_ui.opportunities->columnCount(); ++i) {
+      for (auto i = 0; i < m_ui.opportunities->columnCount(); ++i) {
         m_ui.opportunities->horizontalHeaderItem(i)->setText(headers[i]);
       }
       m_ui.opportunities->setVisible(true);
@@ -445,21 +543,21 @@ void StrategyWindow::OnOpportunityUpdate(
 
 boost::unordered_set<size_t> StrategyWindow::GetSelectedStartExchanges() const {
   return GetSelectedExchanges(*m_ui.startExchanges,
-                              m_strategy.GetStartExchanges());
+                              m_strategy->GetStartExchanges());
 }
 boost::unordered_set<size_t> StrategyWindow::GetSelectedMiddleExchanges()
     const {
   return GetSelectedExchanges(*m_ui.middleExchanges,
-                              m_strategy.GetMiddleExchanges());
+                              m_strategy->GetMiddleExchanges());
 }
 boost::unordered_set<size_t> StrategyWindow::GetSelectedFinishExchanges()
     const {
   return GetSelectedExchanges(*m_ui.finishExchanges,
-                              m_strategy.GetFinishExchanges());
+                              m_strategy->GetFinishExchanges());
 }
 boost::unordered_set<size_t> StrategyWindow::GetSelectedExchanges(
     const QListWidget &control,
-    const boost::unordered_set<size_t> &defaultResult) const {
+    const boost::unordered_set<size_t> &defaultResult) {
   boost::unordered_set<size_t> result;
   const auto &selected = control.selectedItems();
   if (selected.size() == control.count()) {
@@ -472,13 +570,13 @@ boost::unordered_set<size_t> StrategyWindow::GetSelectedExchanges(
 }
 
 void StrategyWindow::SetSelectedStartExchanges() {
-  SetSelectedExchanges(*m_ui.startExchanges, m_strategy.GetStartExchanges());
+  SetSelectedExchanges(*m_ui.startExchanges, m_strategy->GetStartExchanges());
 }
 void StrategyWindow::SetSelectedMiddleExchanges() {
-  SetSelectedExchanges(*m_ui.middleExchanges, m_strategy.GetMiddleExchanges());
+  SetSelectedExchanges(*m_ui.middleExchanges, m_strategy->GetMiddleExchanges());
 }
 void StrategyWindow::SetSelectedFinishExchanges() {
-  SetSelectedExchanges(*m_ui.finishExchanges, m_strategy.GetFinishExchanges());
+  SetSelectedExchanges(*m_ui.finishExchanges, m_strategy->GetFinishExchanges());
 }
 void StrategyWindow::SetSelectedExchanges(
     QListWidget &control, const boost::unordered_set<size_t> &indexes) const {
@@ -487,7 +585,7 @@ void StrategyWindow::SetSelectedExchanges(
   if (indexes.empty()) {
     control.selectAll();
   } else {
-    for (int i = 0; i < control.count(); ++i) {
+    for (auto i = 0; i < control.count(); ++i) {
       auto &item = *control.item(i);
       item.setSelected(indexes.count(item.data(Qt::UserRole).toInt()) > 0);
     }
@@ -498,4 +596,33 @@ void StrategyWindow::SetSelectedExchanges(
   } else {
     control.setStyleSheet("border-color:rgb(255,255,0);");
   }
+}
+
+void StrategyWindow::StoreConfig(const bool isActive) {
+  m_engine.StoreConfig(*m_strategy, m_config, isActive);
+}
+
+void StrategyWindow::closeEvent(QCloseEvent *closeEvent) {
+  if (!IsAutoTradingActivated()) {
+    StoreConfig(false);
+    closeEvent->accept();
+    return;
+  }
+  const auto &response = QMessageBox::question(
+      this, tr("Strategy closing"),
+      tr("Are you sure you want to the close strategy window?\n\nIf strategy "
+         "window will be closed - automatic trading will be stopped, all "
+         "automatically opened position will not automatically closed.\n\n"
+         "Continue and close strategy window?"),
+      QMessageBox::Yes | QMessageBox::No);
+  if (response == QMessageBox::Yes) {
+    StoreConfig(false);
+    closeEvent->accept();
+  } else {
+    closeEvent->ignore();
+  }
+}
+
+bool StrategyWindow::IsAutoTradingActivated() const {
+  return !m_strategy->IsBlocked() && m_strategy->IsTradingEnabled();
 }
