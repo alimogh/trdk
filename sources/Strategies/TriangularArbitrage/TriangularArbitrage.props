@@ -4,9 +4,7 @@
     <_PropertySheetDisplayName>Triangular Arbitrage</_PropertySheetDisplayName>
   </PropertyGroup>
   <ItemDefinitionGroup>
-    <Link>
-      <ModuleDefinitionFile>TriangularArbitrage.def</ModuleDefinitionFile>
-    </Link>
+    <Link />
     <ClCompile>
       <PreprocessorDefinitions>TRDK_STRATEGY_TRIANGULARARBITRAGE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>

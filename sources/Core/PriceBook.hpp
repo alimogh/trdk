@@ -18,55 +18,54 @@ class PriceBook {
  public:
   enum { SIDE_MAX_SIZE = 10 };
 
- public:
   class Level {
    public:
     Level() : m_price(.0), m_qty(.0) {}
 
-    explicit Level(const boost::posix_time::ptime &time,
-                   const trdk::Price &price,
-                   const trdk::Qty &qty)
+    explicit Level(const boost::posix_time::ptime& time,
+                   const Price& price,
+                   const Qty& qty)
         : m_time(time), m_price(price), m_qty(qty) {}
 
-   public:
-    void operator+=(const Level &rhs) { m_qty += rhs.m_qty; }
-    void operator+=(const trdk::Qty &qty) { m_qty += qty; }
-    const boost::posix_time::ptime &GetTime() const { return m_time; }
-    void UpdateTime(const boost::posix_time::ptime &time) {
+    void operator+=(const Level& rhs) { m_qty += rhs.m_qty; }
+    void operator+=(const Qty& qty) { m_qty += qty; }
+    const boost::posix_time::ptime& GetTime() const { return m_time; }
+
+    void UpdateTime(const boost::posix_time::ptime& time) {
       if (m_time == boost::posix_time::not_a_date_time || time > m_time) {
         m_time = time;
       }
     }
 
-    const trdk::Price &GetPrice() const { return m_price; }
+    const Price& GetPrice() const { return m_price; }
 
-    const trdk::Qty &GetQty() const { return m_qty; }
+    const Qty& GetQty() const { return m_qty; }
 
    private:
     boost::posix_time::ptime m_time;
 
-    trdk::Price m_price;
-    trdk::Qty m_qty;
+    Price m_price;
+    Qty m_qty;
   };
 
   template <bool isAscendingSort>
   class Side {
    private:
-    typedef boost::array<Level, PriceBook::SIDE_MAX_SIZE> Storage;
+    typedef boost::array<Level, SIDE_MAX_SIZE> Storage;
 
    public:
     Side() : m_offset(0), m_size(0) {}
 
-    Side(const Side &rhs) : m_offset(0), m_size(rhs.m_size) {
-      const auto &begin = rhs.m_levels.cbegin() + rhs.m_offset;
-      const auto &end = begin + m_size;
+    Side(const Side& rhs) : m_offset(0), m_size(rhs.m_size) {
+      const auto& begin = rhs.m_levels.cbegin() + rhs.m_offset;
+      const auto& end = begin + m_size;
       AssertGe(m_levels.size(), size_t(std::distance(begin, end)));
       std::copy(begin, end, m_levels.begin());
     }
 
-    const Side &operator=(const Side &rhs) {
-      const auto &begin = rhs.m_levels.cbegin() + rhs.m_offset;
-      const auto &end = begin + rhs.m_size;
+    const Side& operator=(const Side& rhs) {
+      const auto& begin = rhs.m_levels.cbegin() + rhs.m_offset;
+      const auto& end = begin + rhs.m_size;
       AssertGe(m_levels.size(), size_t(std::distance(begin, end)));
       std::copy(begin, end, m_levels.begin());
       m_offset = 0;
@@ -79,12 +78,12 @@ class PriceBook {
 
     bool IsEmpty() const { return GetSize() == 0; }
 
-    const Level &GetTop() const { return GetLevel(0); }
+    const Level& GetTop() const { return GetLevel(0); }
 
-    const Level &GetLevel(size_t levelIndex) const {
+    const Level& GetLevel(size_t levelIndex) const {
       AssertGe(m_levels.size(), size_t(m_offset + m_size));
       if (levelIndex >= m_size) {
-        throw trdk::Lib::LogicError("Price book level index is out of range");
+        throw Lib::LogicError("Price book level index is out of range");
       }
       AssertGt(m_levels.size(), m_offset + levelIndex);
       return m_levels[m_offset + levelIndex];
@@ -93,7 +92,7 @@ class PriceBook {
     void PopTop() {
       AssertGe(m_levels.size(), size_t(m_offset + m_size));
       if (IsEmpty()) {
-        throw trdk::Lib::LogicError("Price book is empty");
+        throw Lib::LogicError("Price book is empty");
       }
       AssertGt(m_levels.size(), m_offset);
       AssertLt(0, m_size);
@@ -104,20 +103,20 @@ class PriceBook {
       AssertGe(m_levels.size(), size_t(m_offset + m_size));
     }
 
-    void Add(const boost::posix_time::ptime &time,
+    void Add(const boost::posix_time::ptime& time,
              double price,
-             const trdk::Qty &qty) {
+             const Qty& qty) {
       AssertEq(0, m_offset);
       AssertGe(m_levels.size(), m_size);
 
       if (m_size >= m_levels.size()) {
         AssertEq(m_size, m_levels.size());
-        throw trdk::Lib::Exception("Price book is out of price levels slots");
+        throw Lib::Exception("Price book is out of price levels slots");
       }
 
-      const auto &begin = m_levels.begin();
-      const auto &end = begin + m_size;
-      const auto &pos = FindPrice(begin, end, price);
+      const auto& begin = m_levels.begin();
+      const auto& end = begin + m_size;
+      const auto& pos = FindPrice(begin, end, price);
       TrdkAssert(pos <= end);
       TrdkAssert(pos < m_levels.cend());
       TrdkAssert(pos >= begin);
@@ -129,7 +128,7 @@ class PriceBook {
       }
 
       if (pos->GetPrice() == price) {
-        throw trdk::Lib::Exception("Not unique price level found");
+        throw Lib::Exception("Not unique price level found");
       }
 
       for (auto it = end; it != pos; --it) {
@@ -139,15 +138,15 @@ class PriceBook {
       ++m_size;
     }
 
-    bool Update(const boost::posix_time::ptime &time,
+    bool Update(const boost::posix_time::ptime& time,
                 double price,
-                const trdk::Qty &qty) {
+                const Qty& qty) {
       AssertEq(0, m_offset);
       AssertGe(m_levels.size(), m_size);
 
-      const auto &begin = m_levels.begin();
-      const auto &end = begin + m_size;
-      const auto &pos = FindPrice(begin, end, price);
+      const auto& begin = m_levels.begin();
+      const auto& end = begin + m_size;
+      const auto& pos = FindPrice(begin, end, price);
       TrdkAssert(pos <= end);
       TrdkAssert(pos >= begin);
 
@@ -165,7 +164,7 @@ class PriceBook {
       }
 
       if (pos->GetPrice() == price) {
-        Level &level = *pos;
+        Level& level = *pos;
         level += qty;
         level.UpdateTime(time);
         return true;
@@ -193,12 +192,12 @@ class PriceBook {
     void Clear() throw() { m_offset = m_size = 0; }
 
    private:
-    static Storage::iterator FindPrice(const Storage::iterator &begin,
-                                       const Storage::iterator &end,
-                                       const trdk::Price &price) {
+    static Storage::iterator FindPrice(const Storage::iterator& begin,
+                                       const Storage::iterator& end,
+                                       const Price& price) {
       static_assert(isAscendingSort, "Failed to find template specialization.");
       return std::lower_bound(begin, end, price,
-                              [](const Level &lhs, const trdk::Price &rhs) {
+                              [](const Level& lhs, const Price& rhs) {
                                 return lhs.GetPrice() < rhs;
                               });
     }
@@ -215,23 +214,24 @@ class PriceBook {
  public:
   PriceBook() {}
 
-  explicit PriceBook(const boost::posix_time::ptime &time) : m_time(time) {}
+  explicit PriceBook(const boost::posix_time::ptime& time) : m_time(time) {}
 
  public:
   static size_t GetSideMaxSize() { return SIDE_MAX_SIZE; }
 
  public:
-  const boost::posix_time::ptime &GetTime() const { return m_time; }
-  void SetTime(const boost::posix_time::ptime &time) {
+  const boost::posix_time::ptime& GetTime() const { return m_time; }
+
+  void SetTime(const boost::posix_time::ptime& time) {
     TrdkAssert(m_time == boost::posix_time::not_a_date_time || m_time <= time);
     m_time = time;
   }
 
-  const Bid &GetBid() const { return const_cast<PriceBook *>(this)->GetBid(); }
-  Bid &GetBid() { return m_bid; }
+  const Bid& GetBid() const { return const_cast<PriceBook*>(this)->GetBid(); }
+  Bid& GetBid() { return m_bid; }
 
-  const Ask &GetAsk() const { return const_cast<PriceBook *>(this)->GetAsk(); }
-  Ask &GetAsk() { return m_ask; }
+  const Ask& GetAsk() const { return const_cast<PriceBook*>(this)->GetAsk(); }
+  Ask& GetAsk() { return m_ask; }
 
   void Clear() throw() {
     m_bid.Clear();
@@ -247,13 +247,11 @@ class PriceBook {
 
 template <>
 inline PriceBook::Side<false>::Storage::iterator
-PriceBook::Side<false>::FindPrice(
-    const PriceBook::Side<false>::Storage::iterator &begin,
-    const PriceBook::Side<false>::Storage::iterator &end,
-    const trdk::Price &price) {
-  return std::lower_bound(begin, end, price,
-                          [](const Level &lhs, const trdk::Price &rhs) {
-                            return lhs.GetPrice() > rhs;
-                          });
+PriceBook::Side<false>::FindPrice(const Storage::iterator& begin,
+                                  const Storage::iterator& end,
+                                  const Price& price) {
+  return std::lower_bound(
+      begin, end, price,
+      [](const Level& lhs, const Price& rhs) { return lhs.GetPrice() > rhs; });
 }
 }  // namespace trdk
