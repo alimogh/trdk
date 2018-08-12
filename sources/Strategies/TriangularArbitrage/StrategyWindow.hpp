@@ -35,28 +35,42 @@ class StrategyWindow : public QMainWindow {
   explicit StrategyWindow(FrontEnd::Engine &,
                           const LegsConf &,
                           QWidget *parent);
-  ~StrategyWindow();
+  explicit StrategyWindow(FrontEnd::Engine &,
+                          const QUuid &strategyId,
+                          const QString &name,
+                          const boost::property_tree::ptree &config,
+                          QWidget *parent);
+  ~StrategyWindow() override;
+
+  bool IsAutoTradingActivated() const;
 
  private slots:
-  void OnOpportunityUpdate(const std::vector<Opportunity> &);
-  void OnBlocked(const QString &reason);
+  void UpdateOpportunity(const std::vector<Opportunity> &);
+  void Block(const QString &reason);
 
  signals:
   void OpportunityUpdated(const std::vector<Opportunity> &);
   void Blocked(const QString &reason);
 
+ protected:
+  void closeEvent(QCloseEvent *) override;
+
  private:
+  void Init(const boost::uuids::uuid &, const std::string &name);
+
+  void StoreConfig(bool isActive);
+
   void ConnectSignals();
-  Strategy &CreateStrategyInstance(const LegsConf &);
+  Strategy &CreateStrategyInstance(const boost::uuids::uuid &,
+                                   const std::string &name);
 
   void Disable();
 
   boost::unordered_set<size_t> GetSelectedStartExchanges() const;
   boost::unordered_set<size_t> GetSelectedMiddleExchanges() const;
   boost::unordered_set<size_t> GetSelectedFinishExchanges() const;
-  boost::unordered_set<size_t> GetSelectedExchanges(
-      const QListWidget &,
-      const boost::unordered_set<size_t> &defaultResult) const;
+  static boost::unordered_set<size_t> GetSelectedExchanges(
+      const QListWidget &, const boost::unordered_set<size_t> &defaultResult);
 
   void SetSelectedStartExchanges();
   void SetSelectedMiddleExchanges();
@@ -64,19 +78,19 @@ class StrategyWindow : public QMainWindow {
   void SetSelectedExchanges(QListWidget &,
                             const boost::unordered_set<size_t> &) const;
 
- private:
   FrontEnd::Engine &m_engine;
-  const QString m_investCurrency;
-  const QString m_resultCurrency;
-  Ui::StrategyWindow m_ui;
-  boost::array<Leg, numberOfLegs> m_legs;
+  boost::property_tree::ptree m_config;
+  QString m_investCurrency;
+  QString m_resultCurrency;
+  Ui::StrategyWindow m_ui{};
+  boost::array<Leg, numberOfLegs> m_legs{};
 
   boost::signals2::scoped_connection m_opportunityUpdateConnection;
   boost::signals2::scoped_connection m_blockConnection;
 
-  size_t m_maxNumberOfOppotunities;
+  int m_maxNumberOfOppotunities = 0;
 
-  Strategy &m_strategy;
+  Strategy *m_strategy = nullptr;
 };
 
 }  // namespace TriangularArbitrage

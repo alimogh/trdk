@@ -20,6 +20,8 @@ class Strategy : public trdk::Strategy {
  public:
   typedef trdk::Strategy Base;
 
+  static const boost::uuids::uuid typeId;
+
   explicit Strategy(Context &,
                     const std::string &instanceName,
                     const boost::property_tree::ptree &);

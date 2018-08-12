@@ -18,10 +18,10 @@ using namespace Lib;
 using namespace TradingLib;
 using namespace TimeMeasurement;
 using namespace Strategies::TriangularArbitrage;
-
 namespace ta = Strategies::TriangularArbitrage;
 namespace sig = boost::signals2;
 namespace ptr = boost::property_tree;
+namespace ids = boost::uuids;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -31,23 +31,22 @@ class BuyLegPolicy : public LegPolicy {
   explicit BuyLegPolicy(const std::string &symbol) : LegPolicy(symbol) {}
   ~BuyLegPolicy() override = default;
 
- public:
-  virtual const OrderSide &GetSide() const override {
+  const OrderSide &GetSide() const override {
     static const OrderSide result = ORDER_SIDE_BUY;
     return result;
   }
 
-  virtual Qty GetQty(const Security &security) const override {
+  Qty GetQty(const Security &security) const override {
     return security.GetAskQty();
   }
 
-  virtual Price GetPrice(const Security &security) const override {
+  Price GetPrice(const Security &security) const override {
     return security.GetAskPrice();
   }
 
-  virtual Qty GetOrderQtyAllowedByBalance(const TradingSystem &tradingSystem,
-                                          const Security &security,
-                                          const Price &price) const override {
+  Qty GetOrderQtyAllowedByBalance(const TradingSystem &tradingSystem,
+                                  const Security &security,
+                                  const Price &price) const override {
     auto balance = tradingSystem.GetBalances().GetAvailableToTrade(
         security.GetSymbol().GetQuoteSymbol());
     balance -= tradingSystem.CalcCommission(balance / price, price,
@@ -55,7 +54,7 @@ class BuyLegPolicy : public LegPolicy {
     return balance / price;
   }
 
-  virtual Qty CalcPnl(const Qty &thisLegQty, const Qty &leg1Qty) const {
+  Qty CalcPnl(const Qty &thisLegQty, const Qty &leg1Qty) const override {
     return thisLegQty - leg1Qty;
   }
 };
@@ -85,7 +84,7 @@ class SellLegPolicy : public LegPolicy {
         security.GetSymbol().GetBaseSymbol());
   }
 
-  virtual Qty CalcPnl(const Qty &thisLegQty, const Qty &leg1Qty) const {
+  Qty CalcPnl(const Qty &thisLegQty, const Qty &leg1Qty) const override {
     return leg1Qty - thisLegQty;
   }
 };
@@ -141,7 +140,7 @@ boost::optional<std::string> CheckCalcs(const Opportunity &opportunity) {
   if (targets[LEG_3].qty < plannedLeg3Qty * 0.75 ||
       plannedLeg3Qty * 1.25 < targets[LEG_3].qty) {
     boost::format error(
-        "Legs configuration is wrong - 3rd leg quantity is %1%, but shouldbe "
+        "Legs configuration is wrong - 3rd leg quantity is %1%, but should be "
         "near %2% (P&L ratio is %3%)");
     error % targets[LEG_3].qty   // 1
         % plannedLeg3Qty         // 2
@@ -154,6 +153,9 @@ boost::optional<std::string> CheckCalcs(const Opportunity &opportunity) {
 }  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
+
+const ids::uuid ta::Strategy::typeId =
+    ids::string_generator()("{F0F45162-F1D3-484A-A0F3-7AC7DF7F9DA9}");
 
 class ta::Strategy::Implementation : private boost::noncopyable {
  public:
@@ -282,8 +284,8 @@ class ta::Strategy::Implementation : private boost::noncopyable {
           m_legs[LEG_3]->CalcPnl(targets[LEG_3].qty, targets[LEG_1].qty);
     }
     if (!opportunity.checkError) {
-      boost::tie(opportunity.checkError, opportunity.errorTradingSystem) =
-          CheckTargets(opportunity.targets);
+      boost::tie(opportunity.checkError, opportunity.errorTradingSystem,
+                 opportunity.orderError) = CheckTargets(opportunity.targets);
     }
     {
       const auto configurationError = CheckCalcs(opportunity);
@@ -662,8 +664,10 @@ class ta::Strategy::Implementation : private boost::noncopyable {
     }
   }
 
-  std::pair<const std::string *, const TradingSystem *> CheckTargets(
-      Opportunity::Targets &targets) {
+  boost::tuple<const std::string *,
+               const TradingSystem *,
+               boost::optional<const OrderCheckError>>
+  CheckTargets(Opportunity::Targets &targets) {
     size_t leg = 0;
     for (auto target : targets) {
       const auto &result = OrderBestSecurityChecker::Create(
@@ -671,7 +675,8 @@ class ta::Strategy::Implementation : private boost::noncopyable {
                                target.qty, target.price)
                                ->Check(*target.security);
       if (result) {
-        return {&result->GetRuleNameRef(), target.tradingSystem};
+        return {&result->GetRuleNameRef(), target.tradingSystem,
+                result->GetOrderError()};
       }
       ++leg;
     }
@@ -716,11 +721,7 @@ class ta::Strategy::Implementation : private boost::noncopyable {
 ta::Strategy::Strategy(Context &context,
                        const std::string &instanceName,
                        const ptr::ptree &conf)
-    : Base(context,
-           "{F0F45162-F1D3-484A-A0F3-7AC7DF7F9DA9}",
-           "TriangularArbitrage",
-           instanceName,
-           conf),
+    : Base(context, typeId, "TriangularArbitrage", instanceName, conf),
       m_pimpl(boost::make_unique<Implementation>(*this)) {
   {
     m_pimpl->m_isTradingEnabled = conf.get<bool>("config.isTradingEnabled");
@@ -1013,6 +1014,7 @@ Leg ta::Strategy::GetLeg(const Security &security) const {
 std::unique_ptr<trdk::Strategy> CreateStrategy(Context &context,
                                                const std::string &instanceName,
                                                const ptr::ptree &conf) {
+#pragma comment(linker, "/EXPORT:" __FUNCTION__ "=" __FUNCDNAME__)
   return boost::make_unique<ta::Strategy>(context, instanceName, conf);
 }
 

@@ -167,7 +167,4 @@
       <Filter>Form Files</Filter>
     </CustomBuild>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="TriangularArbitrage.def" />
-  </ItemGroup>
 </Project>
