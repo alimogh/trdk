@@ -211,7 +211,7 @@ void BalancesContainer::ReduceAvailableToTradeByOrder(
                 % delta;             // 7
           });
       storage.available = newAvailable;
-      storage.locked = newAvailable;
+      storage.locked = newLocked;
 
       m_pimpl->Copy(symbol, storage);
 
