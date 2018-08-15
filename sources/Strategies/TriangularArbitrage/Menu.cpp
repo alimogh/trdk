@@ -21,10 +21,11 @@ StrategyMenuActionList CreateMenuActions(Engine &engine) {
           {QObject::tr("&Triangular Arbitrage..."),
            [&engine](QWidget *parent) -> StrategyWidgetList {
              StrategyWidgetList result;
-             for (const auto &legSet :
-                  LegSetSelectionDialog(engine, parent).RequestLegSet()) {
+             const auto &conf =
+                 LegSetSelectionDialog(engine, parent).RequestLegSet();
+             if (conf) {
                result.emplace_back(
-                   boost::make_unique<StrategyWindow>(engine, legSet, parent));
+                   boost::make_unique<StrategyWindow>(engine, *conf, parent));
              }
              return result;
            }}};
