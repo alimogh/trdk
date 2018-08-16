@@ -64,13 +64,28 @@ ExcambiorexMarketDataSource::~ExcambiorexMarketDataSource() {
 
 void ExcambiorexMarketDataSource::Connect() {
   GetLog().Debug("Creating connection...");
+
+  ExcambiorexProductList products;
   try {
-    m_products = RequestExcambiorexProductAndCurrencyList(
-                     m_session, GetContext(), GetLog())
-                     .first;
+    products = RequestExcambiorexProductAndCurrencyList(m_session, GetContext(),
+                                                        GetLog())
+                   .first;
   } catch (const std::exception& ex) {
     throw ConnectError(ex.what());
   }
+
+  boost::unordered_set<std::string> symbolListHint;
+  for (const auto& product : products) {
+    symbolListHint.insert(product.symbol);
+  }
+
+  m_products = std::move(products);
+  m_symbolListHint = std::move(symbolListHint);
+}
+
+const boost::unordered_set<std::string>&
+ExcambiorexMarketDataSource::GetSymbolListHint() const {
+  return m_symbolListHint;
 }
 
 void ExcambiorexMarketDataSource::SubscribeToSecurities() {

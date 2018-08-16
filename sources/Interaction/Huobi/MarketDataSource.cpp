@@ -58,12 +58,21 @@ boost::shared_ptr<trdk::MarketDataSource> CreateMarketDataSource(
 
 void Huobi::MarketDataSource::Connect() {
   GetLog().Debug("Creating connection...");
+
   boost::unordered_map<std::string, Product> products;
   try {
-    m_products = RequestProductList(m_session, GetContext(), GetLog());
+    products = RequestProductList(m_session, GetContext(), GetLog());
   } catch (const std::exception &ex) {
     throw ConnectError(ex.what());
   }
+
+  boost::unordered_set<std::string> symbolListHint;
+  for (const auto &product : products) {
+    symbolListHint.insert(product.first);
+  }
+
+  m_products = std::move(products);
+  m_symbolListHint = std::move(symbolListHint);
 }
 
 void Huobi::MarketDataSource::SubscribeToSecurities() {
@@ -192,4 +201,9 @@ void Huobi::MarketDataSource::UpdatePrices(const ptr::ptree &source,
       security.SetLevel1(time, ask->first, ask->second, delayMeasurement);
     }
   }
+}
+
+const boost::unordered_set<std::string>
+    &Huobi::MarketDataSource::GetSymbolListHint() const {
+  return m_symbolListHint;
 }

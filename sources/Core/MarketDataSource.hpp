@@ -64,6 +64,11 @@ class TRDK_CORE_API MarketDataSource : virtual public Interactor {
 
   virtual void SubscribeToSecurities() = 0;
 
+  //! Returns an actual list of symbols that system may support (but not
+  //! obliged).
+  virtual const boost::unordered_set<std::string>& GetSymbolListHint()
+      const = 0;
+
   //! Returns security without expiration date, creates new object if it
   //! doesn't exist yet.
   /**

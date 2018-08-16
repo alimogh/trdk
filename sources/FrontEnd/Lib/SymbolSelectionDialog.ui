@@ -7,19 +7,33 @@
     <x>0</x>
     <y>0</y>
     <width>274</width>
-    <height>260</height>
+    <height>287</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Select Symbol</string>
   </property>
-  <layout class="QVBoxLayout" name="_2">
+  <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <widget class="QLabel" name="symbolLabel">
      <property name="text">
       <string>Select one or more symbols:</string>
      </property>
     </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QLabel" name="filterLabel">
+       <property name="text">
+        <string>Filer:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="filter"/>
+     </item>
+    </layout>
    </item>
    <item>
     <widget class="QListWidget" name="symbols">
@@ -30,6 +44,19 @@
    </item>
    <item>
     <layout class="QHBoxLayout" name="_3">
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
      <item>
       <widget class="QPushButton" name="okButton">
        <property name="text">

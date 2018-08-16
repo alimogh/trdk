@@ -52,11 +52,26 @@ CexioMarketDataSource::~CexioMarketDataSource() {
 
 void CexioMarketDataSource::Connect() {
   GetLog().Debug("Creating connection...");
+
+  boost::unordered_map<std::string, CexioProduct> products;
   try {
-    m_products = RequestCexioProductList(m_session, GetContext(), GetLog());
+    products = RequestCexioProductList(m_session, GetContext(), GetLog());
   } catch (const std::exception &ex) {
     throw ConnectError(ex.what());
   }
+
+  boost::unordered_set<std::string> symbolListHint;
+  for (const auto &product : products) {
+    symbolListHint.insert(product.first);
+  }
+
+  m_products = std::move(products);
+  m_symbolListHint = std::move(symbolListHint);
+}
+
+const boost::unordered_set<std::string>
+    &CexioMarketDataSource::GetSymbolListHint() const {
+  return m_symbolListHint;
 }
 
 void CexioMarketDataSource::SubscribeToSecurities() {

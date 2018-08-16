@@ -18,19 +18,19 @@ namespace Dummies {
 
 class MarketDataSource : public trdk::MarketDataSource {
  public:
-  explicit MarketDataSource(trdk::Context * = nullptr);
-  virtual ~MarketDataSource() override = default;
+  explicit MarketDataSource(Context * = nullptr);
+  ~MarketDataSource() override = default;
 
   static MarketDataSource &GetInstance();
 
- public:
-  virtual void Connect() override;
+  void Connect() override;
 
-  virtual void SubscribeToSecurities() override;
+  void SubscribeToSecurities() override;
+
+  const boost::unordered_set<std::string> &GetSymbolListHint() const override;
 
  protected:
-  virtual trdk::Security &CreateNewSecurityObject(
-      const trdk::Lib::Symbol &) override;
+  Security &CreateNewSecurityObject(const Lib::Symbol &) override;
 };
 }  // namespace Dummies
 }  // namespace Tests

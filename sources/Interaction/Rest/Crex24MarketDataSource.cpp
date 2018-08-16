@@ -49,6 +49,7 @@ Crex24MarketDataSource::~Crex24MarketDataSource() {
 
 void Crex24MarketDataSource::Connect() {
   GetLog().Debug("Creating connection...");
+
   boost::unordered_map<std::string, Crex24Product> products;
   try {
     products = RequestCrex24ProductList(m_session, GetContext(), GetLog());
@@ -58,10 +59,19 @@ void Crex24MarketDataSource::Connect() {
   boost::unordered_map<std::string,
                        std::pair<Crex24Product, boost::shared_ptr<Security>>>
       securities;
+  boost::unordered_set<std::string> symbolListHint;
   for (const auto &product : products) {
     securities.emplace(product.first, std::make_pair(product.second, nullptr));
+    symbolListHint.insert(product.first);
   }
-  securities.swap(m_securities);
+
+  m_securities = std::move(securities);
+  m_symbolListHint = std::move(symbolListHint);
+}
+
+const boost::unordered_set<std::string>
+    &Crex24MarketDataSource::GetSymbolListHint() const {
+  return m_symbolListHint;
 }
 
 void Crex24MarketDataSource::SubscribeToSecurities() {

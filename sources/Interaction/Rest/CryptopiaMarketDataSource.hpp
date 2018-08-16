@@ -35,6 +35,8 @@ class CryptopiaMarketDataSource : public MarketDataSource {
 
   void SubscribeToSecurities() override;
 
+  const boost::unordered_set<std::string> &GetSymbolListHint() const override;
+
  protected:
   trdk::Security &CreateNewSecurityObject(const Lib::Symbol &) override;
 
@@ -54,6 +56,7 @@ class CryptopiaMarketDataSource : public MarketDataSource {
                        std::pair<CryptopiaProductList::const_iterator,
                                  boost::shared_ptr<Rest::Security>>>
       m_securities;
+  boost::unordered_set<std::string> m_symbolListHint;
 
   std::unique_ptr<Poco::Net::HTTPSClientSession> m_session;
 

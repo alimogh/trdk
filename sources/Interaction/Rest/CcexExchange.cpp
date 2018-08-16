@@ -334,6 +334,10 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     return TradingSystem::CheckSymbol(symbol) && m_products.count(symbol) > 0;
   }
 
+  const boost::unordered_set<std::string> &GetSymbolListHint() const override {
+    return m_symbolListHint;
+  }
+
  protected:
   void CreateConnection() override {
     try {
@@ -539,9 +543,10 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
   }
 
   void RequestProducts() {
-    boost::unordered_map<std::string, Product> products;
     PublicRequest request("getmarkets", *m_endpoint.floodControl, std::string(),
                           GetContext(), GetTsLog());
+
+    boost::unordered_map<std::string, Product> products;
     try {
       const auto response = boost::get<1>(request.Send(m_marketDataSession));
       for (const auto &node : response) {
@@ -561,7 +566,14 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       error % ex.what();
       throw Exception(error.str().c_str());
     }
+
+    boost::unordered_set<std::string> symbolListHint;
+    for (const auto &product : products) {
+      symbolListHint.insert(product.first);
+    }
+
     m_products = std::move(products);
+    m_symbolListHint = std::move(symbolListHint);
   }
 
   void UpdateOrder(const OrderId &orderId, const ptr::ptree &order) {
@@ -710,6 +722,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
   std::unique_ptr<Poco::Net::HTTPSClientSession> m_tradingSession;
 
   boost::unordered_map<std::string, Product> m_products;
+  boost::unordered_set<std::string> m_symbolListHint;
 
   SecuritiesMutex m_securitiesMutex;
   boost::unordered_map<Lib::Symbol, SecuritySubscribtion> m_securities;
@@ -717,8 +730,6 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
   BalancesContainer m_balances;
 
   std::unique_ptr<PollingTask> m_pollingTask;
-
-  trdk::Timer::Scope m_timerScope;
 
   boost::mutex m_canceledMutex;
   boost::unordered_set<OrderId> m_canceled;

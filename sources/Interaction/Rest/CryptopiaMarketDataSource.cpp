@@ -51,11 +51,26 @@ CryptopiaMarketDataSource::~CryptopiaMarketDataSource() {
 
 void CryptopiaMarketDataSource::Connect() {
   GetLog().Debug("Creating connection...");
+
+  CryptopiaProductList products;
   try {
-    m_products = RequestCryptopiaProductList(m_session, GetContext(), GetLog());
+    products = RequestCryptopiaProductList(m_session, GetContext(), GetLog());
   } catch (const std::exception &ex) {
     throw ConnectError(ex.what());
   }
+
+  boost::unordered_set<std::string> symbolListHint;
+  for (const auto &product : products) {
+    symbolListHint.insert(product.symbol);
+  }
+
+  m_products = std::move(products);
+  m_symbolListHint = std::move(symbolListHint);
+}
+
+const boost::unordered_set<std::string>
+    &CryptopiaMarketDataSource::GetSymbolListHint() const {
+  return m_symbolListHint;
 }
 
 void CryptopiaMarketDataSource::SubscribeToSecurities() {

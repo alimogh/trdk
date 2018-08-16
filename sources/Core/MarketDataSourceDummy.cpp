@@ -37,6 +37,11 @@ void Dummies::MarketDataSource::SubscribeToSecurities() {
 }
 
 trdk::Security &Dummies::MarketDataSource::CreateNewSecurityObject(
-    const trdk::Lib::Symbol &) {
+    const Symbol &) {
+  throw std::logic_error("Not supported");
+}
+
+const boost::unordered_set<std::string>
+    &Dummies::MarketDataSource::GetSymbolListHint() const {
   throw std::logic_error("Not supported");
 }

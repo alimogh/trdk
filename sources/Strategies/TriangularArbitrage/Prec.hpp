@@ -41,5 +41,4 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/thread/future.hpp>
-#include <boost/unordered_set.hpp>
 #include <boost/uuid/uuid_generators.hpp>
