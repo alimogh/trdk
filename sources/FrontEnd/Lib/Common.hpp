@@ -12,4 +12,3 @@
 
 #include "Api.h"
 #include "Fwd.hpp"
-#include <boost/unordered_set.hpp>

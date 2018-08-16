@@ -35,6 +35,8 @@ class MarketDataSource : public trdk::MarketDataSource {
 
   void SubscribeToSecurities() override;
 
+  const boost::unordered_set<std::string> &GetSymbolListHint() const override;
+
  protected:
   Security &CreateNewSecurityObject(const Lib::Symbol &) override;
 
@@ -49,6 +51,7 @@ class MarketDataSource : public trdk::MarketDataSource {
   std::unique_ptr<Poco::Net::HTTPSClientSession> m_session;
 
   boost::unordered_map<std::string, Product> m_products;
+  boost::unordered_set<std::string> m_symbolListHint;
   boost::unordered_map<ProductId, boost::shared_ptr<Rest::Security>>
       m_securities;
 

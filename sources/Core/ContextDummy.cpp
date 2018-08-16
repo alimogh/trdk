@@ -60,6 +60,10 @@ bool Dummies::Context::HasExpirationCalendar() const {
   throw std::logic_error("Not supported");
 }
 
+boost::unordered_set<std::string> Dummies::Context::GetSymbolListHint() const {
+  throw std::logic_error("Not supported");
+}
+
 size_t Dummies::Context::GetNumberOfMarketDataSources() const {
   throw std::logic_error("Not supported");
 }

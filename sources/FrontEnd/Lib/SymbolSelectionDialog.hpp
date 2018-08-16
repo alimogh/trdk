@@ -22,14 +22,15 @@ class TRDK_FRONTEND_LIB_API SymbolSelectionDialog : public QDialog {
  public:
   typedef QDialog Base;
 
- public:
   explicit SymbolSelectionDialog(Engine &, QWidget *parent);
   ~SymbolSelectionDialog();
 
- public:
   std::vector<QString> RequestSymbols();
 
  private:
+  void UpdateList();
+
+  std::vector<QString> m_symbols;
   std::unique_ptr<Ui::SymbolSelectionDialog> m_ui;
 };
 }  // namespace FrontEnd

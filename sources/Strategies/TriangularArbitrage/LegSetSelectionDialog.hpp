@@ -22,12 +22,20 @@ class LegSetSelectionDialog : public QDialog {
  public:
   explicit LegSetSelectionDialog(FrontEnd::Engine &, QWidget *parent);
 
- public:
-  std::vector<LegsConf> RequestLegSet();
+  boost::optional<LegsConf> RequestLegSet();
 
  private:
-  Ui::LegSetSelectionDialog m_ui;
-  std::vector<LegsConf> m_legSets;
+  void ResetLists();
+  void ConnectSiganls();
+  void UpdateSides(const OrderSide &, const OrderSide &, const OrderSide &);
+  void UpdateSymbolsByLeg1();
+  void UpdateSymbolsByLeg2();
+  void UpdateOkButton();
+
+  QMap<QString, std::pair<QString, QString>> m_pairs;
+
+  const FrontEnd::Engine &m_engine;
+  Ui::LegSetSelectionDialog m_ui{};
 };
 }  // namespace TriangularArbitrage
 }  // namespace Strategies

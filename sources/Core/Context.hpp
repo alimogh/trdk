@@ -159,6 +159,10 @@ class TRDK_CORE_API Context {
    */
   virtual bool HasExpirationCalendar() const = 0;
 
+  //! Returns an actual list of symbols that system may support (but not
+  //! obliged).
+  virtual boost::unordered_set<std::string> GetSymbolListHint() const = 0;
+
   //! Market Data Sources count.
   /** @sa GetMarketDataSource
    */

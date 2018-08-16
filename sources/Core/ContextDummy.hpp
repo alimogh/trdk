@@ -31,6 +31,8 @@ class Context : public trdk::Context {
   const Lib::ExpirationCalendar& GetExpirationCalendar() const override;
   bool HasExpirationCalendar() const override;
 
+  boost::unordered_set<std::string> GetSymbolListHint() const override;
+
   size_t GetNumberOfMarketDataSources() const override;
   const MarketDataSource& GetMarketDataSource(size_t) const override;
   MarketDataSource& GetMarketDataSource(size_t) override;

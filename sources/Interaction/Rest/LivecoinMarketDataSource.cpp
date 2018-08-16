@@ -56,11 +56,26 @@ LivecoinMarketDataSource::~LivecoinMarketDataSource() {
 
 void LivecoinMarketDataSource::Connect() {
   GetLog().Debug("Creating connection...");
+
+  boost::unordered_map<std::string, LivecoinProduct> products;
   try {
-    m_products = RequestLivecoinProductList(m_session, GetContext(), GetLog());
+    products = RequestLivecoinProductList(m_session, GetContext(), GetLog());
   } catch (const std::exception &ex) {
     throw ConnectError(ex.what());
   }
+
+  boost::unordered_set<std::string> symbolListHint;
+  for (const auto &product : products) {
+    symbolListHint.insert(product.first);
+  }
+
+  m_products = std::move(products);
+  m_symbolListHint = std::move(symbolListHint);
+}
+
+const boost::unordered_set<std::string>
+    &LivecoinMarketDataSource::GetSymbolListHint() const {
+  return m_symbolListHint;
 }
 
 void LivecoinMarketDataSource::SubscribeToSecurities() {

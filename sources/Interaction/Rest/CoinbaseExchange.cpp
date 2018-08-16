@@ -370,6 +370,10 @@ class CoinbaseExchange : public TradingSystem, public MarketDataSource {
     return (qty * price) * (fee / 100);
   }
 
+  const boost::unordered_set<std::string>& GetSymbolListHint() const override {
+    return m_symbolListHint;
+  }
+
  protected:
   void CreateConnection() override {
     try {
@@ -535,8 +539,16 @@ class CoinbaseExchange : public TradingSystem, public MarketDataSource {
           % quoteIncrement;             // 3
       log.emplace_back(logStr.str());
     }
-    GetTsLog().Info("Products: %1%.", boost::join(log, ", "));
+
+    boost::unordered_set<std::string> symbolListHint;
+    for (const auto& product : products) {
+      symbolListHint.insert(product.first);
+    }
+
     m_products = std::move(products);
+    m_symbolListHint = std::move(symbolListHint);
+
+    GetTsLog().Info("Products: %1%.", boost::join(log, ", "));
   }
 
   void UpdateBalances() {
@@ -777,6 +789,7 @@ class CoinbaseExchange : public TradingSystem, public MarketDataSource {
   std::unique_ptr<PollingTask> m_pollingTask;
 
   boost::unordered_map<std::string, Product> m_products;
+  boost::unordered_set<std::string> m_symbolListHint;
 };  // namespace
 }  // namespace
 

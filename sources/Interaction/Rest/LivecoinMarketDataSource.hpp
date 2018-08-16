@@ -36,6 +36,8 @@ class LivecoinMarketDataSource : public MarketDataSource {
 
   void SubscribeToSecurities() override;
 
+  const boost::unordered_set<std::string> &GetSymbolListHint() const override;
+
  protected:
   trdk::Security &CreateNewSecurityObject(const Lib::Symbol &) override;
 
@@ -49,6 +51,7 @@ class LivecoinMarketDataSource : public MarketDataSource {
   const boost::posix_time::time_duration m_serverTimeDiff;
 
   boost::unordered_map<std::string, LivecoinProduct> m_products;
+  boost::unordered_set<std::string> m_symbolListHint;
 
   boost::mutex m_securitiesMutex;
   boost::unordered_map<LivecoinProductId, boost::shared_ptr<Security>>
