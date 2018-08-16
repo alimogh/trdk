@@ -12,9 +12,8 @@
 #include "CexioRequest.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Interaction::Rest;
-
+using namespace Lib;
+using namespace Interaction::Rest;
 namespace net = Poco::Net;
 namespace pt = boost::posix_time;
 
@@ -38,8 +37,8 @@ FloodControl &CexioRequest::GetFloodControl() const {
   return *result;
 }
 
-void CexioRequest::SetUri(const std::string &uri,
-                          net::HTTPRequest &request) const {
+void CexioRequest::WriteUri(const std::string uri,
+                            net::HTTPRequest &request) const {
   const auto &params = GetUriParams();
   if (params.empty() || request.getMethod() == net::HTTPRequest::HTTP_POST) {
     request.setURI(uri);
@@ -56,8 +55,8 @@ CexioRequest::Response CexioRequest::Send(
     const auto &errorMessageField = response.get_optional<std::string>("error");
     if (errorMessageField) {
       const auto &errorMessage = *errorMessageField;
-      bool isInsufficientFundsError = false;
-      bool isCommunicationError = false;
+      auto isInsufficientFundsError = false;
+      auto isCommunicationError = false;
       if (boost::istarts_with(errorMessage, "Rate limit exceeded")) {
         GetLog().Warn("Server rejects requests by rate limit exceeding.");
         GetFloodControl().OnRateLimitExceeded();

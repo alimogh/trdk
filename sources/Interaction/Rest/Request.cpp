@@ -25,9 +25,10 @@ namespace {
 void CopyToString(std::istream& source, std::string& result) {
   //! Reimplement with std::string::data with C++17.
   Poco::StreamCopier::copyToString(source, result);
-  result.erase(std::remove_if(result.begin(), result.end(),
-                              [](char ch) { return ch == '\r' || ch == '\n'; }),
-               result.end());
+  result.erase(
+      std::remove_if(result.begin(), result.end(),
+                     [](const char ch) { return ch == '\r' || ch == '\n'; }),
+      result.end());
 }
 }  // namespace
 
@@ -47,15 +48,15 @@ std::string Request::AppendUriParams(const std::string& newParams,
   if (newParams.empty()) {
     return result;
   }
-  std::string resultCopy = result;
+  auto resultCopy = result;
   AppendUriParams(newParams, resultCopy);
   return resultCopy;
 }
 
-Request::Request(const std::string& uri,
-                 const std::string& name,
+Request::Request(std::string uri,
+                 std::string name,
                  const std::string& method,
-                 const std::string& uriParams,
+                 std::string uriParams,
                  const Context& context,
                  ModuleEventsLog& log,
                  ModuleTradingLog* tradingLog,
@@ -64,10 +65,10 @@ Request::Request(const std::string& uri,
     : m_context(context),
       m_log(log),
       m_tradingLog(tradingLog),
-      m_uri(uri),
-      m_uriParams(uriParams),
+      m_uri(std::move(uri)),
+      m_uriParams(std::move(uriParams)),
       m_request(boost::make_unique<net::HTTPRequest>(method, m_uri, version)),
-      m_name(name) {
+      m_name(std::move(name)) {
   m_request->set("User-Agent", TRDK_NAME " " TRDK_BUILD_IDENTITY);
   m_request->set("Connection", "keep-alive");
   m_request->set("DNT", "1");
@@ -84,7 +85,7 @@ boost::tuple<pt::ptime, ptr::ptree, TimeMeasurement::Milestones> Request::Send(
     std::unique_ptr<net::HTTPSClientSession>& session) {
   Assert(session);
 
-  SetUri(m_uri, *m_request);
+  WriteUri(m_uri, *m_request);
 
   auto body = m_body;
   CreateBody(*session, body);
@@ -101,9 +102,9 @@ boost::tuple<pt::ptime, ptr::ptree, TimeMeasurement::Milestones> Request::Send(
         session->sendRequest(*m_request);
       }
     } catch (const std::exception& ex) {
-      const auto& getError = [this](const std::exception& ex) -> std::string {
+      const auto& getError = [this](const std::exception& ex) {
         boost::format error(
-            "failed to send request \"%1%\" (%2%) to server: \"%3%\"");
+            R"(failed to send request "%1%" (%2%) to server: "%3%")");
         error % m_name             // 1
             % m_request->getURI()  // 2
             % ex.what();           // 3
@@ -111,15 +112,15 @@ boost::tuple<pt::ptime, ptr::ptree, TimeMeasurement::Milestones> Request::Send(
       };
       try {
         throw;
-      } catch (const Poco::TimeoutException& ex) {
+      } catch (const Poco::TimeoutException& reEx) {
         throw CommunicationErrorWithUndeterminedRemoteResult(
-            getError(ex).c_str());
+            getError(reEx).c_str());
       } catch (const net::NoMessageException&) {
         throw CommunicationErrorWithUndeterminedRemoteResult(
             getError(ex).c_str());
-      } catch (const Poco::Exception& ex) {
+      } catch (const Poco::Exception& reEx) {
         session = RecreateSession(*session);
-        throw CommunicationError(getError(ex).c_str());
+        throw CommunicationError(getError(reEx).c_str());
       } catch (const std::exception&) {
         throw Exception(getError(ex).c_str());
       }
@@ -175,16 +176,16 @@ boost::tuple<pt::ptime, ptr::ptree, TimeMeasurement::Milestones> Request::Send(
       if (attempt < GetNumberOfAttempts()) {
         try {
           throw;
-        } catch (const net::NoMessageException& ex) {
-          m_log.Debug("Repeating request \"%1%\" after error \"%2%\"...",
+        } catch (const net::NoMessageException& reEx) {
+          m_log.Debug(R"(Repeating request "%1%" after error "%2%"...)",
                       m_request->getURI(),  // 1
-                      ex.what());           // 2
+                      reEx.what());         // 2
           continue;
         } catch (...) {
         }
       }
       boost::format error(
-          "Failed to read request \"%1%\" (%2%) response: \"%3%\"");
+          R"(Failed to read request "%1%" (%2%) response: "%3%")");
       error % m_name             // 1
           % m_request->getURI()  // 2
           % ex.what();           // 3
@@ -213,7 +214,7 @@ void Request::CreateBody(const net::HTTPClientSession&,
 
 void Request::CheckErrorResponse(const net::HTTPResponse& response,
                                  const std::string& responseContent,
-                                 size_t attemptNumber) const {
+                                 const size_t attemptNumber) const {
   AssertNe(net::HTTPResponse::HTTP_OK, response.getStatus());
   if (attemptNumber < 2) {
     switch (response.getStatus()) {
@@ -223,6 +224,8 @@ void Request::CheckErrorResponse(const net::HTTPResponse& response,
                     m_request->getURI(),    // 1
                     response.getStatus());  // 2
         return;
+      default:
+        break;
     }
   }
   boost::format error(
@@ -242,15 +245,16 @@ void Request::CheckErrorResponse(const net::HTTPResponse& response,
   }
 }
 
-void Request::SetUri(const std::string& uri, net::HTTPRequest& request) const {
-  auto fullUri =
-      uri + "?nonce=" + to_iso_string(pt::microsec_clock::universal_time());
+void Request::WriteUri(std::string uri, net::HTTPRequest& request) const {
   if (!m_uriParams.empty() &&
       request.getMethod() == net::HTTPRequest::HTTP_GET) {
-    fullUri += '&' + m_uriParams;
+    uri += uri.find('?') == std::string::npos ? '?' : '&';
+    uri += m_uriParams;
   }
-  request.setURI(fullUri);
+  request.setURI(uri);
 }
+
+const std::string& Request::GetUri() const { return m_uri; }
 
 std::unique_ptr<net::HTTPSClientSession> Request::RecreateSession(
     const net::HTTPSClientSession& source) {

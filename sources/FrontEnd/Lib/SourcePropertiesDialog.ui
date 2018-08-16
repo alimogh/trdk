@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>313</width>
-    <height>181</height>
+    <width>353</width>
+    <height>200</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -27,7 +27,7 @@
    <item row="1" column="0">
     <widget class="QLabel" name="userIdLabel">
      <property name="text">
-      <string>User ID:</string>
+      <string>User ID / account:</string>
      </property>
     </widget>
    </item>
@@ -122,6 +122,7 @@
  </widget>
  <tabstops>
   <tabstop>exchange</tabstop>
+  <tabstop>userId</tabstop>
   <tabstop>apiKey</tabstop>
   <tabstop>apiSecret</tabstop>
   <tabstop>apiPassphrase</tabstop>

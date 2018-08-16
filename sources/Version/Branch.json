@@ -19,6 +19,8 @@
     "Charts",
     "Rest",
     "Exmo",
-    "ArbitrationAdvisor"
+    "Huobi",
+    "ArbitrationAdvisor",
+    "TriangularArbitrage"
   ]
 }

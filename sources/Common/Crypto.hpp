@@ -19,13 +19,13 @@ std::string Encode(const unsigned char *source,
                    size_t sourceLen,
                    bool multiline);
 template <typename Source>
-std::string Encode(const Source &source, bool multiline) {
+std::string Encode(const Source &source, const bool multiline) {
   return Encode(&source[0], source.size(), multiline);
 }
 std::vector<unsigned char> Decode(const std::string &);
 }  // namespace Base64
 
-std::string EncodeToHex(const unsigned char *cource, size_t sourceLen);
+std::string EncodeToHex(const unsigned char *source, size_t sourceLen);
 
 namespace Hmac {
 boost::array<unsigned char, 64> CalcSha512Digest(const unsigned char *source,

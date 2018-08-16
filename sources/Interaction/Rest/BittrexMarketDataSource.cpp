@@ -110,7 +110,7 @@ trdk::Security &BittrexMarketDataSource::CreateNewSecurityObject(
 void BittrexMarketDataSource::UpdatePrices() {
   const boost::mutex::scoped_lock lock(m_securitiesLock);
   for (const auto &subscribtion : m_securities) {
-    Rest::Security &security = *subscribtion.first;
+    auto &security = *subscribtion.first;
     if (!subscribtion.second) {
       continue;
     }
@@ -144,9 +144,10 @@ boost::optional<std::pair<Level1TickValue, Level1TickValue>> ReadTopPrice(
     const Source &source) {
   if (source) {
     for (const auto &level : *source) {
-      return std::make_pair(
-          Level1TickValue::Create<qtyType>(level.second.get<Qty>("Quantity")),
-          Level1TickValue::Create<priceType>(level.second.get<Price>("Rate")));
+      return std::make_pair(Level1TickValue::Create<qtyType>(
+                                level.second.template get<Qty>("Quantity")),
+                            Level1TickValue::Create<priceType>(
+                                level.second.template get<Price>("Rate")));
     }
   }
   return boost::none;

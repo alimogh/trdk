@@ -51,6 +51,7 @@ class BittrexTradingSystem : public TradingSystem {
     void PrepareRequest(const Poco::Net::HTTPClientSession &,
                         const std::string &,
                         Poco::Net::HTTPRequest &) const override;
+    void WriteUri(std::string uri, Poco::Net::HTTPRequest &) const override;
 
    private:
     const Settings &m_settings;

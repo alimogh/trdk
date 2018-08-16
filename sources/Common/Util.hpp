@@ -115,8 +115,8 @@ class ExcelTextFieldFormatter {
 };
 
 template <typename T>
-trdk::Lib::ExcelTextFieldFormatter<T> ExcelTextField(const T &value) {
-  return trdk::Lib::ExcelTextFieldFormatter<T>(value);
+ExcelTextFieldFormatter<T> ExcelTextField(const T &value) {
+  return {value};
 }
 
 ////////////////////////////////////////////////////////////////////////////////

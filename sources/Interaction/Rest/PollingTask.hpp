@@ -32,14 +32,14 @@ class TRDK_INTERACTION_REST_API PollingTask : boost::noncopyable {
   explicit PollingTask(const PollingSetttings &, ModuleEventsLog &);
   ~PollingTask();
 
-  void AddTask(std::string &&name,
+  void AddTask(std::string name,
                size_t priority,
-               const boost::function<bool()> &&,
+               boost::function<bool()>,
                size_t frequency,
                bool isAccelerable);
-  void ReplaceTask(std::string &&name,
+  void ReplaceTask(std::string name,
                    size_t priority,
-                   const boost::function<bool()> &&,
+                   boost::function<bool()>,
                    size_t frequency,
                    bool isAccelerable);
   void AccelerateNextPolling();
@@ -48,9 +48,9 @@ class TRDK_INTERACTION_REST_API PollingTask : boost::noncopyable {
   void RunTasks();
   bool RunTask(Task &, bool isAccelerated) const;
 
-  void ScheduleTaskSetting(std::string &&name,
+  void ScheduleTaskSetting(std::string name,
                            size_t priority,
-                           const boost::function<bool()> &&,
+                           boost::function<bool()>,
                            size_t frequency,
                            bool isAccelerable,
                            bool replace);

@@ -61,6 +61,13 @@ void BittrexTradingSystem::PrivateRequest::PrepareRequest(
   Base::PrepareRequest(session, body, request);
 }
 
+void BittrexTradingSystem::PrivateRequest::WriteUri(
+    std::string uri, net::HTTPRequest &request) const {
+  Base::WriteUri(
+      uri + "?nonce=" + to_iso_string(pt::microsec_clock::universal_time()),
+      request);
+}
+
 class BittrexTradingSystem::OrderTransactionRequest : public PrivateRequest {
  public:
   typedef PrivateRequest Base;
@@ -73,10 +80,10 @@ class BittrexTradingSystem::OrderTransactionRequest : public PrivateRequest {
                                    ModuleEventsLog &log,
                                    ModuleTradingLog &tradingLog)
       : Base(name, uriParams, settings, context, log, &tradingLog) {}
-  virtual ~OrderTransactionRequest() override = default;
+  ~OrderTransactionRequest() override = default;
 
  protected:
-  virtual bool IsPriority() const override { return true; }
+  bool IsPriority() const override { return true; }
 };
 
 ////////////////////////////////////////////////////////////////////////////////

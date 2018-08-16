@@ -1,11 +1,16 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ImportGroup Label="PropertySheets" />
-  <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <LibraryPath>$(BOOST_DIR_X64)\boost_1_66_0\lib64-msvc-14.0\;$(SolutionDir)\..\externals\openssl-1.0.1t-vs2015\lib64\;$(SolutionDir)\..\externals\poco-1.7.9-all\lib64;$(LibraryPath)</LibraryPath>
-    <IncludePath>$(BOOST_DIR_X64)\boost_1_66_0\;$(SolutionDir)\..\externals\openssl-1.0.1t-vs2015\include64\;$(IncludePath)</IncludePath>
+    <LibraryPath>$(BOOST_DIR)\boost_1_66_0\lib64-msvc-14.0\;$(SolutionDir)\..\externals\openssl-1.0.1t-vs2015\lib64\;$(SolutionDir)\..\externals\poco-1.7.9-all\lib64;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(BOOST_INCLUDE_DIR);$(SolutionDir)\..\externals\openssl-1.0.1t-vs2015\include64\;$(IncludePath)</IncludePath>
+    <ExecutablePath>$(SolutionDir)\..\externals\openssl-1.0.1t-vs2015\bin64\;$(SolutionDir)\..\externals\poco-1.7.9-all\bin64;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <ItemDefinitionGroup />
-  <ItemGroup />
+  <ItemGroup>
+    <BuildMacro Include="BOOST_INCLUDE_DIR">
+      <Value>$(BOOST_INCLUDE_DIR)</Value>
+      <EnvironmentVariable>true</EnvironmentVariable>
+    </BuildMacro>
+  </ItemGroup>
 </Project>
