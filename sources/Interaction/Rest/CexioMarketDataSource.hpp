@@ -43,6 +43,8 @@ class CexioMarketDataSource : public MarketDataSource {
 
   void SubscribeToSecurities() override;
 
+  const boost::unordered_set<std::string> &GetSymbolListHint() const override;
+
  protected:
   trdk::Security &CreateNewSecurityObject(const Lib::Symbol &) override;
 
@@ -60,6 +62,7 @@ class CexioMarketDataSource : public MarketDataSource {
   std::unique_ptr<Poco::Net::HTTPSClientSession> m_session;
 
   boost::unordered_map<std::string, CexioProduct> m_products;
+  boost::unordered_set<std::string> m_symbolListHint;
 
   boost::mutex m_securitiesMutex;
   boost::unordered_map<CexioProduct *, Subscribtion> m_securities;

@@ -32,6 +32,8 @@ class BittrexMarketDataSource : public MarketDataSource {
 
   void SubscribeToSecurities() override;
 
+  const boost::unordered_set<std::string> &GetSymbolListHint() const override;
+
  protected:
   trdk::Security &CreateNewSecurityObject(const Lib::Symbol &) override;
 
@@ -44,6 +46,7 @@ class BittrexMarketDataSource : public MarketDataSource {
 
   const Settings m_settings;
   boost::unordered_map<std::string, BittrexProduct> m_products;
+  boost::unordered_set<std::string> m_symbolListHint;
   boost::mutex m_securitiesLock;
   std::vector<std::pair<boost::shared_ptr<Rest::Security>,
                         std::unique_ptr<BittrexPublicRequest>>>

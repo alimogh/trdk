@@ -31,6 +31,8 @@ class RandomMarketDataSource : public MarketDataSource {
   void Connect() override;
   void SubscribeToSecurities() override {}
 
+  const boost::unordered_set<std::string> &GetSymbolListHint() const override;
+
  protected:
   trdk::Security &CreateNewSecurityObject(const Lib::Symbol &) override;
 

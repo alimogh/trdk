@@ -58,6 +58,8 @@ class ExcambiorexMarketDataSource : public MarketDataSource {
 
   void SubscribeToSecurities() override;
 
+  const boost::unordered_set<std::string>& GetSymbolListHint() const override;
+
  protected:
   trdk::Security& CreateNewSecurityObject(const Lib::Symbol&) override;
 
@@ -73,6 +75,7 @@ class ExcambiorexMarketDataSource : public MarketDataSource {
   std::unique_ptr<Poco::Net::HTTPSClientSession> m_session;
 
   ExcambiorexProductList m_products;
+  boost::unordered_set<std::string> m_symbolListHint;
   boost::mutex m_subscribtionMutex;
   SubscribtionList m_subscribtionList;
 

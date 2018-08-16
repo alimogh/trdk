@@ -169,6 +169,12 @@ trdk::Security &RandomMarketDataSource::CreateNewSecurityObject(
   return *result;
 }
 
+const boost::unordered_set<std::string>
+    &RandomMarketDataSource::GetSymbolListHint() const {
+  static boost::unordered_set<std::string> result;
+  return result;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 TRDK_INTERACTION_TEST_API

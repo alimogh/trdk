@@ -44,6 +44,8 @@ class MarketDataSource : public trdk::MarketDataSource, public Handler {
       Lib::NetworkStreamClient&,
       const Lib::TimeMeasurement::Milestones&) override;
 
+  const boost::unordered_set<std::string>& GetSymbolListHint() const override;
+
  protected:
   trdk::Security& CreateNewSecurityObject(const Lib::Symbol&) override;
 

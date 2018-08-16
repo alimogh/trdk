@@ -478,6 +478,10 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     return TradingSystem::CheckSymbol(symbol) && m_products.count(symbol) > 0;
   }
 
+  const boost::unordered_set<std::string>& GetSymbolListHint() const override {
+    return m_symbolListHint;
+  }
+
  protected:
   void CreateConnection() override {
     GetTsLog().Debug(
@@ -681,11 +685,18 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     if (products.empty()) {
       throw Exception("Exchange doesn't have products");
     }
-    products.swap(m_products);
+
+    boost::unordered_set<std::string> symbolListHint;
+    for (const auto& product : products) {
+      symbolListHint.insert(product.first);
+    }
+
+    m_products = std::move(products);
+    m_symbolListHint = std::move(symbolListHint);
   }
 
   bool RequestAccountInfo(Auth& auth) {
-    bool hasTradingRights = false;
+    auto hasTradingRights = false;
 
     std::vector<std::string> rights;
     size_t numberOfTransactions = 0;
@@ -1175,6 +1186,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   mutable std::unique_ptr<net::HTTPSClientSession> m_tradingSession;
 
   boost::unordered_map<std::string, Product> m_products;
+  boost::unordered_set<std::string> m_symbolListHint;
 
   boost::unordered_map<std::string, boost::shared_ptr<Rest::Security>>
       m_securities;

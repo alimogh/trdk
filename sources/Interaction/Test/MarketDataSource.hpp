@@ -30,6 +30,8 @@ class MarketDataSource : public trdk::MarketDataSource {
 
   void SubscribeToSecurities() override;
 
+  const boost::unordered_set<std::string> &GetSymbolListHint() const override;
+
  protected:
   virtual void Run() = 0;
 

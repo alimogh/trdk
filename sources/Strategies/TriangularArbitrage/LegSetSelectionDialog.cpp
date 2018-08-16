@@ -42,6 +42,30 @@ LegSetSelectionDialog::LegSetSelectionDialog(Engine &engine, QWidget *parent)
         m_pairs.insert(QString::fromStdString(symbol),
                        std::make_pair(baseSymbol, quoteSymbol));
       }
+      std::vector<QMap<QString, std::pair<QString, QString>>::Iterator>
+          emptyPairs;
+      for (auto it = m_pairs.begin(); it != m_pairs.cend(); ++it) {
+        const auto &leg1Pair = it.value();
+        size_t numberOfLegs3 = 0;
+        for (const auto &leg2Pair : m_pairs) {
+          if (leg2Pair.first != leg1Pair.second) {
+            continue;
+          }
+          for (const auto &leg3Pair : m_pairs) {
+            if (leg3Pair.first != leg1Pair.first ||
+                leg3Pair.second != leg2Pair.second) {
+              continue;
+            }
+            ++numberOfLegs3;
+          }
+        }
+        if (!numberOfLegs3) {
+          emptyPairs.emplace_back(it);
+        }
+      }
+      for (const auto &pair : emptyPairs) {
+        m_pairs.erase(pair);
+      }
     }
   }
 
@@ -111,23 +135,6 @@ void LegSetSelectionDialog::ResetLists() {
   m_ui.leg3Symbol->setEnabled(false);
 
   for (auto it = m_pairs.cbegin(); it != m_pairs.cend(); ++it) {
-    const auto &leg1Pair = it.value();
-    size_t numberOfLegs3 = 0;
-    for (const auto &leg2Pair : m_pairs) {
-      if (leg2Pair.first != leg1Pair.second) {
-        continue;
-      }
-      for (const auto &leg3Pair : m_pairs) {
-        if (leg3Pair.first != leg1Pair.first ||
-            leg3Pair.second != leg2Pair.second) {
-          continue;
-        }
-        ++numberOfLegs3;
-      }
-    }
-    if (!numberOfLegs3) {
-      continue;
-    }
     m_ui.leg1Symbol->addItem(it.key());
   }
 

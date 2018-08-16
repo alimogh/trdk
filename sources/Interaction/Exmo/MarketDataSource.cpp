@@ -57,12 +57,21 @@ boost::shared_ptr<trdk::MarketDataSource> CreateMarketDataSource(
 
 void Exmo::MarketDataSource::Connect() {
   GetLog().Debug("Creating connection...");
+
   boost::unordered_map<std::string, Product> products;
   try {
-    m_products = RequestProductList(m_session, GetContext(), GetLog());
+    products = RequestProductList(m_session, GetContext(), GetLog());
   } catch (const std::exception &ex) {
     throw ConnectError(ex.what());
   }
+
+  boost::unordered_set<std::string> symbolListHint;
+  for (const auto &product : products) {
+    symbolListHint.insert(product.first);
+  }
+
+  m_products = std::move(products);
+  m_symbolListHint = std::move(symbolListHint);
 }
 
 void Exmo::MarketDataSource::SubscribeToSecurities() {
@@ -85,6 +94,11 @@ void Exmo::MarketDataSource::SubscribeToSecurities() {
         return true;
       },
       m_settings.pollingSetttings.GetPricesRequestFrequency(), false);
+}
+
+const boost::unordered_set<std::string>
+    &Exmo::MarketDataSource::GetSymbolListHint() const {
+  return m_symbolListHint;
 }
 
 trdk::Security &Exmo::MarketDataSource::CreateNewSecurityObject(

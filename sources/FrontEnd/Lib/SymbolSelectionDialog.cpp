@@ -18,19 +18,16 @@ using namespace trdk::FrontEnd;
 
 SymbolSelectionDialog::SymbolSelectionDialog(Engine &engine, QWidget *parent)
     : Base(parent), m_ui(boost::make_unique<Ui::SymbolSelectionDialog>()) {
-  m_ui->setupUi(this);
-  {
-    const auto &list =
-        engine.GetContext().GetSettings().GetConfig().get_child_optional(
-            "defaults.symbols");
-    if (list) {
-      for (const auto &symbol : *list) {
-        m_ui->symbols->addItem(
-            QString::fromStdString(symbol.second.get_value<std::string>()));
-      }
-    }
+  for (const auto &symbol : engine.GetContext().GetSymbolListHint()) {
+    m_symbols.emplace_back(QString::fromStdString(symbol));
   }
 
+  m_ui->setupUi(this);
+
+  UpdateList();
+
+  Verify(connect(m_ui->filter, &QLineEdit::textEdited,
+                 [this]() { UpdateList(); }));
   Verify(connect(m_ui->symbols, &QListWidget::doubleClicked,
                  [this](const QModelIndex &) { accept(); }));
 }
@@ -53,5 +50,19 @@ std::vector<QString> SymbolSelectionDialog::RequestSymbols() {
       result.emplace_back(item->text());
     }
     return result;
+  }
+}
+
+void SymbolSelectionDialog::UpdateList() {
+  const QSignalBlocker blocker(m_ui->symbols);
+
+  m_ui->symbols->clear();
+
+  const auto &filter = m_ui->filter->text();
+  for (const auto &symbol : m_symbols) {
+    if (!symbol.contains(filter, Qt::CaseInsensitive)) {
+      continue;
+    }
+    m_ui->symbols->addItem(symbol);
   }
 }

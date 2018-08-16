@@ -32,6 +32,8 @@ class Crex24MarketDataSource : public MarketDataSource {
 
   void SubscribeToSecurities() override;
 
+  const boost::unordered_set<std::string> &GetSymbolListHint() const override;
+
  protected:
   trdk::Security &CreateNewSecurityObject(const Lib::Symbol &) override;
 
@@ -47,6 +49,7 @@ class Crex24MarketDataSource : public MarketDataSource {
   boost::unordered_map<std::string,
                        std::pair<Crex24Product, boost::shared_ptr<Security>>>
       m_securities;
+  boost::unordered_set<std::string> m_symbolListHint;
 
   std::unique_ptr<PollingTask> m_pollingTask;
 };

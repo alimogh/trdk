@@ -60,3 +60,9 @@ void Test::MarketDataSource::SubscribeToSecurities() {
     }
   });
 }
+
+const boost::unordered_set<std::string>
+    &Test::MarketDataSource::GetSymbolListHint() const {
+  static boost::unordered_set<std::string> result;
+  return result;
+}

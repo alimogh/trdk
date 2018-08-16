@@ -50,10 +50,17 @@ BittrexMarketDataSource::~BittrexMarketDataSource() {
 
 void BittrexMarketDataSource::Connect() {
   GetLog().Debug("Creating connection...");
+
+  boost::unordered_map<std::string, BittrexProduct> products;
+
   try {
-    m_products = RequestBittrexProductList(m_session, GetContext(), GetLog());
+    products = RequestBittrexProductList(m_session, GetContext(), GetLog());
   } catch (const std::exception &ex) {
     throw ConnectError(ex.what());
+  }
+  boost::unordered_set<std::string> symbolListHint;
+  for (const auto &product : products) {
+    symbolListHint.insert(product.first);
   }
 
   m_pollingTask->AddTask(
@@ -65,6 +72,14 @@ void BittrexMarketDataSource::Connect() {
       m_settings.pollingSetttings.GetPricesRequestFrequency(), false);
 
   m_pollingTask->AccelerateNextPolling();
+
+  m_products = std::move(products);
+  m_symbolListHint = std::move(symbolListHint);
+}
+
+const boost::unordered_set<std::string>
+    &BittrexMarketDataSource::GetSymbolListHint() const {
+  return m_symbolListHint;
 }
 
 void BittrexMarketDataSource::SubscribeToSecurities() {

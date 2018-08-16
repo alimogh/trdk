@@ -135,6 +135,12 @@ void fix::MarketDataSource::OnMarketDataSnapshotFullRefresh(
   });
 }
 
+const boost::unordered_set<std::string>&
+fix::MarketDataSource::GetSymbolListHint() const {
+  static boost::unordered_set<std::string> result;
+  return result;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 boost::shared_ptr<trdk::MarketDataSource> CreateMarketDataSource(

@@ -490,6 +490,24 @@ bool Engine::Context::HasExpirationCalendar() const {
   return static_cast<bool>(m_pimpl->m_expirationCalendar);
 }
 
+boost::unordered_set<std::string> Engine::Context::GetSymbolListHint() const {
+  boost::unordered_set<std::string> result;
+  {
+    const auto &conf =
+        GetSettings().GetConfig().get_child_optional("defaults.symbols");
+    if (conf) {
+      for (const auto &symbol : *conf) {
+        result.emplace(symbol.second.get_value<std::string>());
+      }
+    }
+  }
+  ForEachMarketDataSource([&result](const MarketDataSource &source) {
+    const auto &sourceHint = source.GetSymbolListHint();
+    result.insert(sourceHint.cbegin(), sourceHint.cend());
+  });
+  return result;
+}
+
 size_t Engine::Context::GetNumberOfMarketDataSources() const {
   return m_pimpl->m_marketDataSources.size();
 }
