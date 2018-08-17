@@ -34,11 +34,24 @@ FloodControl &Crex24Request::GetFloodControl() const {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+Crex24PublicRequestV1::Crex24PublicRequestV1(const std::string &name,
+                                             const std::string &params,
+                                             const Context &context,
+                                             ModuleEventsLog &log)
+    : Crex24Request("/CryptoExchangeService/BotPublic/",
+                    name,
+                    net::HTTPRequest::HTTP_GET,
+                    params,
+                    context,
+                    log) {}
+
+bool Crex24PublicRequestV1::IsPriority() const { return false; }
+
 Crex24PublicRequest::Crex24PublicRequest(const std::string &name,
                                          const std::string &params,
                                          const Context &context,
                                          ModuleEventsLog &log)
-    : Crex24Request("/CryptoExchangeService/BotPublic/",
+    : Crex24Request("/v2/public/",
                     name,
                     net::HTTPRequest::HTTP_GET,
                     params,
