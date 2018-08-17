@@ -30,6 +30,10 @@ class Crex24Request : public Request {
                          const Context &,
                          ModuleEventsLog &,
                          ModuleTradingLog * = nullptr);
+  Crex24Request(Crex24Request &&) = default;
+  Crex24Request(const Crex24Request &) = delete;
+  Crex24Request &operator=(Crex24Request &&) = delete;
+  Crex24Request &operator=(const Crex24Request &) = delete;
   ~Crex24Request() override = default;
 
  protected:
@@ -38,12 +42,32 @@ class Crex24Request : public Request {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+class Crex24PublicRequestV1 : public Crex24Request {
+ public:
+  explicit Crex24PublicRequestV1(const std::string &name,
+                                 const std::string &params,
+                                 const Context &,
+                                 ModuleEventsLog &);
+  Crex24PublicRequestV1(Crex24PublicRequestV1 &&) = default;
+  Crex24PublicRequestV1(const Crex24PublicRequestV1 &) = delete;
+  Crex24PublicRequestV1 &operator=(Crex24PublicRequestV1 &&) = delete;
+  Crex24PublicRequestV1 &operator=(const Crex24PublicRequestV1 &) = delete;
+  ~Crex24PublicRequestV1() override = default;
+
+ protected:
+  bool IsPriority() const override;
+};
+
 class Crex24PublicRequest : public Crex24Request {
  public:
   explicit Crex24PublicRequest(const std::string &name,
                                const std::string &params,
                                const Context &,
                                ModuleEventsLog &);
+  Crex24PublicRequest(Crex24PublicRequest &&) = default;
+  Crex24PublicRequest(const Crex24PublicRequest &) = delete;
+  Crex24PublicRequest &operator=(Crex24PublicRequest &&) = delete;
+  Crex24PublicRequest &operator=(const Crex24PublicRequest &) = delete;
   ~Crex24PublicRequest() override = default;
 
  protected:
