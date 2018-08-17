@@ -259,24 +259,31 @@ boost::optional<OrderCheckError> Crex24TradingSystem::CheckOrder(
     const Qty &qty,
     const boost::optional<Price> &price,
     const OrderSide &side) const {
-  {
-    const auto result = Base::CheckOrder(security, currency, qty, price, side);
-    if (result) {
-      return result;
+  auto result = Base::CheckOrder(security, currency, qty, price, side);
+
+  const auto &productIt = m_products.find(security.GetSymbol().GetSymbol());
+  if (productIt == m_products.cend()) {
+    GetLog().Error("Failed find product for \"%1%\" to check order.", security);
+    throw Exception("Symbol is not supported by exchange");
+  }
+  const auto &product = productIt->second;
+
+  if (price) {
+    if ((!result || !result->price) && *price < product.minPrice) {
+      if (!result) {
+        result = OrderCheckError{};
+      }
+      result->price = product.minPrice;
+    }
+    if ((!result || !result->volume) && (*price * qty) < product.minVolume) {
+      if (!result) {
+        result = OrderCheckError{};
+      }
+      result->volume = product.minVolume;
     }
   }
-  {
-    const auto &product = m_products.find(security.GetSymbol().GetSymbol());
-    if (product == m_products.cend()) {
-      GetLog().Error("Failed find product for \"%1%\" to check order.",
-                     security);
-      throw Exception("Symbol is not supported by exchange");
-    }
-    if (qty < product->second.minQty) {
-      return OrderCheckError{product->second.minQty};
-    }
-  }
-  return boost::none;
+
+  return result;
 }
 
 bool Crex24TradingSystem::CheckSymbol(const std::string &symbol) const {

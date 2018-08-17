@@ -16,7 +16,9 @@ namespace Rest {
 
 struct Crex24Product {
   std::string id;
-  Qty minQty;
+  Price tickSize;
+  Price minPrice;
+  Volume minVolume;
 };
 
 boost::unordered_map<std::string, Crex24Product> RequestCrex24ProductList(

@@ -82,7 +82,7 @@ void Crex24MarketDataSource::SubscribeToSecurities() {
     if (!security.second.second) {
       continue;
     }
-    auto request = boost::make_shared<Crex24PublicRequest>(
+    auto request = boost::make_shared<Crex24PublicRequestV1>(
         "ReturnOrderBook",
         "request=[PairName=" + security.second.first.id + "]", GetContext(),
         GetLog());
