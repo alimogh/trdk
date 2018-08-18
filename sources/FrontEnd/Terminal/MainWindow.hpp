@@ -48,7 +48,7 @@ class MainWindow : public QMainWindow {
   void CreateNewOrderWindows(Security &);
 
   void EditExchangeList();
-  void AddSymbol();
+  void AddDefaultSymbol();
 
   Engine &m_engine;
   Ui::MainWindow m_ui;
