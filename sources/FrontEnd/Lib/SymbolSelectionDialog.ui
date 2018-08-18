@@ -75,6 +75,12 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>filter</tabstop>
+  <tabstop>symbols</tabstop>
+  <tabstop>okButton</tabstop>
+  <tabstop>cancelButton</tabstop>
+ </tabstops>
  <resources/>
  <connections>
   <connection>

@@ -68,8 +68,8 @@ MainWindow::~MainWindow() = default;
 void MainWindow::ConnectSignals() {
   Verify(connect(m_ui.editExchangeList, &QAction::triggered, this,
                  &MainWindow::EditExchangeList));
-  Verify(connect(m_ui.addSymbol, &QAction::triggered, this,
-                 &MainWindow::AddSymbol));
+  Verify(connect(m_ui.addDefaultSymbol, &QAction::triggered, this,
+                 &MainWindow::AddDefaultSymbol));
 
   Verify(connect(
       m_ui.centalTabs, &QTabWidget::tabCloseRequested, [this](const int index) {
@@ -532,7 +532,7 @@ void MainWindow::EditExchangeList() {
       QMessageBox::Ok);
 }
 
-void MainWindow::AddSymbol() {
+void MainWindow::AddDefaultSymbol() {
   SymbolDialog dialog(this);
   if (dialog.exec() != QDialog::Accepted) {
     return;
