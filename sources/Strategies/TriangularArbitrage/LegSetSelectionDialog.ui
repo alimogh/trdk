@@ -6,14 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>860</width>
-    <height>333</height>
+    <width>880</width>
+    <height>436</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Select Symbol Set</string>
   </property>
-  <layout class="QVBoxLayout" name="dialogLayout">
+  <layout class="QVBoxLayout" name="verticalLayout_6">
    <item>
     <widget class="QLabel" name="label">
      <property name="text">
@@ -22,7 +22,7 @@
     </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_4">
+    <layout class="QHBoxLayout" name="horizontalLayout_6">
      <item>
       <widget class="QGroupBox" name="leg1">
        <property name="title">
@@ -48,6 +48,20 @@
            </item>
           </layout>
          </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_4">
+          <item>
+           <widget class="QLabel" name="leg1SymbolFilterLabel">
+            <property name="text">
+             <string>Filer:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="leg1SymbolFilter"/>
+          </item>
+         </layout>
         </item>
         <item>
          <widget class="QListWidget" name="leg1Symbol"/>
@@ -88,36 +102,60 @@
       </widget>
      </item>
      <item>
-      <widget class="QGroupBox" name="leg3">
-       <property name="title">
-        <string>Leg 3</string>
-       </property>
-       <layout class="QVBoxLayout" name="verticalLayout_3">
-        <item>
-         <widget class="QWidget" name="leg3Side" native="true">
-          <layout class="QHBoxLayout" name="horizontalLayout_3">
-           <item>
-            <widget class="QRadioButton" name="leg3Buy">
-             <property name="text">
-              <string>buy</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="leg3Sell">
-             <property name="text">
-              <string>sell</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item>
-         <widget class="QListWidget" name="leg3Symbol"/>
-        </item>
-       </layout>
-      </widget>
+      <layout class="QVBoxLayout" name="verticalLayout_5">
+       <item>
+        <widget class="QGroupBox" name="leg3">
+         <property name="title">
+          <string>Leg 3</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_3">
+          <item>
+           <widget class="QWidget" name="leg3Side" native="true">
+            <layout class="QHBoxLayout" name="horizontalLayout_3">
+             <item>
+              <widget class="QRadioButton" name="leg3Buy">
+               <property name="text">
+                <string>buy</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QRadioButton" name="leg3Sell">
+               <property name="text">
+                <string>sell</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="leg3Symbol">
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="exchanges">
+         <property name="title">
+          <string>Exchanges</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_4">
+          <item>
+           <widget class="QListWidget" name="exchangeList">
+            <property name="selectionMode">
+             <enum>QAbstractItemView::NoSelection</enum>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
      </item>
     </layout>
    </item>
@@ -154,6 +192,21 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>leg1Buy</tabstop>
+  <tabstop>leg1Sell</tabstop>
+  <tabstop>leg1SymbolFilter</tabstop>
+  <tabstop>leg1Symbol</tabstop>
+  <tabstop>leg2Buy</tabstop>
+  <tabstop>leg2Sell</tabstop>
+  <tabstop>leg2Symbol</tabstop>
+  <tabstop>leg3Buy</tabstop>
+  <tabstop>leg3Sell</tabstop>
+  <tabstop>leg3Symbol</tabstop>
+  <tabstop>exchangeList</tabstop>
+  <tabstop>okButton</tabstop>
+  <tabstop>cancelButton</tabstop>
+ </tabstops>
  <resources/>
  <connections>
   <connection>

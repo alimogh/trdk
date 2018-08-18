@@ -490,20 +490,42 @@ bool Engine::Context::HasExpirationCalendar() const {
   return static_cast<bool>(m_pimpl->m_expirationCalendar);
 }
 
+namespace {
+bool IsCurrencySupported(const std::string &symbol) {
+  const auto delimeter = symbol.find('_');
+  if (delimeter == std::string::npos) {
+    return true;
+  }
+  try {
+    ConvertCurrencyFromIso(symbol.substr(delimeter + 1));
+  } catch (const Exception &) {
+    return false;
+  }
+  return true;
+}
+}  // namespace
 boost::unordered_set<std::string> Engine::Context::GetSymbolListHint() const {
   boost::unordered_set<std::string> result;
   {
     const auto &conf =
         GetSettings().GetConfig().get_child_optional("defaults.symbols");
     if (conf) {
-      for (const auto &symbol : *conf) {
-        result.emplace(symbol.second.get_value<std::string>());
+      for (const auto &node : *conf) {
+        auto symbol = node.second.get_value<std::string>();
+        if (!IsCurrencySupported(symbol)) {
+          continue;
+        }
+        result.emplace(std::move(symbol));
       }
     }
   }
   ForEachMarketDataSource([&result](const MarketDataSource &source) {
-    const auto &sourceHint = source.GetSymbolListHint();
-    result.insert(sourceHint.cbegin(), sourceHint.cend());
+    for (const auto &symbol : source.GetSymbolListHint()) {
+      if (!IsCurrencySupported(symbol)) {
+        continue;
+      }
+      result.emplace(symbol);
+    }
   });
   return result;
 }

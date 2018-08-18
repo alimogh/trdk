@@ -25,16 +25,20 @@ class LegSetSelectionDialog : public QDialog {
   boost::optional<LegsConf> RequestLegSet();
 
  private:
+  void LoadPairs();
   void ResetLists();
   void ConnectSiganls();
   void UpdateSides(const OrderSide &, const OrderSide &, const OrderSide &);
   void UpdateSymbolsByLeg1();
   void UpdateSymbolsByLeg2();
   void UpdateOkButton();
-
-  QMap<QString, std::pair<QString, QString>> m_pairs;
+  void FilterLeg1Symbols();
 
   const FrontEnd::Engine &m_engine;
+
+  std::vector<QString> m_leg1Pairs;
+  QMap<QString, std::vector<QString>> m_leg2Pairs;
+
   Ui::LegSetSelectionDialog m_ui{};
 };
 }  // namespace TriangularArbitrage

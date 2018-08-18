@@ -33,7 +33,7 @@
      <x>0</x>
      <y>0</y>
      <width>943</width>
-     <height>21</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuTrade">
@@ -47,7 +47,7 @@
     </widget>
     <addaction name="strategiesMenu"/>
     <addaction name="editExchangeList"/>
-    <addaction name="addSymbol"/>
+    <addaction name="addDefaultSymbol"/>
     <addaction name="separator"/>
     <addaction name="exit"/>
    </widget>
@@ -162,12 +162,12 @@
     <string>Edit Exchange List...</string>
    </property>
   </action>
-  <action name="addSymbol">
+  <action name="addDefaultSymbol">
    <property name="text">
-    <string>Add &amp;Symbol...</string>
+    <string>Add Default &amp;Symbol...</string>
    </property>
    <property name="toolTip">
-    <string>Add Symbol...</string>
+    <string>Add Default Symbol...</string>
    </property>
   </action>
   <action name="showBalancesWindow">
