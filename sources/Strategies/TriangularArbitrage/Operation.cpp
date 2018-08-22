@@ -10,19 +10,18 @@
 
 #include "Prec.hpp"
 #include "Operation.hpp"
+#include "PnlContainer.hpp"
 #include "Strategy.hpp"
 
 using namespace trdk;
 using namespace Lib;
-using namespace TradingLib;
 using namespace Strategies::TriangularArbitrage;
 
 namespace ta = Strategies::TriangularArbitrage;
 
 ta::Operation::Operation(Strategy &strategy,
                          const Opportunity::Targets &targets)
-    : Base(strategy, boost::make_unique<PnlOneSymbolContainer>()),
-      m_targets(targets) {}
+    : Base(strategy, boost::make_unique<PnlContainer>()), m_targets(targets) {}
 
 const Opportunity::Target &ta::Operation::GetTarget(
     const Security &security) const {
