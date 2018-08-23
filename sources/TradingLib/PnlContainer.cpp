@@ -126,20 +126,24 @@ void PnlOneSymbolContainer::AddCommission(const Security& security,
 }
 
 PnlOneSymbolContainer::Result PnlOneSymbolContainer::GetResult() const {
-  const auto numberOfBalances =
-      m_pimpl->m_numberOfLosses + m_pimpl->m_numberOfProfits;
+  return CalcResult(m_pimpl->m_numberOfProfits, m_pimpl->m_numberOfLosses);
+}
+
+PnlOneSymbolContainer::Result PnlOneSymbolContainer::CalcResult(
+    const size_t numberOfProfits, const size_t numberOfLosses) const {
+  const auto numberOfBalances = numberOfLosses + numberOfProfits;
   if (numberOfBalances == 0) {
     return RESULT_NONE;
   }
   if (numberOfBalances > 1) {
     return RESULT_ERROR;
   }
-  if (m_pimpl->m_numberOfProfits) {
-    AssertEq(1, m_pimpl->m_numberOfProfits);
-    AssertEq(0, m_pimpl->m_numberOfLosses);
+  if (numberOfProfits) {
+    AssertEq(1, numberOfProfits);
+    AssertEq(0, numberOfLosses);
     return RESULT_PROFIT;
   }
-  AssertEq(1, m_pimpl->m_numberOfLosses);
+  AssertEq(1, numberOfLosses);
   return RESULT_LOSS;
 }
 
