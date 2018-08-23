@@ -12,7 +12,7 @@
 
 namespace trdk {
 
-class Pnl : boost::noncopyable {
+class Pnl {
  public:
   enum Result {
     RESULT_NONE,
@@ -29,9 +29,14 @@ class Pnl : boost::noncopyable {
   };
   typedef boost::unordered_map<std::string, SymbolData> Data;
 
+  Pnl() = default;
+  Pnl(Pnl &&) = default;
+  Pnl(const Pnl &) = delete;
+  Pnl &operator=(Pnl &&) = delete;
+  Pnl &operator=(const Pnl &) = delete;
   virtual ~Pnl() = default;
 
   virtual Result GetResult() const = 0;
-  virtual const Data& GetData() const = 0;
+  virtual const Data &GetData() const = 0;
 };
 }  // namespace trdk
