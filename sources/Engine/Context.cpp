@@ -506,19 +506,6 @@ bool IsCurrencySupported(const std::string &symbol) {
 }  // namespace
 boost::unordered_set<std::string> Engine::Context::GetSymbolListHint() const {
   boost::unordered_set<std::string> result;
-  {
-    const auto &conf =
-        GetSettings().GetConfig().get_child_optional("defaults.symbols");
-    if (conf) {
-      for (const auto &node : *conf) {
-        auto symbol = node.second.get_value<std::string>();
-        if (!IsCurrencySupported(symbol)) {
-          continue;
-        }
-        result.emplace(std::move(symbol));
-      }
-    }
-  }
   ForEachMarketDataSource([&result](const MarketDataSource &source) {
     for (const auto &symbol : source.GetSymbolListHint()) {
       if (!IsCurrencySupported(symbol)) {

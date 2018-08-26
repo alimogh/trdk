@@ -15,6 +15,8 @@
 #include "Lib/BalanceListModel.hpp"
 #include "Lib/BalanceListView.hpp"
 #include "Lib/Engine.hpp"
+#include "Lib/MarketScannerModel.hpp"
+#include "Lib/MarketScannerView.hpp"
 #include "Lib/OperationListModel.hpp"
 #include "Lib/OperationListSettingsWidget.hpp"
 #include "Lib/OperationListView.hpp"
@@ -53,6 +55,7 @@ MainWindow::MainWindow(FrontEnd::Engine &engine,
 
   InitBalanceListWindow();
   InitSecurityListWindow();
+  InitMarketScannerWindow();
 
   CreateNewStrategyOperationsWindow();
   CreateNewStandaloneOrderListWindow();
@@ -107,13 +110,19 @@ void MainWindow::ConnectSignals() {
                  [this]() { ShowAbout(*this); }));
 
   Verify(connect(m_ui.showBalancesWindow, &QAction::triggered,
-                 [this](bool isChecked) {
+                 [this](const bool isChecked) {
                    isChecked ? m_ui.balances->show() : m_ui.balances->hide();
                  }));
-  Verify(connect(
-      m_ui.showSecuritiesWindow, &QAction::triggered, [this](bool isChecked) {
-        isChecked ? m_ui.securities->show() : m_ui.securities->hide();
-      }));
+  Verify(connect(m_ui.showSecuritiesWindow, &QAction::triggered,
+                 [this](const bool isChecked) {
+                   isChecked ? m_ui.securities->show()
+                             : m_ui.securities->hide();
+                 }));
+  Verify(connect(m_ui.showMarketScannerWindow, &QAction::triggered,
+                 [this](const bool isChecked) {
+                   isChecked ? m_ui.marketScanner->show()
+                             : m_ui.marketScanner->hide();
+                 }));
 
   Verify(connect(m_ui.createNewChartWindows, &QAction::triggered, this,
                  &MainWindow::CreateNewChartWindows));
@@ -223,6 +232,14 @@ void MainWindow::RestoreModules() {
         }
       });
   ShowModuleWindows(widgets);
+
+  boost::polymorphic_downcast<MarketScannerModel *>(
+      boost::polymorphic_downcast<QAbstractProxyModel *>(
+          boost::polymorphic_downcast<QTableView *>(
+              m_ui.marketScanner->widget())
+              ->model())
+          ->sourceModel())
+      ->Refresh();
 }
 
 void MainWindow::CreateNewChartWindows() {
@@ -425,6 +442,24 @@ void MainWindow::InitSecurityListWindow() {
                  [this](bool isVisible) {
                    const QSignalBlocker blocker(m_ui.showSecuritiesWindow);
                    m_ui.showSecuritiesWindow->setChecked(isVisible);
+                 }));
+}
+
+void MainWindow::InitMarketScannerWindow() {
+  {
+    auto &view = *new MarketScannerView(this);
+    {
+      auto &model = *new SortFilterProxyModel(&view);
+      model.setSourceModel(new MarketScannerModel(m_engine, &view));
+      view.setModel(&model);
+    }
+    m_ui.marketScanner->setWidget(&view);
+    m_ui.marketScanner->setWindowTitle(view.windowTitle());
+  }
+  Verify(connect(m_ui.marketScanner, &QDockWidget::visibilityChanged,
+                 [this](bool isVisible) {
+                   const QSignalBlocker blocker(m_ui.showSecuritiesWindow);
+                   m_ui.showMarketScannerWindow->setChecked(isVisible);
                  }));
 }
 

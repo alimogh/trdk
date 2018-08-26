@@ -21,6 +21,21 @@ namespace lt = boost::local_time;
 using namespace trdk;
 using namespace Lib;
 
+namespace {
+bool IsCurrencySupported(const std::string &symbol) {
+  const auto delimeter = symbol.find('_');
+  if (delimeter == std::string::npos) {
+    return true;
+  }
+  try {
+    ConvertCurrencyFromIso(symbol.substr(delimeter + 1));
+  } catch (const Exception &) {
+    return false;
+  }
+  return true;
+}
+}  // namespace
+
 class Settings::Implementation {
  public:
   ptr::ptree m_config;
@@ -33,6 +48,7 @@ class Settings::Implementation {
   lt::time_zone_ptr m_timeZone;
   gr::date_duration m_periodBeforeExpiryDayToSwitchContract;
   boost::unordered_map<std::string, std::string> m_symbolAliases;
+  boost::unordered_set<std::string> m_defaultSymbols;
 
   Implementation()
       : m_defaultSecurityType(numberOfSecurityTypes),
@@ -128,6 +144,18 @@ class Settings::Implementation {
               R"(Failed to parse default currency ISO 4217 code "%1%": "%2%")");
           error % currency % ex.what();
           throw Exception(error.str().c_str());
+        }
+      }
+      {
+        const auto &conf = defaultsConf.get_child_optional("symbols");
+        if (conf) {
+          for (const auto &node : *conf) {
+            auto symbol = node.second.get_value<std::string>();
+            if (!IsCurrencySupported(symbol)) {
+              continue;
+            }
+            m_defaultSymbols.emplace(std::move(symbol));
+          }
         }
       }
       {
@@ -232,4 +260,8 @@ void Settings::ReplaceSymbolWithAlias(std::string &symbolToReplace) const {
     return;
   }
   symbolToReplace = it->second;
+}
+
+const boost::unordered_set<std::string> &Settings::GetDefaultSymbols() const {
+  return m_pimpl->m_defaultSymbols;
 }
