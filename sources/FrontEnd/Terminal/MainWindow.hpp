@@ -39,6 +39,7 @@ class MainWindow : public QMainWindow {
 
   void InitBalanceListWindow();
   void InitSecurityListWindow();
+  void InitMarketScannerWindow();
 
   void CreateNewChartWindows();
   void CreateNewChartWindow(const QString &symbol);

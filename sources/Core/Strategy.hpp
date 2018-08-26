@@ -22,6 +22,10 @@ class TRDK_CORE_API Strategy : public Consumer {
   typedef boost::function<PositionUpdateSlotSignature> PositionUpdateSlot;
   typedef boost::signals2::connection PositionUpdateSlotConnection;
 
+  typedef void(ProfitScannerSlotSignature)(const Lib::Double &profitRatio);
+  typedef boost::function<ProfitScannerSlotSignature> ProfitScannerSlot;
+  typedef boost::signals2::connection ProfitScannerSlotConnection;
+
   class TRDK_CORE_API PositionList {
    public:
     class ConstIterator;
@@ -204,8 +208,12 @@ class TRDK_CORE_API Strategy : public Consumer {
 
   PositionUpdateSlotConnection SubscribeToPositionsUpdates(
       const PositionUpdateSlot &) const;
+  ProfitScannerSlotConnection SubscribeToProfitScanner(
+      const ProfitScannerSlot &) const;
 
   void OnPositionMarkedAsCompleted(Position &);
+
+  boost::optional<Lib::Double> GetProfitOpportunityRatio() const;
 
  protected:
   virtual void OnLevel1Update(Security &,
@@ -230,6 +238,8 @@ class TRDK_CORE_API Strategy : public Consumer {
    *         in any case).
    */
   virtual bool OnBlocked(const std::string *reason = nullptr) noexcept;
+
+  void SetProfitOpportunityRatio(const Lib::Double &);
 
  private:
   class Implementation;

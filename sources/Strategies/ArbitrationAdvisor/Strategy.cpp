@@ -190,10 +190,12 @@ class aa::Strategy::Implementation : boost::noncopyable {
 
   void CheckAutoTradingSignal(Security &security,
                               const Milestones &delayMeasurement) {
+#if 0
     if (m_adviceSignal.num_slots() == 0 && !m_tradingSettings.isEnabled) {
       return;
     }
     AssertLt(0, m_adviceSignal.num_slots());
+#endif
     CheckSignal(security, m_symbols[security.GetSymbol()], delayMeasurement);
   }
 
@@ -269,6 +271,7 @@ class aa::Strategy::Implementation : boost::noncopyable {
                spreadRatio,
                spreadRatio >= m_minPriceDifferenceRatioToAdvice,
                allSecurities});
+    m_self.SetProfitOpportunityRatio(spreadRatio);
   }
 
   void CheckTradeSignal(std::vector<AdviceSecuritySignal> &allSecurities,

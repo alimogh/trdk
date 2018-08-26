@@ -62,6 +62,8 @@ class TRDK_CORE_API Settings {
   const std::string& ResolveSymbolAlias(const std::string&) const;
   void ReplaceSymbolWithAlias(std::string&) const;
 
+  const boost::unordered_set<std::string>& GetDefaultSymbols() const;
+
  private:
   class Implementation;
   std::unique_ptr<Implementation> m_pimpl;

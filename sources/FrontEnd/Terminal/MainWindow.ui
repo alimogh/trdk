@@ -74,6 +74,7 @@
     </property>
     <addaction name="showBalancesWindow"/>
     <addaction name="showSecuritiesWindow"/>
+    <addaction name="showMarketScannerWindow"/>
    </widget>
    <addaction name="menuTrade"/>
    <addaction name="menuView"/>
@@ -84,7 +85,7 @@
    <attribute name="dockWidgetArea">
     <number>2</number>
    </attribute>
-   <widget class="QWidget" name="dockWidgetContents">
+   <widget class="QWidget" name="balancesContents">
     <layout class="QHBoxLayout" name="horizontalLayout_2"/>
    </widget>
   </widget>
@@ -92,7 +93,13 @@
    <attribute name="dockWidgetArea">
     <number>8</number>
    </attribute>
-   <widget class="QWidget" name="dockWidgetContents_2"/>
+   <widget class="QWidget" name="securitiesContents"/>
+  </widget>
+  <widget class="QDockWidget" name="marketScanner">
+   <attribute name="dockWidgetArea">
+    <number>1</number>
+   </attribute>
+   <widget class="QWidget" name="marketScannerContents"/>
   </widget>
   <action name="exit">
    <property name="text">
@@ -159,7 +166,7 @@
     <string>Edit &amp;Exchange List...</string>
    </property>
    <property name="toolTip">
-    <string>Edit Exchange List...</string>
+    <string>Edit exchange list...</string>
    </property>
   </action>
   <action name="addDefaultSymbol">
@@ -167,7 +174,7 @@
     <string>Add Default &amp;Symbol...</string>
    </property>
    <property name="toolTip">
-    <string>Add Default Symbol...</string>
+    <string>Add default symbol...</string>
    </property>
   </action>
   <action name="showBalancesWindow">
@@ -196,6 +203,20 @@
    </property>
    <property name="toolTip">
     <string>Show securities window.</string>
+   </property>
+  </action>
+  <action name="showMarketScannerWindow">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Market Scanner</string>
+   </property>
+   <property name="toolTip">
+    <string>Show market scanner window. The market scanner scans the market for strategies opportunities.</string>
    </property>
   </action>
  </widget>
