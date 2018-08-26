@@ -122,6 +122,22 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_MarketOpportunityItem.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_MarketOpportunityItemDelegate.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_MarketScannerModel.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_MarketScannerView.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="GeneratedFiles\Debug Standalone\moc_OperationItemDelegate.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
@@ -155,6 +171,22 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="GeneratedFiles\Release Standalone\moc_ItemDelegate.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_MarketOpportunityItem.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_MarketOpportunityItemDelegate.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_MarketScannerModel.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_MarketScannerView.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">true</ExcludedFromBuild>
     </ClCompile>
@@ -194,6 +226,22 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_MarketOpportunityItem.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_MarketOpportunityItemDelegate.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_MarketScannerModel.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_MarketScannerView.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="GeneratedFiles\Test Standalone\moc_OperationItemDelegate.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
@@ -227,6 +275,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="ItemDelegate.cpp" />
+    <ClCompile Include="MarketOpportunityItem.cpp" />
+    <ClCompile Include="MarketOpportunityItemDelegate.cpp" />
+    <ClCompile Include="MarketScannerModel.cpp" />
+    <ClCompile Include="MarketScannerView.cpp" />
     <ClCompile Include="OperationItemDelegate.cpp" />
     <ClCompile Include="OrderWindow.cpp" />
     <ClCompile Include="SecurityListView.cpp" />
@@ -664,6 +716,62 @@
       <Message Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Moc%27ing %(Identity)...</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">.\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp" "-fPrec.hpp" "-f../../%(Filename)%(Extension)"  -DNDEBUG -DNTEST -DBOOST_DISABLE_ASSERTS -DQT_NO_DEBUG -DTRDK_FRONTEND_LIB -D_BUILDING_TRDK_FRONTEND_LIB_ORM -D_QX_UNITY_BUILD -D_QX_ENABLE_BOOST -DDISTRIBUTION_STANDALONE -DUNICODE -DWIN64 -DQT_DLL -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB -DWIN32 -D_WINDOWS -D_WIN32_WINNT=0x0600 -DWINVER=0x0600 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS -D_WINDLL "-I.\GeneratedFiles" "-I." "-I$(QTDIR)\include" "-I.\GeneratedFiles\$(ConfigurationName)\." "-I$(QTDIR)\include\QtCore" "-I$(QTDIR)\include\QtGui" "-I$(QTDIR)\include\QtWidgets"</Command>
+    </CustomBuild>
+    <CustomBuild Include="MarketScannerView.hpp">
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Moc%27ing %(Identity)...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">.\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp" "-fPrec.hpp" "-f../../%(Filename)%(Extension)"  -D_DEBUG -DDEV_VER -DBOOST_ENABLE_ASSERT_HANDLER -DTRDK_FRONTEND_LIB -D_BUILDING_TRDK_FRONTEND_LIB_ORM -D_QX_UNITY_BUILD -D_QX_ENABLE_BOOST -DDISTRIBUTION_STANDALONE -DUNICODE -DWIN64 -DQT_DLL -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB -DWIN32 -D_WINDOWS -D_WIN32_WINNT=0x0600 -DWINVER=0x0600 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS -D_WINDLL "-I.\GeneratedFiles" "-I." "-I$(QTDIR)\include" "-I.\GeneratedFiles\$(ConfigurationName)\." "-I$(QTDIR)\include\QtCore" "-I$(QTDIR)\include\QtGui" "-I$(QTDIR)\include\QtWidgets"</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Moc%27ing %(Identity)...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">.\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp" "-fPrec.hpp" "-f../../%(Filename)%(Extension)"  -DNDEBUG -D_TEST -DDEV_VER -DPROFILE -DBOOST_ENABLE_ASSERT_HANDLER -DQT_NO_DEBUG -DTRDK_FRONTEND_LIB -D_BUILDING_TRDK_FRONTEND_LIB_ORM -D_QX_UNITY_BUILD -D_QX_ENABLE_BOOST -DDISTRIBUTION_STANDALONE -DUNICODE -DWIN64 -DQT_DLL -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB -DWIN32 -D_WINDOWS -D_WIN32_WINNT=0x0600 -DWINVER=0x0600 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS -D_WINDLL "-I.\GeneratedFiles" "-I." "-I$(QTDIR)\include" "-I.\GeneratedFiles\$(ConfigurationName)\." "-I$(QTDIR)\include\QtCore" "-I$(QTDIR)\include\QtGui" "-I$(QTDIR)\include\QtWidgets"</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Moc%27ing %(Identity)...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">.\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp" "-fPrec.hpp" "-f../../%(Filename)%(Extension)"  -DNDEBUG -DNTEST -DBOOST_DISABLE_ASSERTS -DQT_NO_DEBUG -DTRDK_FRONTEND_LIB -D_BUILDING_TRDK_FRONTEND_LIB_ORM -D_QX_UNITY_BUILD -D_QX_ENABLE_BOOST -DDISTRIBUTION_STANDALONE -DUNICODE -DWIN64 -DQT_DLL -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB -DWIN32 -D_WINDOWS -D_WIN32_WINNT=0x0600 -DWINVER=0x0600 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS -D_WINDLL "-I.\GeneratedFiles" "-I." "-I$(QTDIR)\include" "-I.\GeneratedFiles\$(ConfigurationName)\." "-I$(QTDIR)\include\QtCore" "-I$(QTDIR)\include\QtGui" "-I$(QTDIR)\include\QtWidgets"</Command>
+    </CustomBuild>
+    <CustomBuild Include="MarketScannerModel.hpp">
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Moc%27ing %(Identity)...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">.\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp" "-fPrec.hpp" "-f../../%(Filename)%(Extension)"  -D_DEBUG -DDEV_VER -DBOOST_ENABLE_ASSERT_HANDLER -DTRDK_FRONTEND_LIB -D_BUILDING_TRDK_FRONTEND_LIB_ORM -D_QX_UNITY_BUILD -D_QX_ENABLE_BOOST -DDISTRIBUTION_STANDALONE -DUNICODE -DWIN64 -DQT_DLL -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB -DWIN32 -D_WINDOWS -D_WIN32_WINNT=0x0600 -DWINVER=0x0600 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS -D_WINDLL "-I.\GeneratedFiles" "-I." "-I$(QTDIR)\include" "-I.\GeneratedFiles\$(ConfigurationName)\." "-I$(QTDIR)\include\QtCore" "-I$(QTDIR)\include\QtGui" "-I$(QTDIR)\include\QtWidgets"</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Moc%27ing %(Identity)...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">.\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp" "-fPrec.hpp" "-f../../%(Filename)%(Extension)"  -DNDEBUG -D_TEST -DDEV_VER -DPROFILE -DBOOST_ENABLE_ASSERT_HANDLER -DQT_NO_DEBUG -DTRDK_FRONTEND_LIB -D_BUILDING_TRDK_FRONTEND_LIB_ORM -D_QX_UNITY_BUILD -D_QX_ENABLE_BOOST -DDISTRIBUTION_STANDALONE -DUNICODE -DWIN64 -DQT_DLL -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB -DWIN32 -D_WINDOWS -D_WIN32_WINNT=0x0600 -DWINVER=0x0600 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS -D_WINDLL "-I.\GeneratedFiles" "-I." "-I$(QTDIR)\include" "-I.\GeneratedFiles\$(ConfigurationName)\." "-I$(QTDIR)\include\QtCore" "-I$(QTDIR)\include\QtGui" "-I$(QTDIR)\include\QtWidgets"</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Moc%27ing %(Identity)...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">.\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp" "-fPrec.hpp" "-f../../%(Filename)%(Extension)"  -DNDEBUG -DNTEST -DBOOST_DISABLE_ASSERTS -DQT_NO_DEBUG -DTRDK_FRONTEND_LIB -D_BUILDING_TRDK_FRONTEND_LIB_ORM -D_QX_UNITY_BUILD -D_QX_ENABLE_BOOST -DDISTRIBUTION_STANDALONE -DUNICODE -DWIN64 -DQT_DLL -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB -DWIN32 -D_WINDOWS -D_WIN32_WINNT=0x0600 -DWINVER=0x0600 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS -D_WINDLL "-I.\GeneratedFiles" "-I." "-I$(QTDIR)\include" "-I.\GeneratedFiles\$(ConfigurationName)\." "-I$(QTDIR)\include\QtCore" "-I$(QTDIR)\include\QtGui" "-I$(QTDIR)\include\QtWidgets"</Command>
+    </CustomBuild>
+    <CustomBuild Include="MarketOpportunityItemDelegate.hpp">
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Moc%27ing MarketOpportunityItemDelegate.hpp...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">.\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp" "-fPrec.hpp" "-f../../MarketOpportunityItemDelegate.hpp"  -D_DEBUG -DDEV_VER -DBOOST_ENABLE_ASSERT_HANDLER -DTRDK_FRONTEND_LIB -D_BUILDING_TRDK_FRONTEND_LIB_ORM -D_QX_UNITY_BUILD -D_QX_ENABLE_BOOST -DDISTRIBUTION_STANDALONE -DUNICODE -DWIN64 -DQT_DLL -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB -DWIN32 -D_WINDOWS -D_WIN32_WINNT=0x0600 -DWINVER=0x0600 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS -D_WINDLL "-I.\GeneratedFiles" "-I." "-I$(QTDIR)\include" "-I.\GeneratedFiles\$(ConfigurationName)\." "-I$(QTDIR)\include\QtCore" "-I$(QTDIR)\include\QtGui" "-I$(QTDIR)\include\QtWidgets"</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Moc%27ing MarketOpportunityItemDelegate.hpp...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">.\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp" "-fPrec.hpp" "-f../../MarketOpportunityItemDelegate.hpp"  -DNDEBUG -D_TEST -DDEV_VER -DPROFILE -DBOOST_ENABLE_ASSERT_HANDLER -DQT_NO_DEBUG -DTRDK_FRONTEND_LIB -D_BUILDING_TRDK_FRONTEND_LIB_ORM -D_QX_UNITY_BUILD -D_QX_ENABLE_BOOST -DDISTRIBUTION_STANDALONE -DUNICODE -DWIN64 -DQT_DLL -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB -DWIN32 -D_WINDOWS -D_WIN32_WINNT=0x0600 -DWINVER=0x0600 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS -D_WINDLL "-I.\GeneratedFiles" "-I." "-I$(QTDIR)\include" "-I.\GeneratedFiles\$(ConfigurationName)\." "-I$(QTDIR)\include\QtCore" "-I$(QTDIR)\include\QtGui" "-I$(QTDIR)\include\QtWidgets"</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Moc%27ing MarketOpportunityItemDelegate.hpp...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">.\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp" "-fPrec.hpp" "-f../../MarketOpportunityItemDelegate.hpp"  -DNDEBUG -DNTEST -DBOOST_DISABLE_ASSERTS -DQT_NO_DEBUG -DTRDK_FRONTEND_LIB -D_BUILDING_TRDK_FRONTEND_LIB_ORM -D_QX_UNITY_BUILD -D_QX_ENABLE_BOOST -DDISTRIBUTION_STANDALONE -DUNICODE -DWIN64 -DQT_DLL -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB -DWIN32 -D_WINDOWS -D_WIN32_WINNT=0x0600 -DWINVER=0x0600 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS -D_WINDLL "-I.\GeneratedFiles" "-I." "-I$(QTDIR)\include" "-I.\GeneratedFiles\$(ConfigurationName)\." "-I$(QTDIR)\include\QtCore" "-I$(QTDIR)\include\QtGui" "-I$(QTDIR)\include\QtWidgets"</Command>
+    </CustomBuild>
+    <CustomBuild Include="MarketOpportunityItem.hpp">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Moc%27ing MarketOpportunityItem.hpp...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">.\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp" "-fPrec.hpp" "-f../../MarketOpportunityItem.hpp"  -D_DEBUG -DDEV_VER -DBOOST_ENABLE_ASSERT_HANDLER -DTRDK_FRONTEND_LIB -D_BUILDING_TRDK_FRONTEND_LIB_ORM -D_QX_UNITY_BUILD -D_QX_ENABLE_BOOST -DDISTRIBUTION_STANDALONE -DUNICODE -DWIN64 -DQT_DLL -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB -DWIN32 -D_WINDOWS -D_WIN32_WINNT=0x0600 -DWINVER=0x0600 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS -D_WINDLL "-I.\GeneratedFiles" "-I." "-I$(QTDIR)\include" "-I.\GeneratedFiles\$(ConfigurationName)\." "-I$(QTDIR)\include\QtCore" "-I$(QTDIR)\include\QtGui" "-I$(QTDIR)\include\QtWidgets"</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Moc%27ing MarketOpportunityItem.hpp...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">.\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp" "-fPrec.hpp" "-f../../MarketOpportunityItem.hpp"  -DNDEBUG -D_TEST -DDEV_VER -DPROFILE -DBOOST_ENABLE_ASSERT_HANDLER -DQT_NO_DEBUG -DTRDK_FRONTEND_LIB -D_BUILDING_TRDK_FRONTEND_LIB_ORM -D_QX_UNITY_BUILD -D_QX_ENABLE_BOOST -DDISTRIBUTION_STANDALONE -DUNICODE -DWIN64 -DQT_DLL -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB -DWIN32 -D_WINDOWS -D_WIN32_WINNT=0x0600 -DWINVER=0x0600 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS -D_WINDLL "-I.\GeneratedFiles" "-I." "-I$(QTDIR)\include" "-I.\GeneratedFiles\$(ConfigurationName)\." "-I$(QTDIR)\include\QtCore" "-I$(QTDIR)\include\QtGui" "-I$(QTDIR)\include\QtWidgets"</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Moc%27ing MarketOpportunityItem.hpp...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">.\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp" "-fPrec.hpp" "-f../../MarketOpportunityItem.hpp"  -DNDEBUG -DNTEST -DBOOST_DISABLE_ASSERTS -DQT_NO_DEBUG -DTRDK_FRONTEND_LIB -D_BUILDING_TRDK_FRONTEND_LIB_ORM -D_QX_UNITY_BUILD -D_QX_ENABLE_BOOST -DDISTRIBUTION_STANDALONE -DUNICODE -DWIN64 -DQT_DLL -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB -DWIN32 -D_WINDOWS -D_WIN32_WINNT=0x0600 -DWINVER=0x0600 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS -D_WINDLL "-I.\GeneratedFiles" "-I." "-I$(QTDIR)\include" "-I.\GeneratedFiles\$(ConfigurationName)\." "-I$(QTDIR)\include\QtCore" "-I$(QTDIR)\include\QtGui" "-I$(QTDIR)\include\QtWidgets"</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
     </CustomBuild>
     <ClInclude Include="ModuleApi.hpp" />
     <ClInclude Include="OperationItem.hpp" />

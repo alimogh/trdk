@@ -18,18 +18,14 @@ using namespace trdk;
 using namespace Lib;
 using namespace FrontEnd;
 using namespace FrontEnd::Detail;
-
-namespace pt = boost::posix_time;
 namespace front = trdk::FrontEnd;
 
 namespace {
 
 class RootItem : public BalanceItem {
  public:
-  explicit RootItem() {}
   ~RootItem() override = default;
 
- public:
   QVariant GetData(int) const override { return QVariant(); }
 };
 
@@ -120,21 +116,14 @@ class BalanceListModel::Implementation : boost::noncopyable {
 
 BalanceListModel::BalanceListModel(const front::Engine& engine, QWidget* parent)
     : Base(parent), m_pimpl(boost::make_unique<Implementation>(*this)) {
-  {
-    const auto& symbols =
-        engine.GetContext().GetSettings().GetConfig().get_child_optional(
-            "defaults.symbols");
-    if (symbols) {
-      for (const auto& node : *symbols) {
-        const auto& symbol = node.second.get_value<std::string>();
-        for (auto it = boost::make_split_iterator(
-                 symbol, boost::first_finder("_", boost::is_iequal()));
-             !it.eof(); ++it) {
-          auto subSymbol = boost::copy_range<std::string>(*it);
-          if (!subSymbol.empty()) {
-            m_pimpl->m_defaultSymbols.emplace(std::move(subSymbol));
-          }
-        }
+  for (const auto& symbol :
+       engine.GetContext().GetSettings().GetDefaultSymbols()) {
+    for (auto it = boost::make_split_iterator(
+             symbol, boost::first_finder("_", boost::is_iequal()));
+         !it.eof(); ++it) {
+      auto subSymbol = boost::copy_range<std::string>(*it);
+      if (!subSymbol.empty()) {
+        m_pimpl->m_defaultSymbols.emplace(std::move(subSymbol));
       }
     }
   }
@@ -158,8 +147,8 @@ BalanceListModel::BalanceListModel(const front::Engine& engine, QWidget* parent)
 BalanceListModel::~BalanceListModel() = default;
 
 QVariant BalanceListModel::headerData(int section,
-                                      Qt::Orientation orientation,
-                                      int role) const {
+                                      const Qt::Orientation orientation,
+                                      const int role) const {
   if (orientation != Qt::Horizontal) {
     return Base::headerData(section, orientation, role);
   }
@@ -182,13 +171,16 @@ QVariant BalanceListModel::headerData(int section,
         return tr("Time");
       case BALANCE_COLUMN_USED:
         return tr("Used");
+      default:
+        break;
     }
   }
 
   return Base::headerData(section, orientation, role);
 }
 
-QVariant BalanceListModel::data(const QModelIndex& index, int role) const {
+QVariant BalanceListModel::data(const QModelIndex& index,
+                                const int role) const {
   if (!index.isValid()) {
     return QVariant();
   }
@@ -199,35 +191,36 @@ QVariant BalanceListModel::data(const QModelIndex& index, int role) const {
     case Qt::DisplayRole:
       return static_cast<BalanceItem*>(index.internalPointer())
           ->GetData(index.column());
+    default:
+      return {};
   }
-  return QVariant();
 }
 
 QModelIndex BalanceListModel::index(int row,
                                     int column,
                                     const QModelIndex& parentIndex) const {
   if (!hasIndex(row, column, parentIndex)) {
-    return QModelIndex();
+    return {};
   }
   auto& parentItem =
       !parentIndex.isValid()
           ? m_pimpl->m_root
           : *static_cast<BalanceItem*>(parentIndex.internalPointer());
-  BalanceItem* const childItem = parentItem.GetChild(row);
+  const auto childItem = parentItem.GetChild(row);
   if (!childItem) {
-    return QModelIndex();
+    return {};
   }
   return createIndex(row, column, childItem);
 }
 
 QModelIndex BalanceListModel::parent(const QModelIndex& index) const {
   if (!index.isValid()) {
-    return QModelIndex();
+    return {};
   }
   auto& parent =
       *static_cast<BalanceItem*>(index.internalPointer())->GetParent();
   if (&parent == &m_pimpl->m_root) {
-    return QModelIndex();
+    return {};
   }
   return createIndex(parent.GetRow(), 0, &parent);
 }
@@ -249,7 +242,7 @@ int BalanceListModel::columnCount(const QModelIndex&) const {
 
 Qt::ItemFlags BalanceListModel::flags(const QModelIndex& index) const {
   if (!index.isValid()) {
-    return 0;
+    return nullptr;
   }
   return QAbstractItemModel::flags(index);
 }

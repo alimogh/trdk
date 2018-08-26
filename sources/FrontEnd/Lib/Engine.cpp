@@ -143,7 +143,7 @@ class FrontEnd::Engine::Implementation : boost::noncopyable {
   }
 
   void ConnectSignals() {
-    Verify(connect(&m_self, &Engine::StateChange, [this](bool isStarted) {
+    Verify(connect(&m_self, &Engine::StateChange, [this](const bool isStarted) {
       if (!isStarted) {
         m_engine.reset();
       }

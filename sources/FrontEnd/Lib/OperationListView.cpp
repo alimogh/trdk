@@ -57,13 +57,13 @@ void OperationListView::InitContextMenu() {
     auto *action = new QAction(tr("Expand New Operations"), this);
     action->setCheckable(true);
     action->setChecked(m_isExpandingEnabled);
-    Verify(connect(action, &QAction::toggled, this, [this](bool isEnabled) {
-      m_isExpandingEnabled = isEnabled;
-    }));
+    Verify(connect(
+        action, &QAction::toggled, this,
+        [this](const bool isEnabled) { m_isExpandingEnabled = isEnabled; }));
     addAction(action);
   }
   {
-    QAction *separator = new QAction(this);
+    auto separator = new QAction(this);
     separator->setSeparator(true);
     addAction(separator);
   }
