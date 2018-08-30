@@ -22,6 +22,9 @@ OrderListView::OrderListView(Engine &engine, QWidget *parent)
   setSelectionBehavior(SelectRows);
   setSelectionMode(ExtendedSelection);
   verticalHeader()->setVisible(false);
+  verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
+  verticalHeader()->setDefaultSectionSize(
+      verticalHeader()->fontMetrics().height() + 4);
 
   m_contextMenu.addAction(tr("&Cancel"), this,
                           &OrderListView::CancelSelectedOrders);

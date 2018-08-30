@@ -35,16 +35,28 @@ QString MarketOpportunityItemDelegate::displayText(
 
 void MarketOpportunityItemDelegate::initStyleOption(
     QStyleOptionViewItem *options, const QModelIndex &index) const {
+  Base::initStyleOption(options, index);
+
+  static const QColor colorOfSuspicion(255, 255, 0);
+  static const QColor colorOfSuspicionAlt(255, 240, 0);
+  static const QColor colorOfSuspicionText(Qt::red);
   static const QColor colorOfProfit(0, 128, 0);
   static const QColor colorOfProfitAlt(0, 153, 0);
-
-  Base::initStyleOption(options, index);
+  static const QColor colorOfLoss(179, 0, 0);
+  static const QColor colorOfLossAlt(204, 0, 0);
 
   const auto &item = ResolveModelIndexItem<MarketOpportunityItem>(index);
   const auto &profit = item.GetProfit();
-  if (!profit.isNull() && Double(profit.toDouble()) > .05 / 100) {
-    options->backgroundBrush =
-        index.row() % 2 ? colorOfProfitAlt : colorOfProfit;
-    options->font.setBold(true);
+  if (!profit.isNull()) {
+    if (Double(profit.toDouble()) > 10) {
+      options->backgroundBrush =
+          index.row() % 2 ? colorOfSuspicionAlt : colorOfSuspicion;
+      options->palette.setColor(QPalette::Text, colorOfSuspicionText);
+    } else if (Double(profit.toDouble()) > .5) {
+      options->backgroundBrush =
+          index.row() % 2 ? colorOfProfitAlt : colorOfProfit;
+    } else if (Double(profit.toDouble()) <= 0) {
+      options->backgroundBrush = index.row() % 2 ? colorOfLossAlt : colorOfLoss;
+    }
   }
 }

@@ -439,7 +439,7 @@ void MainWindow::InitSecurityListWindow() {
                    &MainWindow::CreateNewChartWindow));
   }
   Verify(connect(m_ui.securities, &QDockWidget::visibilityChanged,
-                 [this](bool isVisible) {
+                 [this](const bool isVisible) {
                    const QSignalBlocker blocker(m_ui.showSecuritiesWindow);
                    m_ui.showSecuritiesWindow->setChecked(isVisible);
                  }));
@@ -455,9 +455,11 @@ void MainWindow::InitMarketScannerWindow() {
     }
     m_ui.marketScanner->setWidget(&view);
     m_ui.marketScanner->setWindowTitle(view.windowTitle());
+    Verify(connect(&view, &MarketScannerView::StrategyRequested, this,
+                   &MainWindow::ShowRequestedStrategy));
   }
   Verify(connect(m_ui.marketScanner, &QDockWidget::visibilityChanged,
-                 [this](bool isVisible) {
+                 [this](const bool isVisible) {
                    const QSignalBlocker blocker(m_ui.showSecuritiesWindow);
                    m_ui.showMarketScannerWindow->setChecked(isVisible);
                  }));
@@ -600,4 +602,62 @@ void MainWindow::AddDefaultSymbol() {
       this, tr("Symbol list"),
       tr("Changes will take effect after the application restart."),
       QMessageBox::Ok);
+}
+
+void MainWindow::ShowRequestedStrategy(const QString &title,
+                                       const QString &module,
+                                       const QString &factoryName,
+                                       const QString &params) {
+  for (const auto &it : children()) {
+    const auto widget = dynamic_cast<QWidget *>(it);
+    if (!widget) {
+      continue;
+    }
+    if (widget->windowTitle() == title) {
+      widget->activateWindow();
+      widget->raise();
+      return;
+    }
+  }
+
+  for (auto &dll : m_moduleDlls) {
+    if (dll->GetOriginalFile().filename().replace_extension("") !=
+        module.toStdString()) {
+      continue;
+    }
+    boost::function<StrategyWidgetList(FrontEnd::Engine &, const QString &,
+                                       const QWidget *parent)>
+        factory;
+    try {
+      factory = dll->GetFunction<StrategyWidgetList(
+          FrontEnd::Engine &, const QString &, const QWidget *parent)>(
+          factoryName.toStdString());
+    } catch (const std::exception &ex) {
+      const auto &error =
+          QString(tr("Failed to load module front-end: \"%1\"."))
+              .arg(ex.what());
+      QMessageBox::critical(this, tr("Failed to load module."), error,
+                            QMessageBox::Ignore);
+      return;
+    }
+    StrategyWidgetList widgets;
+    try {
+      widgets = factory(m_engine, params, this);
+    } catch (const std::exception &ex) {
+      const auto &error =
+          QString(R"(Failed to create new strategy window: "%1".)")
+              .arg(ex.what());
+      QMessageBox::critical(this, tr("Strategy error."), error,
+                            QMessageBox::Abort);
+      return;
+    }
+    ShowModuleWindows(widgets);
+    return;
+  }
+  {
+    const auto &error =
+        QString(tr("Failed to find module \"%1\".")).arg(module);
+    QMessageBox::critical(this, tr("Failed to load module."), error,
+                          QMessageBox::Ignore);
+  }
 }
