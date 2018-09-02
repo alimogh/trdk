@@ -129,6 +129,7 @@ class Module::Implementation : private boost::noncopyable {
   const InstanceId m_instanceId;
   const std::string m_implementationName;
   const std::string m_instanceName;
+  const std::string m_moduleName;
 
   Mutex m_mutex;
 
@@ -150,6 +151,7 @@ class Module::Implementation : private boost::noncopyable {
         m_instanceId(nextFreeInstanceId++),
         m_implementationName(implementationName),
         m_instanceName(instanceName),
+        m_moduleName(conf.get<std::string>("module")),
         m_context(context),
         m_stringId(FormatStringId(
             typeName, m_implementationName, m_instanceName, m_instanceId)),
@@ -181,6 +183,10 @@ const std::string &Module::GetImplementationName() const {
 
 const std::string &Module::GetInstanceName() const noexcept {
   return m_pimpl->m_instanceName;
+}
+
+const std::string &Module::GetModuleName() const {
+  return m_pimpl->m_moduleName;
 }
 
 Module::Lock Module::LockForOtherThreads() { return Lock(m_pimpl->m_mutex); }

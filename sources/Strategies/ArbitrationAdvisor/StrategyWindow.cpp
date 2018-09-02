@@ -555,4 +555,13 @@ StrategyWidgetList RestoreStrategyWidgets(Engine &engine,
   return result;
 }
 
+StrategyWidgetList CreateStrategyWidgetsForSymbols(Engine &engine,
+                                                   const QString &symbol,
+                                                   QWidget *parent) {
+  StrategyWidgetList result;
+  result.emplace_back(
+      boost::make_unique<StrategyWindow>(engine, symbol, parent));
+  return result;
+}
+
 ////////////////////////////////////////////////////////////////////////////////

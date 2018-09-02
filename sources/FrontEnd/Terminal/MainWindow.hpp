@@ -31,6 +31,12 @@ class MainWindow : public QMainWindow {
   void LoadModule(const boost::filesystem::path &);
   void RestoreModules();
 
+ public slots:
+  void ShowRequestedStrategy(const QString &title,
+                             const QString &module,
+                             const QString &factoryName,
+                             const QString &params);
+
  private:
   void ConnectSignals();
 
