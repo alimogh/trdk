@@ -43,6 +43,7 @@ class TRDK_CORE_API Module : boost::noncopyable {
   const InstanceId &GetInstanceId() const;
   const std::string &GetImplementationName() const;
   const std::string &GetInstanceName() const noexcept;
+  const std::string &GetModuleName() const;
 
   Context &GetContext();
   const Context &GetContext() const;

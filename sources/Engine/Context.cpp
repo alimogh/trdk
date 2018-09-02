@@ -20,7 +20,6 @@
 #include "SubscriptionsManager.hpp"
 #include "Common/ExpirationCalendar.hpp"
 
-namespace pt = boost::posix_time;
 namespace ptr = boost::property_tree;
 namespace fs = boost::filesystem;
 namespace ids = boost::uuids;

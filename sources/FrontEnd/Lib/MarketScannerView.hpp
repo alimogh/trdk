@@ -27,7 +27,10 @@ class TRDK_FRONTEND_LIB_API MarketScannerView : public QTableView {
   ~MarketScannerView() override;
 
  signals:
-  void StrategyRequested();
+  void StrategyRequested(const QString &title,
+                         const QString &module,
+                         const QString &factoryName,
+                         const QString &params);
 
  protected:
   void rowsInserted(const QModelIndex &, int start, int end) override;

@@ -42,7 +42,12 @@ class ArbirageAdvisorMarketOpportunityItem : public MarketOpportunityItem {
       ArbirageAdvisorMarketOpportunityItem &&) = delete;
   ArbirageAdvisorMarketOpportunityItem &operator=(
       const ArbirageAdvisorMarketOpportunityItem &) = delete;
-  ~ArbirageAdvisorMarketOpportunityItem() = default;
+  ~ArbirageAdvisorMarketOpportunityItem() override = default;
+
+  QString GetTitle() const override {
+    return GetSymbols() + " " + tr("Arbitrage") + " - " +
+           QCoreApplication::applicationName();
+  }
 
  private:
   static const Strategy &CreateStrategy(front::Engine &engine,
@@ -131,29 +136,25 @@ class MarketScannerModel::Implementation {
       }
     }
 
-    size_t count = 0;
     for (const auto &pair : pairs) {
       if (!m_itemIndex.emplace(pair).second) {
         continue;
       }
-      {
-        const auto index = static_cast<int>(m_items.size());
-        m_self.beginInsertRows(QModelIndex(), index, index);
-        m_items.emplace_back(
-            boost::make_shared<ArbirageAdvisorMarketOpportunityItem>(pair,
-                                                                     m_engine));
-        m_self.endInsertRows();
-        m_self.connect(&*m_items.back(), &MarketOpportunityItem::ProfitUpdated,
-                       &m_self,
-                       [this, index]() {
-                         m_self.beginInsertRows(QModelIndex(), index, index);
-                         m_self.endInsertRows();
-                       },
-                       Qt::QueuedConnection);
-      }
-      if (++count >= 3) {
-        return false;
-      }
+      const auto index = static_cast<int>(m_items.size());
+      m_self.beginInsertRows(QModelIndex(), index, index);
+      m_items.emplace_back(
+          boost::make_shared<ArbirageAdvisorMarketOpportunityItem>(pair,
+                                                                   m_engine));
+      m_self.endInsertRows();
+      Verify(m_self.connect(
+          &*m_items.back(), &MarketOpportunityItem::ProfitUpdated, &m_self,
+          [this, index]() {
+            emit m_self.dataChanged(
+                m_self.createIndex(index, 0),
+                m_self.createIndex(index, numberOfColumns - 1),
+                                    {Qt::DisplayRole});
+          },
+          Qt::QueuedConnection));
     }
 
     return true;

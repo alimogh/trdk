@@ -55,8 +55,9 @@ inline Qt::AlignmentFlag GetBalanceFieldAligment(const BalanceColumn &column) {
     case BALANCE_COLUMN_LOCKED:
     case BALANCE_COLUMN_TOTAL:
       return Qt::AlignRight;
+    default:
+      return Qt::AlignLeft;
   }
-  return Qt::AlignLeft;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -88,10 +89,9 @@ class BalanceItem : private boost::noncopyable {
 class BalanceTradingSystemItem : public BalanceItem {
  public:
   explicit BalanceTradingSystemItem(const TradingSystem &);
-  virtual ~BalanceTradingSystemItem() override = default;
+  ~BalanceTradingSystemItem() override = default;
 
- public:
-  virtual QVariant GetData(int column) const override;
+  QVariant GetData(int column) const override;
 
  private:
   QVariant m_data;
@@ -103,16 +103,14 @@ class BalanceDataItem : public BalanceItem {
  public:
   typedef BalanceItem Base;
 
- public:
   explicit BalanceDataItem(const boost::shared_ptr<BalanceRecord> &);
-  virtual ~BalanceDataItem() override = default;
+  ~BalanceDataItem() override = default;
 
- public:
   BalanceRecord &GetRecord();
-  virtual QVariant GetData(int column) const override;
-  virtual bool HasEmpty() const override;
-  virtual bool HasLocked() const override;
-  virtual bool IsUsed() const;
+  QVariant GetData(int column) const override;
+  bool HasEmpty() const override;
+  bool HasLocked() const override;
+  bool IsUsed() const override;
 
  private:
   const boost::shared_ptr<BalanceRecord> m_data;

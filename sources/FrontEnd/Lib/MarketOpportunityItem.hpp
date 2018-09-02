@@ -22,11 +22,13 @@ class MarketOpportunityItem : public QObject {
   MarketOpportunityItem(const MarketOpportunityItem &) = delete;
   MarketOpportunityItem &operator=(MarketOpportunityItem &&) = delete;
   MarketOpportunityItem &operator=(const MarketOpportunityItem &) = delete;
-  ~MarketOpportunityItem();
+  virtual ~MarketOpportunityItem();
 
   QVariant GetProfit() const;
   const Strategy &GetStrategy() const;
   const QString &GetSymbols() const;
+
+  virtual QString GetTitle() const = 0;
 
  signals:
   void ProfitUpdated();

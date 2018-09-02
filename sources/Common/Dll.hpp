@@ -91,7 +91,7 @@ class Dll {
 
  public:
   explicit Dll(boost::filesystem::path dllFile, const bool autoName = false)
-      : m_file(std::move(dllFile)) {
+      : m_file(std::move(dllFile)), m_fileOriginal(m_file) {
 #ifdef BOOST_WINDOWS
     if (!m_file.has_extension()) {
       m_file.replace_extension(".dll");
@@ -157,6 +157,9 @@ class Dll {
   void Release() noexcept { m_handle = nullptr; }
 
   const boost::filesystem::path &GetFile() const { return m_file; }
+  const boost::filesystem::path &GetOriginalFile() const {
+    return m_fileOriginal;
+  }
 
   template <typename Func>
   Func *GetFunction(const char *funcName) const {
@@ -181,6 +184,7 @@ class Dll {
 
  private:
   boost::filesystem::path m_file;
+  const boost::filesystem::path m_fileOriginal;
   ModuleHandle m_handle;
 };
 

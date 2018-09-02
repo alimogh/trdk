@@ -88,6 +88,9 @@ SecurityListView::SecurityListView(QWidget *parent)
   setSelectionBehavior(SelectItems);
   setSelectionMode(ExtendedSelection);
   verticalHeader()->setVisible(false);
+  verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
+  verticalHeader()->setDefaultSectionSize(
+      verticalHeader()->fontMetrics().height() + 4);
   setItemDelegate(new ItemDelegate(this));
   Verify(connect(this, &SecurityListView::doubleClicked,
                  [this](const QModelIndex &index) {

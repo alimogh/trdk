@@ -12,6 +12,7 @@
 #include "MarketOpportunityItem.hpp"
 
 using namespace trdk;
+using namespace Lib;
 using namespace FrontEnd;
 
 class MarketOpportunityItem::Implementation {
@@ -19,11 +20,16 @@ class MarketOpportunityItem::Implementation {
   MarketOpportunityItem &m_self;
   QString m_symbols;
   const Strategy &m_strategy;
+  Strategy::ProfitScannerSlotConnection m_strategySignalConnection;
 
   explicit Implementation(MarketOpportunityItem &self,
                           QString symbols,
                           const Strategy &strategy)
-      : m_self(self), m_symbols(std::move(symbols)), m_strategy(strategy) {}
+      : m_self(self),
+        m_symbols(std::move(symbols)),
+        m_strategy(strategy),
+        m_strategySignalConnection(m_strategy.SubscribeToProfitScanner(
+            [this](const Double &) { emit m_self.ProfitUpdated(); })) {}
 };
 
 MarketOpportunityItem::MarketOpportunityItem(QString symbols,
