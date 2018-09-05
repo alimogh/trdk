@@ -32,7 +32,7 @@ class BuyLegPolicy : public LegPolicy {
   ~BuyLegPolicy() override = default;
 
   const OrderSide &GetSide() const override {
-    static const OrderSide result = ORDER_SIDE_BUY;
+    static const auto result = ORDER_SIDE_BUY;
     return result;
   }
 
@@ -249,14 +249,21 @@ class ta::Strategy::Implementation : private boost::noncopyable {
     if (configurationError) {
       m_opportunitySignal(opportunities);
       throw Exception(configurationError->c_str());
-    } else if (!m_isTradingEnabled) {
+    }
+    if (!m_isTradingEnabled) {
       m_opportunitySignal(opportunities);
+      m_self.SetProfitOpportunityRatio(
+          !opportunities.empty() ? (opportunities.front().pnlRatio - 1).Get()
+                                 : 0);
       return;
     }
 
     auto opportunitySignalFuture = boost::async([this, &opportunities]() {
       try {
         m_opportunitySignal(opportunities);
+        m_self.SetProfitOpportunityRatio(
+            !opportunities.empty() ? (opportunities.front().pnlRatio - 1).Get()
+                                   : 0);
       } catch (const std::exception &ex) {
         throw boost::enable_current_exception(ex);
       }
@@ -566,11 +573,8 @@ class ta::Strategy::Implementation : private boost::noncopyable {
       static const std::string error = "failed to get price";
       disable(error, targets[LEG_1].price == 0 ? *targets[LEG_1].tradingSystem
                                                : *targets[LEG_2].tradingSystem);
-      AssertLt(0, targets[LEG_1].price);
-      AssertLt(0, targets[LEG_2].price);
       return;
     }
-    AssertLt(0, targets[LEG_3].price);
 
     const auto &getBalance = [&](const Leg &leg) {
       return m_legs[leg]->GetOrderQtyAllowedByBalance(

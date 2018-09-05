@@ -26,8 +26,9 @@ class MarketOpportunityItem : public QObject {
 
   QVariant GetProfit() const;
   const Strategy &GetStrategy() const;
-  const QString &GetSymbols() const;
+  const QString &GetSymbolsTitle() const;
 
+  virtual QString GetSymbolsConfig() const = 0;
   virtual QString GetTitle() const = 0;
 
  signals:
