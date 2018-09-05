@@ -48,6 +48,6 @@ QVariant MarketOpportunityItem::GetProfit() const {
 const Strategy &MarketOpportunityItem::GetStrategy() const {
   return m_pimpl->m_strategy;
 }
-const QString &MarketOpportunityItem::GetSymbols() const {
+const QString &MarketOpportunityItem::GetSymbolsTitle() const {
   return m_pimpl->m_symbols;
 }

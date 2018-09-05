@@ -41,7 +41,7 @@ class MarketScannerView::Implementation {
     emit m_self.StrategyRequested(
         item.GetTitle(),
         QString::fromStdString(item.GetStrategy().GetModuleName()),
-        "CreateStrategyWidgetsForSymbols", item.GetSymbols());
+        "CreateStrategyWidgetsForSymbols", item.GetSymbolsConfig());
   }
 };
 

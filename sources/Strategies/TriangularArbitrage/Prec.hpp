@@ -39,6 +39,7 @@
 #include "FrontEnd/Lib/Fwd.hpp"
 #include "Fwd.hpp"
 #include <boost/algorithm/string.hpp>
+#include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/thread/future.hpp>
 #include <boost/uuid/uuid_generators.hpp>
