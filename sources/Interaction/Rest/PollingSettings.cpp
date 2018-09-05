@@ -19,7 +19,7 @@ namespace ptr = boost::property_tree;
 
 namespace {
 const pt::time_duration &minInterval = pt::microseconds(1);
-const pt::time_duration &defailtInterval = pt::seconds(1);
+const pt::time_duration &defailtInterval = pt::seconds(15);
 const size_t defaultPriceRequestFrequency = 1;
 const size_t defaultActualOrdersRequestFrequency = 1;
 const size_t defaultAllOrdersRequestFrequency = 60;
