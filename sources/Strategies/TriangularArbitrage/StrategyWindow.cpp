@@ -20,6 +20,29 @@ namespace ta = Strategies::TriangularArbitrage;
 namespace ptr = boost::property_tree;
 namespace ids = boost::uuids;
 
+namespace {
+
+LegsConf ParseLegsConf(const ptr::ptree &config) {
+  LegsConf result = {};
+  auto it = result.begin();
+  for (const auto &node : config) {
+    const auto &legConf = node.second.get_value<std::string>();
+    if (it >= result.cend() || legConf.size() < 2 ||
+        (legConf[0] != '-' && legConf[0] != '+')) {
+      throw Exception("Wrong leg configuration in leg set configuration");
+    }
+    it->side = legConf[0] == '+' ? ORDER_SIDE_LONG : ORDER_SIDE_SHORT;
+    it->symbol = QString::fromStdString(legConf.substr(1));
+    ++it;
+  }
+  if (it != result.cend()) {
+    throw Exception("Wrong leg configuration in leg set configuration");
+  }
+  return result;
+}
+
+}  // namespace
+
 StrategyWidgetList RestoreStrategyWidgets(Engine &engine,
                                           const QUuid &typeId,
                                           const QUuid &instanceId,
@@ -32,6 +55,19 @@ StrategyWidgetList RestoreStrategyWidgets(Engine &engine,
     result.emplace_back(boost::make_unique<StrategyWindow>(
         engine, instanceId, name, config, parent));
   }
+  return result;
+}
+
+StrategyWidgetList CreateStrategyWidgetsForSymbols(Engine &engine,
+                                                   const QString &configString,
+                                                   QWidget *parent) {
+#pragma comment(linker, "/EXPORT:" __FUNCTION__ "=" __FUNCDNAME__)
+  StrategyWidgetList result;
+  std::istringstream configStream(configString.toStdString());
+  ptr::ptree config;
+  ptr::json_parser::read_json(configStream, config);
+  result.emplace_back(boost::make_unique<StrategyWindow>(
+      engine, ParseLegsConf(config), parent));
   return result;
 }
 
@@ -91,23 +127,7 @@ StrategyWindow::~StrategyWindow() { m_strategy->Stop(); }
 
 void StrategyWindow::Init(const ids::uuid &id,
                           const std::string &strategyName) {
-  LegsConf legSet = {};
-  {
-    auto it = legSet.begin();
-    for (const auto &node : m_config.get_child("config.legs")) {
-      const auto &legConf = node.second.get_value<std::string>();
-      if (it >= legSet.cend() || legConf.size() < 2 ||
-          (legConf[0] != '-' && legConf[0] != '+')) {
-        throw Exception("Wrong leg configuration in leg set configuration");
-      }
-      it->side = legConf[0] == '+' ? ORDER_SIDE_LONG : ORDER_SIDE_SHORT;
-      it->symbol = QString::fromStdString(legConf.substr(1));
-      ++it;
-    }
-    if (it != legSet.cend()) {
-      throw Exception("Wrong leg configuration in leg set configuration");
-    }
-  }
+  const auto &legSet = ParseLegsConf(m_config.get_child("config.legs"));
 
   m_investCurrency =
       legSet.front().symbol.right(legSet.front().symbol.indexOf('_'));
@@ -129,7 +149,8 @@ void StrategyWindow::Init(const ids::uuid &id,
   {
     QStringList symbolList;
     for (const auto &leg : legSet) {
-      symbolList << leg.symbol;
+      symbolList << QString("%1%2").arg(leg.side == ORDER_SIDE_BUY ? "+" : "-",
+                                        leg.symbol);
     }
     setWindowTitle(symbolList.join('*') + " " + tr("Triangular Arbitrage") +
                    " - " + QCoreApplication::applicationName());
