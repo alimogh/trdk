@@ -64,7 +64,7 @@ class BalanceListModel::Implementation : boost::noncopyable {
         if (!isUsed && available == 0 && locked == 0) {
           return;
         }
-        const auto index = m_root.GetNumberOfChilds();
+        const auto index = m_root.GetNumberOfChildren();
         m_self.beginInsertRows(QModelIndex(), index, index);
         auto tradingSystemItem =
             boost::make_unique<BalanceTradingSystemItem>(*tradingSystem);
@@ -74,7 +74,7 @@ class BalanceListModel::Implementation : boost::noncopyable {
                                         std::make_pair(&*tradingSystemItem, 0)))
                 .first;
         m_root.AppendChild(std::move(tradingSystemItem));
-        AssertEq(index, m_root.GetNumberOfChilds() - 1);
+        AssertEq(index, m_root.GetNumberOfChildren() - 1);
         m_self.endInsertRows();
       }
     }
@@ -87,7 +87,7 @@ class BalanceListModel::Implementation : boost::noncopyable {
         if (!isUsed && available == 0 && locked == 0) {
           return;
         }
-        const auto index = tradingSystemIt->second.first->GetNumberOfChilds();
+        const auto index = tradingSystemIt->second.first->GetNumberOfChildren();
         const auto& data = boost::make_shared<BalanceRecord>(symbol, available,
                                                              locked, isUsed);
         const auto& item = boost::make_shared<BalanceDataItem>(data);
@@ -97,7 +97,8 @@ class BalanceListModel::Implementation : boost::noncopyable {
             index, index);
         tradingSystemIt->second.first->AppendChild(item);
         symbolList.emplace(std::make_pair(symbol, item));
-        AssertEq(index, tradingSystemIt->second.first->GetNumberOfChilds() - 1);
+        AssertEq(index,
+                 tradingSystemIt->second.first->GetNumberOfChildren() - 1);
         m_self.endInsertRows();
         return;
       }
@@ -233,7 +234,7 @@ int BalanceListModel::rowCount(const QModelIndex& parentIndex) const {
       !parentIndex.isValid()
           ? m_pimpl->m_root
           : *static_cast<BalanceItem*>(parentIndex.internalPointer());
-  return parentItem.GetNumberOfChilds();
+  return parentItem.GetNumberOfChildren();
 }
 
 int BalanceListModel::columnCount(const QModelIndex&) const {

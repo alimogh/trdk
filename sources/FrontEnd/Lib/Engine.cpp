@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "Engine.hpp"
 #include "DropCopy.hpp"
+#include "WalletsRechargingConfig.hpp"
 
 using namespace trdk;
 using namespace Lib;
@@ -76,6 +77,7 @@ class FrontEnd::Engine::Implementation : boost::noncopyable {
   sig::scoped_connection m_engineLogSubscription;
   boost::array<std::unique_ptr<RiskControlScope>, numberOfTradingModes>
       m_riskControls;
+  boost::optional<WalletsRechargingConfig> m_walletsRechargingConfig;
   QSqlDatabase* const m_db;
 
   explicit Implementation(FrontEnd::Engine& self,
@@ -731,6 +733,18 @@ const FrontEnd::DropCopy& FrontEnd::Engine::GetDropCopy() const {
 
 RiskControlScope& FrontEnd::Engine::GetRiskControl(const TradingMode& mode) {
   return *m_pimpl->m_riskControls[mode];
+}
+
+const WalletsRechargingConfig& FrontEnd::Engine::GetWalletsRechargingConfig()
+    const {
+  return const_cast<Engine*>(this)->GetWalletsRechargingConfig();
+}
+WalletsRechargingConfig& FrontEnd::Engine::GetWalletsRechargingConfig() {
+  if (!m_pimpl->m_walletsRechargingConfig) {
+    m_pimpl->m_walletsRechargingConfig.emplace();
+    m_pimpl->m_walletsRechargingConfig->Load();
+  }
+  return *m_pimpl->m_walletsRechargingConfig;
 }
 
 std::vector<boost::shared_ptr<Orm::Operation>> FrontEnd::Engine::GetOperations(

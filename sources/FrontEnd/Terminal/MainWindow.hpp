@@ -36,6 +36,7 @@ class MainWindow : public QMainWindow {
                              const QString &module,
                              const QString &factoryName,
                              const QString &params);
+  void ShowWalletSettings(QString symbol, const TradingSystem &);
 
  private:
   void ConnectSignals();
