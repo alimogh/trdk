@@ -33,6 +33,7 @@
 #include "Lib/TotalResultsReportModel.hpp"
 #include "Lib/TotalResultsReportSettingsWidget.hpp"
 #include "Lib/TotalResultsReportView.hpp"
+#include "Lib/WalletSettingsDialog.hpp"
 
 using namespace trdk;
 using namespace Lib;
@@ -415,6 +416,8 @@ void MainWindow::InitBalanceListWindow() {
     }
     m_ui.balances->setWidget(&view);
     m_ui.balances->setWindowTitle(view.windowTitle());
+    Verify(connect(&view, &BalanceListView::WalletSettingsRequested, this,
+                   &MainWindow::ShowWalletSettings));
   }
   Verify(connect(m_ui.balances, &QDockWidget::visibilityChanged,
                  [this](bool isVisible) {
@@ -660,4 +663,10 @@ void MainWindow::ShowRequestedStrategy(const QString &title,
     QMessageBox::critical(this, tr("Failed to load module."), error,
                           QMessageBox::Ignore);
   }
+}
+
+void MainWindow::ShowWalletSettings(QString symbol,
+                                    const TradingSystem &tradingSystem) {
+  WalletSettingsDialog dialog(symbol, tradingSystem, m_engine, this);
+  dialog.exec();
 }

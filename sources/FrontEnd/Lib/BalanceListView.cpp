@@ -10,11 +10,14 @@
 
 #include "Prec.hpp"
 #include "BalanceListView.hpp"
+#include "BalanceItem.hpp"
 #include "BalanceItemDelegate.hpp"
 
 using namespace trdk::FrontEnd;
+using namespace Detail;
 
-BalanceListView::BalanceListView(QWidget *parent) : Base(parent) {
+BalanceListView::BalanceListView(QWidget *parent)
+    : Base(parent), m_generalContextMenu(this), m_dataContextMenu(this) {
   setWindowTitle(tr("Balances"));
   setSortingEnabled(true);
   sortByColumn(0, Qt::AscendingOrder);
@@ -24,35 +27,71 @@ BalanceListView::BalanceListView(QWidget *parent) : Base(parent) {
   setItemDelegate(new BalanceItemDelegate(this));
   setIndentation(10);
   InitContextMenu();
+  Verify(connect(
+      this, &BalanceListView::doubleClicked,
+      [this](const QModelIndex &index) { RequestWalletSettings(index); }));
 }
 
 void BalanceListView::InitContextMenu() {
-  setContextMenuPolicy(Qt::ActionsContextMenu);
+  setContextMenuPolicy(Qt::CustomContextMenu);
+
+  InitGeneralContextMenu(m_generalContextMenu);
+
+  {
+    auto &action = *new QAction(tr("Settings"), this);
+    Verify(connect(&action, &QAction::triggered, [this]() {
+      for (auto &index : selectionModel()->selectedIndexes()) {
+        RequestWalletSettings(index);
+      }
+    }));
+    m_dataContextMenu.addAction(&action);
+  }
+  {
+    auto *separator = new QAction(this);
+    separator->setSeparator(true);
+    m_dataContextMenu.addAction(separator);
+  }
+  InitGeneralContextMenu(m_dataContextMenu);
+}
+
+void BalanceListView::InitGeneralContextMenu(QMenu &menu) {
   {
     auto *action = new QAction(tr("Copy\tCtrl+C"), this);
     action->setShortcut(QKeySequence::Copy);
     action->setShortcutContext(Qt::WidgetWithChildrenShortcut);
     Verify(connect(action, &QAction::triggered, this,
                    &BalanceListView::CopySelectedValuesToClipboard));
-    addAction(action);
+    menu.addAction(action);
   }
   {
     auto *separator = new QAction(this);
     separator->setSeparator(true);
-    addAction(separator);
+    menu.addAction(separator);
   }
   {
     auto *action = new QAction(tr("Collapse All"), this);
     Verify(connect(action, &QAction::triggered, this,
                    &BalanceListView::collapseAll));
-    addAction(action);
+    menu.addAction(action);
   }
   {
     auto *action = new QAction(tr("Expand All"), this);
     Verify(connect(action, &QAction::triggered, this,
                    &BalanceListView::expandAll));
-    addAction(action);
+    menu.addAction(action);
   }
+
+  Verify(connect(this, &BalanceListView::customContextMenuRequested, this,
+                 &BalanceListView::ShowContextMenu));
+}
+
+void BalanceListView::ShowContextMenu(const QPoint &point) {
+  const auto &index = indexAt(point);
+  const auto &item = ResolveModelIndexItem<BalanceItem>(index);
+  (dynamic_cast<const BalanceDataItem *>(&item) != nullptr
+       ? m_dataContextMenu
+       : m_generalContextMenu)
+      .exec(viewport()->mapToGlobal(point));
 }
 
 void BalanceListView::CopySelectedValuesToClipboard() const {
@@ -86,4 +125,16 @@ void BalanceListView::rowsInserted(const QModelIndex &index,
   for (auto i = 0; i < header()->count(); ++i) {
     resizeColumnToContents(i);
   }
+}
+
+void BalanceListView::RequestWalletSettings(const QModelIndex &index) {
+  const auto &item = ResolveModelIndexItem<BalanceItem>(index);
+  const auto &symbol = dynamic_cast<const BalanceDataItem *>(&item);
+  if (!symbol) {
+    return;
+  }
+  emit WalletSettingsRequested(
+      symbol->GetRecord().symbol,
+      dynamic_cast<const BalanceTradingSystemItem &>(*item.GetParent())
+          .GetTradingSystem());
 }
