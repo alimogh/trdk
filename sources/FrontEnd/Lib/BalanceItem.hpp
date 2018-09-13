@@ -62,25 +62,29 @@ inline Qt::AlignmentFlag GetBalanceFieldAligment(const BalanceColumn &column) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class BalanceItem : private boost::noncopyable {
+class BalanceItem {
  public:
-  BalanceItem();
+  BalanceItem() = default;
+  BalanceItem(BalanceItem &&) = default;
+  BalanceItem(const BalanceItem &) = delete;
+  BalanceItem &operator=(BalanceItem &&) = delete;
+  BalanceItem &operator=(const BalanceItem &) = delete;
   virtual ~BalanceItem() = default;
 
- public:
-  void AppendChild(boost::shared_ptr<BalanceItem> &&);
+  void AppendChild(boost::shared_ptr<BalanceItem>);
   int GetRow() const;
-  int GetNumberOfChilds() const;
+  int GetNumberOfChildren() const;
   BalanceItem *GetChild(int row);
   BalanceItem *GetParent();
+  const BalanceItem *GetParent() const;
   virtual QVariant GetData(int column) const = 0;
   virtual bool HasEmpty() const;
   virtual bool HasLocked() const;
   virtual bool IsUsed() const;
 
  private:
-  BalanceItem *m_parent;
-  int m_row;
+  BalanceItem *m_parent = nullptr;
+  int m_row = -1;
   std::vector<boost::shared_ptr<BalanceItem>> m_childItems;
 };
 
@@ -89,11 +93,19 @@ class BalanceItem : private boost::noncopyable {
 class BalanceTradingSystemItem : public BalanceItem {
  public:
   explicit BalanceTradingSystemItem(const TradingSystem &);
+  BalanceTradingSystemItem(BalanceTradingSystemItem &&) = default;
+  BalanceTradingSystemItem(const BalanceTradingSystemItem &) = delete;
+  BalanceTradingSystemItem &operator=(BalanceTradingSystemItem &&) = delete;
+  BalanceTradingSystemItem &operator=(const BalanceTradingSystemItem &) =
+      delete;
   ~BalanceTradingSystemItem() override = default;
+
+  const TradingSystem &GetTradingSystem() const;
 
   QVariant GetData(int column) const override;
 
  private:
+  const TradingSystem &m_tradingSystem;
   QVariant m_data;
 };
 
@@ -103,10 +115,16 @@ class BalanceDataItem : public BalanceItem {
  public:
   typedef BalanceItem Base;
 
-  explicit BalanceDataItem(const boost::shared_ptr<BalanceRecord> &);
+  explicit BalanceDataItem(boost::shared_ptr<BalanceRecord>);
+  BalanceDataItem(BalanceDataItem &&) = default;
+  BalanceDataItem(const BalanceDataItem &) = delete;
+  BalanceDataItem &operator=(BalanceDataItem &&) = delete;
+  BalanceDataItem &operator=(const BalanceDataItem &) = delete;
   ~BalanceDataItem() override = default;
 
   BalanceRecord &GetRecord();
+  const BalanceRecord &GetRecord() const;
+
   QVariant GetData(int column) const override;
   bool HasEmpty() const override;
   bool HasLocked() const override;

@@ -10,16 +10,17 @@
 
 #include "Prec.hpp"
 #include "BalanceItem.hpp"
+#include <utility>
 
 using namespace trdk;
-using namespace trdk::FrontEnd::Detail;
+using namespace FrontEnd::Detail;
 
 ////////////////////////////////////////////////////////////////////////////////
 
 BalanceRecord::BalanceRecord(const std::string &symbol,
                              const Volume &available,
                              const Volume &locked,
-                             bool isUsed)
+                             const bool isUsed)
     : symbol(QString::fromStdString(symbol)),
       available(available),
       locked(locked),
@@ -37,14 +38,12 @@ Volume BalanceRecord::GetTotal() const { return available + locked; }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-BalanceItem::BalanceItem() : m_parent(nullptr), m_row(-1) {}
-
-void BalanceItem::AppendChild(boost::shared_ptr<BalanceItem> &&child) {
+void BalanceItem::AppendChild(boost::shared_ptr<BalanceItem> child) {
   Assert(!child->m_parent);
   AssertEq(-1, child->m_row);
-  m_childItems.emplace_back(child);
-  child->m_parent = this;
-  child->m_row = static_cast<int>(m_childItems.size()) - 1;
+  m_childItems.push_back(std::move(child));
+  m_childItems.back()->m_parent = this;
+  m_childItems.back()->m_row = static_cast<int>(m_childItems.size()) - 1;
 }
 
 int BalanceItem::GetRow() const {
@@ -52,19 +51,20 @@ int BalanceItem::GetRow() const {
   return m_row;
 }
 
-int BalanceItem::GetNumberOfChilds() const {
+int BalanceItem::GetNumberOfChildren() const {
   return static_cast<int>(m_childItems.size());
 }
 
-BalanceItem *BalanceItem::GetChild(int row) {
-  AssertGt(m_childItems.size(), row);
-  if (m_childItems.size() <= row) {
+BalanceItem *BalanceItem::GetChild(const int row) {
+  AssertGt(static_cast<int>(m_childItems.size()), row);
+  if (static_cast<int>(m_childItems.size()) <= row) {
     return nullptr;
   }
   return &*m_childItems[row];
 }
 
 BalanceItem *BalanceItem::GetParent() { return m_parent; }
+const BalanceItem *BalanceItem::GetParent() const { return m_parent; }
 
 bool BalanceItem::HasEmpty() const {
   for (const auto &child : m_childItems) {
@@ -97,7 +97,12 @@ bool BalanceItem::IsUsed() const {
 
 BalanceTradingSystemItem::BalanceTradingSystemItem(
     const TradingSystem &tradingSystem)
-    : m_data(QString::fromStdString(tradingSystem.GetTitle())) {}
+    : m_tradingSystem(tradingSystem),
+      m_data(QString::fromStdString(m_tradingSystem.GetTitle())) {}
+
+const TradingSystem &BalanceTradingSystemItem::GetTradingSystem() const {
+  return m_tradingSystem;
+}
 
 QVariant BalanceTradingSystemItem::GetData(const int column) const {
   static_assert(numberOfBalanceColumns == 6, "List changed.");
@@ -105,18 +110,19 @@ QVariant BalanceTradingSystemItem::GetData(const int column) const {
     case BALANCE_COLUMN_EXCHANGE_OR_SYMBOL:
       return m_data;
     default:
-      return QVariant();
+      return {};
   }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-BalanceDataItem::BalanceDataItem(const boost::shared_ptr<BalanceRecord> &data)
-    : m_data(data) {}
+BalanceDataItem::BalanceDataItem(boost::shared_ptr<BalanceRecord> data)
+    : m_data(std::move(data)) {}
 
 BalanceRecord &BalanceDataItem::GetRecord() { return *m_data; }
+const BalanceRecord &BalanceDataItem::GetRecord() const { return *m_data; }
 
-QVariant BalanceDataItem::GetData(int column) const {
+QVariant BalanceDataItem::GetData(const int column) const {
   static_assert(numberOfBalanceColumns == 6, "List changed.");
   switch (column) {
     case BALANCE_COLUMN_EXCHANGE_OR_SYMBOL:
@@ -132,11 +138,11 @@ QVariant BalanceDataItem::GetData(int column) const {
     case BALANCE_COLUMN_USED:
       if (m_data->isUsed) {
         return QObject::tr("yes");
-      } else {
-        return QVariant();
       }
+      return {};
+    default:
+      return {};
   }
-  return QVariant();
 }
 
 bool BalanceDataItem::HasEmpty() const {

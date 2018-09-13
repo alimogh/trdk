@@ -47,6 +47,9 @@ class TRDK_FRONTEND_LIB_API Engine : public QObject {
 
   RiskControlScope& GetRiskControl(const TradingMode&);
 
+  const WalletsRechargingConfig& GetWalletsRechargingConfig() const;
+  WalletsRechargingConfig& GetWalletsRechargingConfig();
+
   std::vector<boost::shared_ptr<Orm::Operation>> GetOperations(
       const QDateTime& startTime,
       const boost::optional<QDateTime>& endTime,

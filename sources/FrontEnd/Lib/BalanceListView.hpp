@@ -26,10 +26,21 @@ class TRDK_FRONTEND_LIB_API BalanceListView : public QTreeView {
 
   void setModel(QAbstractItemModel *) override;
 
+ signals:
+  void WalletSettingsRequested(QString symbol, const TradingSystem &);
+
+ private slots:
+  void ShowContextMenu(const QPoint &);
+
  private:
   void InitContextMenu();
+  void InitGeneralContextMenu(QMenu &);
   void CopySelectedValuesToClipboard() const;
+  void RequestWalletSettings(const QModelIndex &);
   void rowsInserted(const QModelIndex &, int start, int end) override;
+
+  QMenu m_generalContextMenu;
+  QMenu m_dataContextMenu;
 };
 }  // namespace FrontEnd
 }  // namespace trdk
