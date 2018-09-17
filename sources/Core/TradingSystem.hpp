@@ -102,7 +102,7 @@ class TRDK_CORE_API TradingSystem : virtual public Interactor {
                          Context &,
                          std::string instanceName,
                          std::string title);
-  TradingSystem(TradingSystem &&);
+  TradingSystem(TradingSystem &&) noexcept;
   TradingSystem(const TradingSystem &) = delete;
   TradingSystem &operator=(TradingSystem &&) = delete;
   TradingSystem &operator=(const TradingSystem &) = delete;
@@ -132,6 +132,9 @@ class TRDK_CORE_API TradingSystem : virtual public Interactor {
   const std::string &GetTitle() const;
 
   const std::string &GetStringId() const noexcept;
+
+  virtual Account &GetAccount();
+  virtual const Account &GetAccount() const;
 
   virtual bool IsConnected() const = 0;
   void Connect();

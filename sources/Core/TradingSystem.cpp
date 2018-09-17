@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "TradingSystem.hpp"
+#include "Account.hpp"
 #include "Balances.hpp"
 #include "DropCopy.hpp"
 #include "OrderStatusHandler.hpp"
@@ -27,7 +28,6 @@ using namespace Lib;
 using namespace TimeMeasurement;
 using namespace Lib::Concurrency;
 namespace pt = boost::posix_time;
-namespace ptr = boost::property_tree;
 
 namespace {
 
@@ -543,7 +543,7 @@ TradingSystem::TradingSystem(const TradingMode &mode,
                              std::string title)
     : m_pimpl(boost::make_unique<Implementation>(
           *this, mode, context, std::move(instanceName), std::move(title))) {}
-TradingSystem::TradingSystem(TradingSystem &&) = default;
+TradingSystem::TradingSystem(TradingSystem &&) noexcept = default;
 TradingSystem::~TradingSystem() = default;
 
 const TradingMode &TradingSystem::GetMode() const { return m_pimpl->m_mode; }
@@ -595,21 +595,20 @@ const Balances &TradingSystem::GetBalances() const {
 Balances &TradingSystem::GetBalancesStorage() {
   static class DummyBalances : public Balances {
    public:
-    virtual ~DummyBalances() override = default;
-
-   public:
-    virtual Volume GetAvailableToTrade(const std::string &) const override {
-      return 0;
-    }
-    virtual void ReduceAvailableToTradeByOrder(const Security &,
-                                               const Qty &,
-                                               const Price &,
-                                               const OrderSide &,
-                                               const TradingSystem &) override {
-    }
-    virtual void ForEach(
-        const boost::function<void(
-            const std::string &, const trdk::Volume &, const trdk::Volume &)> &)
+    DummyBalances() = default;
+    DummyBalances(DummyBalances &&) = default;
+    DummyBalances(const DummyBalances &) = delete;
+    DummyBalances &operator=(DummyBalances &&) = delete;
+    DummyBalances &operator=(const DummyBalances &) = delete;
+    ~DummyBalances() override = default;
+    Volume GetAvailableToTrade(const std::string &) const override { return 0; }
+    void ReduceAvailableToTradeByOrder(const Security &,
+                                       const Qty &,
+                                       const Price &,
+                                       const OrderSide &,
+                                       const TradingSystem &) override {}
+    void ForEach(const boost::function<
+                 void(const std::string &, const Volume &, const Volume &)> &)
         const override {}
   } result;
   return result;
@@ -1023,3 +1022,22 @@ void TradingSystem::OnOrderError(const pt::ptime &time,
                          commission, &OrderStatusHandler::OnError,
                          emptyOrderTransactionContextCallback);
 }
+
+namespace {
+Account &GetDefaultAccount() {
+  static class DummyAccount : public Account {
+   public:
+    ~DummyAccount() override = default;
+
+    bool IsWithdrawsFunds() const override { return false; }
+    bool WithdrawFunds(const std::string &,
+                       const Volume &,
+                       const std::string &) override {
+      throw Exception("Trading system account doesn't withdraw funds");
+    }
+  } result;
+  return result;
+}
+}  // namespace
+Account &TradingSystem::GetAccount() { return GetDefaultAccount(); }
+const Account &TradingSystem::GetAccount() const { return GetDefaultAccount(); }

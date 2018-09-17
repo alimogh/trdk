@@ -12,20 +12,24 @@
 
 namespace trdk {
 
-class Balances : private boost::noncopyable {
+class Balances {
  public:
+  Balances() = default;
+  Balances(Balances &&) = default;
+  Balances(const Balances &) = delete;
+  Balances &operator=(Balances &&) = delete;
+  Balances &operator=(const Balances &) = delete;
   virtual ~Balances() = default;
 
- public:
-  virtual trdk::Volume GetAvailableToTrade(const std::string &symbol) const = 0;
-  virtual void ReduceAvailableToTradeByOrder(const trdk::Security &,
-                                             const trdk::Qty &,
-                                             const trdk::Price &,
-                                             const trdk::OrderSide &,
-                                             const trdk::TradingSystem &) = 0;
+  virtual Volume GetAvailableToTrade(const std::string &symbol) const = 0;
+  virtual void ReduceAvailableToTradeByOrder(const Security &,
+                                             const Qty &,
+                                             const Price &,
+                                             const OrderSide &,
+                                             const TradingSystem &) = 0;
   virtual void ForEach(
       const boost::function<void(const std::string &symbol,
-                                 const trdk::Volume &available,
-                                 const trdk::Volume &locked)> &) const = 0;
+                                 const Volume &available,
+                                 const Volume &locked)> &) const = 0;
 };
 }  // namespace trdk

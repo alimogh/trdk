@@ -15,12 +15,26 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
+    <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,10">
+     <item>
+      <widget class="QLabel" name="addressLabel">
+       <property name="text">
+        <string>Address:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="address"/>
+     </item>
+    </layout>
+   </item>
+   <item>
     <widget class="QGroupBox" name="sourceSettings">
      <property name="enabled">
       <bool>true</bool>
      </property>
      <property name="title">
-      <string>Source</string>
+      <string>Source for other wallets recharging</string>
      </property>
      <property name="checkable">
       <bool>true</bool>
@@ -37,7 +51,14 @@
        </widget>
       </item>
       <item row="0" column="1">
-       <widget class="QDoubleSpinBox" name="sourceMinDeposit"/>
+       <widget class="QDoubleSpinBox" name="sourceMinDeposit">
+        <property name="decimals">
+         <number>8</number>
+        </property>
+        <property name="maximum">
+         <double>9999999999999.000000000000000</double>
+        </property>
+       </widget>
       </item>
       <item row="0" column="2">
        <widget class="QLabel" name="sourceMinDepositSymbol">
@@ -74,13 +95,6 @@
       <bool>false</bool>
      </property>
      <layout class="QGridLayout" name="gridLayout_2" rowstretch="0,0,0,0,0,1">
-      <item row="0" column="0">
-       <widget class="QLabel" name="addressLabel">
-        <property name="text">
-         <string>Address:</string>
-        </property>
-       </widget>
-      </item>
       <item row="1" column="0">
        <widget class="QLabel" name="depositSourceLabel">
         <property name="text">
@@ -162,9 +176,6 @@
         </property>
        </widget>
       </item>
-      <item row="0" column="1">
-       <widget class="QLineEdit" name="address"/>
-      </item>
       <item row="1" column="1">
        <widget class="QComboBox" name="depositSource"/>
       </item>
@@ -219,6 +230,17 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>address</tabstop>
+  <tabstop>sourceSettings</tabstop>
+  <tabstop>sourceMinDeposit</tabstop>
+  <tabstop>rechargingSettings</tabstop>
+  <tabstop>depositSource</tabstop>
+  <tabstop>minDepositVolume</tabstop>
+  <tabstop>minDepositTransactionVolume</tabstop>
+  <tabstop>okButton</tabstop>
+  <tabstop>cancelButton</tabstop>
+ </tabstops>
  <resources/>
  <connections>
   <connection>
@@ -228,8 +250,8 @@
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>278</x>
-     <y>253</y>
+     <x>274</x>
+     <y>439</y>
     </hint>
     <hint type="destinationlabel">
      <x>96</x>
@@ -244,8 +266,8 @@
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>369</x>
-     <y>253</y>
+     <x>373</x>
+     <y>439</y>
     </hint>
     <hint type="destinationlabel">
      <x>179</x>

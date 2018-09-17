@@ -33,7 +33,9 @@
 #include "Lib/TotalResultsReportModel.hpp"
 #include "Lib/TotalResultsReportSettingsWidget.hpp"
 #include "Lib/TotalResultsReportView.hpp"
+#include "Lib/WalletDepositDialog.hpp"
 #include "Lib/WalletSettingsDialog.hpp"
+#include "Lib/WalletsConfig.hpp"
 
 using namespace trdk;
 using namespace Lib;
@@ -418,6 +420,8 @@ void MainWindow::InitBalanceListWindow() {
     m_ui.balances->setWindowTitle(view.windowTitle());
     Verify(connect(&view, &BalanceListView::WalletSettingsRequested, this,
                    &MainWindow::ShowWalletSettings));
+    Verify(connect(&view, &BalanceListView::WalletDepositTransactionRequest,
+                   this, &MainWindow::ShowWalletDepositDialog));
   }
   Verify(connect(m_ui.balances, &QDockWidget::visibilityChanged,
                  [this](bool isVisible) {
@@ -667,6 +671,67 @@ void MainWindow::ShowRequestedStrategy(const QString &title,
 
 void MainWindow::ShowWalletSettings(QString symbol,
                                     const TradingSystem &tradingSystem) {
-  WalletSettingsDialog dialog(symbol, tradingSystem, m_engine, this);
-  dialog.exec();
+  const auto configNode = "wallets";
+  WalletSettingsDialog dialog(
+      std::move(symbol), tradingSystem,
+      WalletsConfig{m_engine, m_engine.LoadConfig().get_child(configNode, {})},
+      false, this);
+  if (dialog.exec() == QDialog::Accepted) {
+    auto config = m_engine.LoadConfig();
+    config.put_child(configNode, dialog.GetConfig().Dump());
+    m_engine.StoreConfig(config);
+  }
+}
+
+void MainWindow::ShowWalletDepositDialog(QString symbol,
+                                         const TradingSystem &tradingSystem) {
+  if (!tradingSystem.GetAccount().IsWithdrawsFunds()) {
+    QMessageBox::warning(this, tr("Funds receptions are not supported"),
+                         tr("Wallet does not support funds reception, so it "
+                            "cannot be deposited."),
+                         QMessageBox::Ok);
+    return;
+  }
+
+  WalletsConfig config(m_engine);
+  for (;;) {
+    const auto configNode = "wallets";
+    config = WalletsConfig{m_engine,
+                           m_engine.LoadConfig().get_child(configNode, {})};
+    if (!config.GetAddress(symbol, tradingSystem).isEmpty()) {
+      break;
+    }
+    if (QMessageBox::information(this, tr("Address is not set"),
+                                 tr("Wallet address is not set yet. Please "
+                                    "provide wallet address to deposit funds."),
+                                 QMessageBox::Ok | QMessageBox::Cancel) !=
+        QMessageBox::Ok) {
+      return;
+    }
+    WalletSettingsDialog settingsDialog(symbol, tradingSystem,
+                                        std::move(config), true, this);
+    if (settingsDialog.exec() != QDialog::Accepted) {
+      return;
+    }
+    auto fullConfig = m_engine.LoadConfig();
+    fullConfig.put_child(configNode, settingsDialog.GetConfig().Dump());
+    m_engine.StoreConfig(fullConfig);
+  }
+
+  WalletDepositDialog dialog(m_engine, std::move(symbol), tradingSystem, config,
+                             this);
+  if (dialog.exec() != WalletDepositDialog::Accepted) {
+    return;
+  }
+
+  try {
+    dialog.GetSource().GetAccount().WithdrawFunds(
+        dialog.GetSymbol().toStdString(), dialog.GetVolume(),
+        dialog.GetTargetAddress().toStdString());
+  } catch (const Exception &ex) {
+    const auto &error =
+        QString(tr("Failed to deposit funds: \"%1\".")).arg(ex.what());
+    QMessageBox::critical(this, tr("Failed to deposit funds."), error,
+                          QMessageBox::Ok);
+  }
 }
