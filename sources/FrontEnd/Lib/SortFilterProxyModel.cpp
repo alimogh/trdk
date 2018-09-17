@@ -18,6 +18,9 @@ bool SortFilterProxyModel::lessThan(const QModelIndex& left,
                                     const QModelIndex& right) const {
   const auto& leftData = sourceModel()->data(left);
   const auto& rightData = sourceModel()->data(right);
+  if (leftData.isNull() || rightData.isNull()) {
+    return (leftData.isNull() ? 0 : 1) < (rightData.isNull() ? 0 : 1);
+  }
   switch (leftData.type()) {
     case QVariant::DateTime:
       return leftData.toDateTime() < rightData.toDateTime();
