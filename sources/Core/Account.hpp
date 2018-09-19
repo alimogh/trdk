@@ -22,7 +22,7 @@ class Account {
   virtual ~Account() = default;
 
   virtual bool IsWithdrawsFunds() const = 0;
-  virtual bool WithdrawFunds(const std::string &symbol,
+  virtual void WithdrawFunds(const std::string &symbol,
                              const Volume &,
                              const std::string &targetInfo) = 0;
 };

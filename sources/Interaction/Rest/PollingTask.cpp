@@ -20,7 +20,7 @@ using namespace trdk::Interaction::Rest;
 namespace pt = boost::posix_time;
 namespace ch = boost::chrono;
 
-PollingTask::PollingTask(const PollingSetttings &setttings,
+PollingTask::PollingTask(const PollingSettings &setttings,
                          ModuleEventsLog &log)
     : m_log(log),
       m_pollingInterval(

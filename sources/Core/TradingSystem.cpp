@@ -1030,7 +1030,7 @@ Account &GetDefaultAccount() {
     ~DummyAccount() override = default;
 
     bool IsWithdrawsFunds() const override { return false; }
-    bool WithdrawFunds(const std::string &,
+    void WithdrawFunds(const std::string &,
                        const Volume &,
                        const std::string &) override {
       throw Exception("Trading system account doesn't withdraw funds");
