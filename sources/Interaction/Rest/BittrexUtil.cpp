@@ -13,9 +13,10 @@
 #include "BittrexRequest.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Interaction;
+using namespace Lib;
+using namespace Interaction;
 namespace net = Poco::Net;
+namespace ptr = boost::property_tree;
 
 namespace {
 
@@ -75,4 +76,14 @@ Rest::RequestBittrexProductList(
     throw Exception("Exchange doesn't have products");
   }
   return result;
+}
+
+Rest::BittrexSettings::BittrexSettings(const ptr::ptree &conf,
+                                       ModuleEventsLog &log)
+    : Base(conf, log),
+      apiKey(conf.get<std::string>("config.auth.apiKey")),
+      apiSecret(conf.get<std::string>("config.auth.apiSecret")) {
+  log.Info("API key: \"%1%\". API secret: %2%.",
+           apiKey,                                     // 1
+           apiSecret.empty() ? "not set" : "is set");  // 2
 }

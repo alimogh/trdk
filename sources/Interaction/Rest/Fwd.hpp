@@ -17,11 +17,13 @@ class FloodControl;
 class Security;
 struct Settings;
 
-class PollingSetttings;
+class PollingSettings;
 class PollingTask;
 
 class Request;
+
 class BittrexPublicRequest;
+struct BittrexSettings;
 }  // namespace Rest
 }  // namespace Interaction
 }  // namespace trdk

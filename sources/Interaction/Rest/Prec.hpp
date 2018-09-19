@@ -13,6 +13,7 @@
 #include "Common.hpp"
 #include "TradingLib/BalancesContainer.hpp"
 #include "TradingLib/Util.hpp"
+#include "Core/Account.hpp"
 #include "Core/Bar.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/Security.hpp"

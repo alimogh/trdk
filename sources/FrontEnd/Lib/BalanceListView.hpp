@@ -28,6 +28,7 @@ class TRDK_FRONTEND_LIB_API BalanceListView : public QTreeView {
 
  signals:
   void WalletSettingsRequested(QString symbol, const TradingSystem &);
+  void WalletDepositTransactionRequest(QString symbol, const TradingSystem &);
 
  private slots:
   void ShowContextMenu(const QPoint &);
@@ -36,7 +37,9 @@ class TRDK_FRONTEND_LIB_API BalanceListView : public QTreeView {
   void InitContextMenu();
   void InitGeneralContextMenu(QMenu &);
   void CopySelectedValuesToClipboard() const;
+  void RequestWalletDepositTransaction(const QModelIndex &);
   void RequestWalletSettings(const QModelIndex &);
+
   void rowsInserted(const QModelIndex &, int start, int end) override;
 
   QMenu m_generalContextMenu;

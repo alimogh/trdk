@@ -26,7 +26,7 @@ const size_t defaultAllOrdersRequestFrequency = 60;
 const size_t defaultBalancesRequestFrequency = 120;
 }  // namespace
 
-PollingSetttings::PollingSetttings(const ptr::ptree &conf)
+PollingSettings::PollingSettings(const ptr::ptree &conf)
     : m_interval(std::max<pt::time_duration>(
           pt::seconds(conf.get<long>(
               "config.polling.intervalSeconds",
@@ -46,7 +46,7 @@ PollingSetttings::PollingSetttings(const ptr::ptree &conf)
           conf.get<size_t>("config.polling.frequency.balances",
                            defaultBalancesRequestFrequency)) {}
 
-void PollingSetttings::Log(ModuleEventsLog &log) const {
+void PollingSettings::Log(ModuleEventsLog &log) const {
   if (GetInterval() == defailtInterval &&
       GetPricesRequestFrequency() == defaultPriceRequestFrequency &&
       GetActualOrdersRequestFrequency() ==

@@ -21,13 +21,11 @@ class TRDK_FRONTEND_LIB_API SortFilterProxyModel
  public:
   typedef QSortFilterProxyModel Base;
 
- public:
   explicit SortFilterProxyModel(QObject *parent) : Base(parent) {}
-  virtual ~SortFilterProxyModel() override = default;
+  ~SortFilterProxyModel() override = default;
 
  protected:
-  virtual bool lessThan(const QModelIndex &,
-                        const QModelIndex &) const override;
+  bool lessThan(const QModelIndex &, const QModelIndex &) const override;
 };
 }  // namespace FrontEnd
 }  // namespace trdk
