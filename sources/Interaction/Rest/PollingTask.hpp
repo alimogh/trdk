@@ -29,7 +29,7 @@ class TRDK_INTERACTION_REST_API PollingTask : boost::noncopyable {
   };
 
  public:
-  explicit PollingTask(const PollingSetttings &, ModuleEventsLog &);
+  explicit PollingTask(const PollingSettings &, ModuleEventsLog &);
   ~PollingTask();
 
   void AddTask(std::string name,

@@ -21,58 +21,11 @@ namespace pt = boost::posix_time;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-BittrexTradingSystem::Settings::Settings(const ptr::ptree &conf,
-                                         ModuleEventsLog &log)
-    : Base(conf, log),
-      apiKey(conf.get<std::string>("config.auth.apiKey")),
-      apiSecret(conf.get<std::string>("config.auth.apiSecret")) {
-  log.Info("API key: \"%1%\". API secret: %2%.",
-           apiKey,                                     // 1
-           apiSecret.empty() ? "not set" : "is set");  // 2
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-BittrexTradingSystem::PrivateRequest::PrivateRequest(
-    const std::string &name,
-    const std::string &uriParams,
-    const Settings &settings,
-    const Context &context,
-    ModuleEventsLog &log,
-    ModuleTradingLog *tradingLog)
-    : Base(name,
-           name,
-           AppendUriParams("apikey=" + settings.apiKey, uriParams),
-           context,
-           log,
-           tradingLog),
-      m_settings(settings) {}
-
-void BittrexTradingSystem::PrivateRequest::PrepareRequest(
-    const net::HTTPClientSession &session,
-    const std::string &body,
-    net::HTTPRequest &request) const {
-  using namespace Crypto;
-  const auto &digest =
-      Hmac::CalcSha512Digest((session.secure() ? "https://" : "http://") +
-                                 session.getHost() + GetRequest().getURI(),
-                             m_settings.apiSecret);
-  request.set("apisign", EncodeToHex(&digest[0], digest.size()));
-  Base::PrepareRequest(session, body, request);
-}
-
-void BittrexTradingSystem::PrivateRequest::WriteUri(
-    std::string uri, net::HTTPRequest &request) const {
-  Base::WriteUri(
-      uri + "?nonce=" + to_iso_string(pt::microsec_clock::universal_time()),
-      request);
-}
-
-class BittrexTradingSystem::OrderTransactionRequest : public PrivateRequest {
+class BittrexTradingSystem::OrderTransactionRequest
+    : public BittrexPrivateRequest {
  public:
-  typedef PrivateRequest Base;
+  typedef BittrexPrivateRequest Base;
 
- public:
   explicit OrderTransactionRequest(const std::string &name,
                                    const std::string &uriParams,
                                    const Settings &settings,
@@ -102,7 +55,13 @@ BittrexTradingSystem::BittrexTradingSystem(const App &,
       m_balancesRequest(m_settings, GetContext(), GetLog()),
       m_tradingSession(CreateSession("bittrex.com", m_settings, true)),
       m_pollingSession(CreateSession("bittrex.com", m_settings, false)),
-      m_pollingTask(m_settings.pollingSetttings, GetLog()) {}
+      m_pollingTask(m_settings.pollingSetttings, GetLog()),
+      m_account(m_products,
+                m_tradingSession,
+                m_settings,
+                GetContext(),
+                GetLog(),
+                GetTradingLog()) {}
 
 void BittrexTradingSystem::CreateConnection() {
   Assert(!IsConnected());
@@ -232,7 +191,6 @@ BittrexTradingSystem::SendOrderTransaction(trdk::Security &security,
                                   log,
                                   tradingLog) {}
 
-   public:
     OrderId SendOrderTransaction(
         std::unique_ptr<net::HTTPSClientSession> &session) {
       const auto response = boost::get<1>(Base::Send(session));
@@ -240,7 +198,7 @@ BittrexTradingSystem::SendOrderTransaction(trdk::Security &security,
         return response.get<std::string>("uuid");
       } catch (const ptr::ptree_error &ex) {
         boost::format error(
-            "Wrong server response to the request \"%1%\" (%2%): \"%3%\"");
+            R"(Wrong server response to the request "%1%" (%2%): "%3%")");
         error % GetName()            // 1
             % GetRequest().getURI()  // 2
             % ex.what();             // 3
@@ -392,6 +350,9 @@ pt::ptime BittrexTradingSystem::ParseTime(std::string &&source) const {
   source[10] = ' ';
   return pt::time_from_string(std::move(source)) - m_serverTimeDiff;
 }
+
+Account &BittrexTradingSystem::GetAccount() { return m_account; }
+const Account &BittrexTradingSystem::GetAccount() const { return m_account; }
 
 ////////////////////////////////////////////////////////////////////////////////
 

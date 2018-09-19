@@ -10,10 +10,6 @@
 
 #pragma once
 
-namespace Ui {
-class SymbolSelectionDialog;
-}
-
 namespace trdk {
 namespace FrontEnd {
 
@@ -24,13 +20,16 @@ class TRDK_FRONTEND_LIB_API WalletSettingsDialog : public QDialog {
 
   explicit WalletSettingsDialog(QString symbol,
                                 const TradingSystem &,
-                                Engine &,
+                                WalletsConfig,
+                                bool isAddressRequired,
                                 QWidget *parent);
   WalletSettingsDialog(WalletSettingsDialog &&) = delete;
   WalletSettingsDialog(const WalletSettingsDialog &) = delete;
   WalletSettingsDialog &operator=(WalletSettingsDialog &&) = delete;
   WalletSettingsDialog &operator=(const WalletSettingsDialog &) = delete;
   ~WalletSettingsDialog() override;
+
+  const WalletsConfig &GetConfig() const;
 
   void done(int) override;
 

@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include "Settings.hpp"
+
 namespace trdk {
 namespace Interaction {
 namespace Rest {
@@ -23,6 +25,17 @@ boost::unordered_map<std::string, BittrexProduct> RequestBittrexProductList(
     std::unique_ptr<Poco::Net::HTTPSClientSession> &,
     const Context &,
     ModuleEventsLog &);
+
+struct BittrexSettings : Settings {
+  typedef Settings Base;
+
+  std::string apiKey;
+  std::string apiSecret;
+
+  explicit BittrexSettings(const boost::property_tree::ptree &,
+                           ModuleEventsLog &);
+};
+
 }  // namespace Rest
 }  // namespace Interaction
 }  // namespace trdk

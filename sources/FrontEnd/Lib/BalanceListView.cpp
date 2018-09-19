@@ -47,6 +47,15 @@ void BalanceListView::InitContextMenu() {
     m_dataContextMenu.addAction(&action);
   }
   {
+    auto &action = *new QAction(tr("Deposit"), this);
+    Verify(connect(&action, &QAction::triggered, [this]() {
+      for (auto &index : selectionModel()->selectedIndexes()) {
+        RequestWalletDepositTransaction(index);
+      }
+    }));
+    m_dataContextMenu.addAction(&action);
+  }
+  {
     auto *separator = new QAction(this);
     separator->setSeparator(true);
     m_dataContextMenu.addAction(separator);
@@ -125,6 +134,20 @@ void BalanceListView::rowsInserted(const QModelIndex &index,
   for (auto i = 0; i < header()->count(); ++i) {
     resizeColumnToContents(i);
   }
+}
+
+void BalanceListView::RequestWalletDepositTransaction(
+    const QModelIndex &index) {
+  auto &item = ResolveModelIndexItem<BalanceItem>(index);
+  const auto &symbol = dynamic_cast<const BalanceDataItem *>(&item);
+  Assert(symbol);
+  if (!symbol) {
+    return;
+  }
+  emit WalletDepositTransactionRequest(
+      symbol->GetRecord().symbol,
+      dynamic_cast<BalanceTradingSystemItem &>(*item.GetParent())
+          .GetTradingSystem());
 }
 
 void BalanceListView::RequestWalletSettings(const QModelIndex &index) {

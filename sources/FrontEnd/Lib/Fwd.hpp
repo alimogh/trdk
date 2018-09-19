@@ -16,7 +16,7 @@ class DropCopy;
 class Engine;
 class OperationListModel;
 class TotalResultsReportModel;
-class WalletsRechargingConfig;
+class WalletsConfig;
 
 namespace Orm {
 class Operation;
