@@ -388,7 +388,6 @@
     <ClCompile Include="Version.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Account.hpp" />
     <ClInclude Include="AsyncLog.hpp" />
     <ClInclude Include="Balances.hpp" />
     <ClInclude Include="Bar.hpp" />

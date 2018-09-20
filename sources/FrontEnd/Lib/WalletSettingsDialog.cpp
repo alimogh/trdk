@@ -170,19 +170,19 @@ WalletSettingsDialog::WalletSettingsDialog(QString symbol,
     }
   }
 
-  Verify(connect(
-      m_pimpl->m_ui.sourceSettings, &QGroupBox::toggled, this,
-      [this](const bool isChecked) {
-        if (isChecked) {
-          if (!m_pimpl->m_tradingSystem.GetAccount().IsWithdrawsFunds()) {
-            QMessageBox::warning(this, tr("Withdrawals are not supported"),
-                                 tr("Wallet does not support funds withdraw, "
-                                    "so it cannot be used as a source."),
-                                 QMessageBox::Ok);
-            m_pimpl->m_ui.sourceSettings->setChecked(false);
-          }
-        }
-      }));
+  Verify(connect(m_pimpl->m_ui.sourceSettings, &QGroupBox::toggled, this,
+                 [this](const bool isChecked) {
+                   if (isChecked) {
+                     if (!m_pimpl->m_tradingSystem.AreWithdrawalSupported()) {
+                       QMessageBox::warning(
+                           this, tr("Withdrawals are not supported"),
+                           tr("Wallet does not support funds withdraw, "
+                              "so it cannot be used as a source."),
+                           QMessageBox::Ok);
+                       m_pimpl->m_ui.sourceSettings->setChecked(false);
+                     }
+                   }
+                 }));
 }
 
 WalletSettingsDialog::~WalletSettingsDialog() = default;

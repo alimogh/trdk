@@ -304,7 +304,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ClCompile Include="App.cpp" />
-    <ClCompile Include="BittrexAccount.cpp" />
     <ClCompile Include="BittrexRequest.cpp" />
     <ClCompile Include="BittrexTradingSystem.cpp" />
     <ClCompile Include="BittrexTradingSystemAndMarketDataSource.cpp" />
@@ -364,7 +363,6 @@
   <ItemGroup>
     <ClInclude Include="Api.h" />
     <ClInclude Include="App.hpp" />
-    <ClInclude Include="BittrexAccount.hpp" />
     <ClInclude Include="BittrexMarketDataSource.hpp" />
     <ClInclude Include="BittrexRequest.hpp" />
     <ClInclude Include="BittrexTradingSystem.hpp" />

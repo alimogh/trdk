@@ -226,9 +226,6 @@
     <ClInclude Include="Balances.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Account.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Core.rc">

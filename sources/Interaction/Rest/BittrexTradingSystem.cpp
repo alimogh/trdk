@@ -21,10 +21,56 @@ namespace pt = boost::posix_time;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class BittrexTradingSystem::OrderTransactionRequest
-    : public BittrexPrivateRequest {
+BittrexTradingSystem::Settings::Settings(const ptr::ptree &conf,
+                                         ModuleEventsLog &log)
+    : Base(conf, log),
+      apiKey(conf.get<std::string>("config.auth.apiKey")),
+      apiSecret(conf.get<std::string>("config.auth.apiSecret")) {
+  log.Info("API key: \"%1%\". API secret: %2%.",
+           apiKey,                                     // 1
+           apiSecret.empty() ? "not set" : "is set");  // 2
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+BittrexTradingSystem::PrivateRequest::PrivateRequest(
+    const std::string &name,
+    const std::string &uriParams,
+    const Settings &settings,
+    const Context &context,
+    ModuleEventsLog &log,
+    ModuleTradingLog *tradingLog)
+    : Base(name,
+           name,
+           AppendUriParams("apikey=" + settings.apiKey, uriParams),
+           context,
+           log,
+           tradingLog),
+      m_settings(settings) {}
+
+void BittrexTradingSystem::PrivateRequest::PrepareRequest(
+    const net::HTTPClientSession &session,
+    const std::string &body,
+    net::HTTPRequest &request) const {
+  using namespace Crypto;
+  const auto &digest =
+      Hmac::CalcSha512Digest((session.secure() ? "https://" : "http://") +
+                                 session.getHost() + GetRequest().getURI(),
+                             m_settings.apiSecret);
+  request.set("apisign", EncodeToHex(&digest[0], digest.size()));
+  Base::PrepareRequest(session, body, request);
+}
+
+void BittrexTradingSystem::PrivateRequest::WriteUri(
+    std::string uri, net::HTTPRequest &request) const {
+  Base::WriteUri(
+      uri + "?nonce=" + to_iso_string(pt::microsec_clock::universal_time()),
+      request);
+}
+
+class BittrexTradingSystem::OrderTransactionRequest : public PrivateRequest {
  public:
-  typedef BittrexPrivateRequest Base;
+  typedef PrivateRequest Base;
 
   explicit OrderTransactionRequest(const std::string &name,
                                    const std::string &uriParams,
@@ -55,13 +101,7 @@ BittrexTradingSystem::BittrexTradingSystem(const App &,
       m_balancesRequest(m_settings, GetContext(), GetLog()),
       m_tradingSession(CreateSession("bittrex.com", m_settings, true)),
       m_pollingSession(CreateSession("bittrex.com", m_settings, false)),
-      m_pollingTask(m_settings.pollingSetttings, GetLog()),
-      m_account(m_products,
-                m_tradingSession,
-                m_settings,
-                GetContext(),
-                GetLog(),
-                GetTradingLog()) {}
+      m_pollingTask(m_settings.pollingSetttings, GetLog()) {}
 
 void BittrexTradingSystem::CreateConnection() {
   Assert(!IsConnected());
@@ -341,18 +381,30 @@ void BittrexTradingSystem::UpdateOrders() {
   }
 }
 
-pt::ptime BittrexTradingSystem::ParseTime(std::string &&source) const {
+pt::ptime BittrexTradingSystem::ParseTime(std::string source) const {
   AssertLe(19, source.size());
   AssertEq('T', source[10]);
   if (source.size() < 11 || source[10] != 'T') {
     return pt::not_a_date_time;
   }
   source[10] = ' ';
-  return pt::time_from_string(std::move(source)) - m_serverTimeDiff;
+  return pt::time_from_string(source) - m_serverTimeDiff;
 }
 
-Account &BittrexTradingSystem::GetAccount() { return m_account; }
-const Account &BittrexTradingSystem::GetAccount() const { return m_account; }
+bool BittrexTradingSystem::AreWithdrawalSupported() const { return true; }
+
+void BittrexTradingSystem::SendWithdrawalTransaction(
+    const std::string &symbol,
+    const Volume &volume,
+    const std::string &address) {
+  boost::format params("currency=%1%&quantity=%2%&address=%3%");
+  params % symbol  // 1
+      % volume     // 2
+      % address;   // 3
+  AccountRequest("/account/withdraw", params.str(), m_settings, GetContext(),
+                 GetLog(), &GetTradingLog())
+      .Send(m_tradingSession);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 

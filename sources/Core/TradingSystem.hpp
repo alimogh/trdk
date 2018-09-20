@@ -133,9 +133,6 @@ class TRDK_CORE_API TradingSystem : virtual public Interactor {
 
   const std::string &GetStringId() const noexcept;
 
-  virtual Account &GetAccount();
-  virtual const Account &GetAccount() const;
-
   virtual bool IsConnected() const = 0;
   void Connect();
 
@@ -195,6 +192,11 @@ class TRDK_CORE_API TradingSystem : virtual public Interactor {
    */
   bool CancelOrder(const OrderId &);
 
+  virtual bool AreWithdrawalSupported() const;
+  void Withdraw(const std::string &symbol,
+                const Volume &,
+                const std::string &destinationInfo);
+
  protected:
   virtual void CreateConnection() = 0;
 
@@ -223,6 +225,10 @@ class TRDK_CORE_API TradingSystem : virtual public Interactor {
       const TimeInForce &) = 0;
 
   virtual void SendCancelOrderTransaction(const OrderTransactionContext &) = 0;
+
+  virtual void SendWithdrawalTransaction(const std::string &symbol,
+                                         const Volume &,
+                                         const std::string &destinationInfo);
 
   virtual void OnTransactionSent(const OrderTransactionContext &);
 
