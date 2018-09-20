@@ -10,7 +10,6 @@
 
 #pragma once
 
-#include "BittrexAccount.hpp"
 #include "BittrexRequest.hpp"
 #include "BittrexUtil.hpp"
 #include "PollingTask.hpp"
@@ -25,13 +24,42 @@ class BittrexTradingSystem : public TradingSystem {
   typedef TradingSystem Base;
 
  private:
-  using Settings = BittrexSettings;
+  struct Settings : Rest::Settings {
+    typedef Rest::Settings Base;
+
+    std::string apiKey;
+    std::string apiSecret;
+
+    explicit Settings(const boost::property_tree::ptree &, ModuleEventsLog &);
+  };
 
   class OrderTransactionRequest;
 
-  class AccountRequest : public BittrexPrivateRequest {
+  class PrivateRequest : public BittrexRequest {
    public:
-    typedef BittrexPrivateRequest Base;
+    typedef BittrexRequest Base;
+
+    explicit PrivateRequest(const std::string &name,
+                            const std::string &uriParams,
+                            const Settings &settings,
+                            const Context &context,
+                            ModuleEventsLog &log,
+                            ModuleTradingLog *tradingLog = nullptr);
+    ~PrivateRequest() override = default;
+
+   protected:
+    void PrepareRequest(const Poco::Net::HTTPClientSession &,
+                        const std::string &,
+                        Poco::Net::HTTPRequest &) const override;
+    void WriteUri(std::string uri, Poco::Net::HTTPRequest &) const override;
+
+   private:
+    const Settings &m_settings;
+  };
+
+  class AccountRequest : public PrivateRequest {
+   public:
+    typedef PrivateRequest Base;
 
     explicit AccountRequest(const std::string &name,
                             const std::string &uriParams,
@@ -82,8 +110,7 @@ class BittrexTradingSystem : public TradingSystem {
 
   bool CheckSymbol(const std::string &) const override;
 
-  Account &GetAccount() override;
-  const Account &GetAccount() const override;
+  bool AreWithdrawalSupported() const override;
 
  protected:
   void CreateConnection() override;
@@ -99,6 +126,10 @@ class BittrexTradingSystem : public TradingSystem {
 
   void SendCancelOrderTransaction(const OrderTransactionContext &) override;
 
+  void SendWithdrawalTransaction(const std::string &,
+                                 const Volume &,
+                                 const std::string &) override;
+
   void OnTransactionSent(const OrderTransactionContext &) override;
 
  private:
@@ -106,7 +137,7 @@ class BittrexTradingSystem : public TradingSystem {
   void UpdateOrders();
   void UpdateOrder(const OrderId &, const boost::property_tree::ptree &);
 
-  boost::posix_time::ptime ParseTime(std::string &&) const;
+  boost::posix_time::ptime ParseTime(std::string) const;
 
   Settings m_settings;
   const boost::posix_time::time_duration m_serverTimeDiff;
@@ -115,8 +146,6 @@ class BittrexTradingSystem : public TradingSystem {
 
   TradingLib::BalancesContainer m_balances;
   BalancesRequest m_balancesRequest;
-
-  BittrexAccount m_account;
 
   std::unique_ptr<Poco::Net::HTTPSClientSession> m_tradingSession;
   std::unique_ptr<Poco::Net::HTTPSClientSession> m_pollingSession;

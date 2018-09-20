@@ -472,7 +472,7 @@ void LivecoinTradingSystem::SendCancelOrderTransaction(
     }
   } catch (const ptr::ptree_error &ex) {
     boost::format error(
-        "Wrong server response to the request \"%1%\" (%2%): \"%3%\"");
+        R"(Wrong server response to the request "%1%" (%2%): "%3%")");
     error % request.GetName()            // 1
         % request.GetRequest().getURI()  // 2
         % ex.what();                     // 3
@@ -484,6 +484,64 @@ void LivecoinTradingSystem::OnTransactionSent(
     const OrderTransactionContext &transaction) {
   Base::OnTransactionSent(transaction);
   m_pollingTask.AccelerateNextPolling();
+}
+
+bool LivecoinTradingSystem::AreWithdrawalSupported() const { return true; }
+
+void LivecoinTradingSystem::SendWithdrawalTransaction(
+    const std::string &symbol,
+    const Volume &volume,
+    const std::string &address) {
+  boost::format params("currency=%1%&amount=%2%&wallet=%3%");
+  params % symbol  // 1
+      % volume     // 2
+      % address;   // 3
+
+  class Request : public PrivateRequest {
+   public:
+    explicit Request(const std::string &name,
+                     const Settings &settings,
+                     const std::string &params,
+                     const Context &context,
+                     ModuleEventsLog &log,
+                     ModuleTradingLog &tradingLog)
+        : PrivateRequest(name,
+                         net::HTTPRequest::HTTP_POST,
+                         settings,
+                         params,
+                         context,
+                         log,
+                         &tradingLog) {}
+    Request(Request &&) = delete;
+    Request(const Request &) = delete;
+    Request &operator=(Request &&) = delete;
+    Request &operator=(const Request &) = delete;
+    ~Request() override = default;
+
+   protected:
+    bool IsPriority() const override { return false; }
+  } request("/payment/out/coin", m_settings, params.str(), GetContext(),
+            GetLog(), GetTradingLog());
+
+  const auto response = boost::get<1>(request.Send(m_tradingSession));
+
+  std::string error;
+  try {
+    error = response.get<std::string>("fault");
+  } catch (const ptr::ptree_error &ex) {
+    boost::format exception(
+        R"(Wrong server response to the request "%1%" (%2%): "%3%")");
+    exception % request.GetName()        // 1
+        % request.GetRequest().getURI()  // 2
+        % ex.what();                     // 3
+    throw Exception(exception.str().c_str());
+  }
+
+  if (!error.empty()) {
+    boost::format exception("Failed to withdraw: \"%1%\"");
+    exception % error;
+    throw Exception(exception.str().c_str());
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

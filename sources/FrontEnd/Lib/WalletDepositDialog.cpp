@@ -49,7 +49,7 @@ WalletDepositDialog::WalletDepositDialog(
     const auto &tradingSystem =
         engine.GetContext().GetTradingSystem(i, TRADING_MODE_LIVE);
     if (targetTradingSystem.GetIndex() == tradingSystem.GetIndex() ||
-        !tradingSystem.GetAccount().IsWithdrawsFunds()) {
+        !tradingSystem.AreWithdrawalSupported()) {
       continue;
     }
     m_pimpl->m_ui.soruce->addItem(

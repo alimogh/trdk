@@ -10,12 +10,11 @@
 
 #include "Prec.hpp"
 #include "BittrexRequest.hpp"
-#include "BittrexUtil.hpp"
 
 using namespace trdk;
 using namespace Lib;
 using namespace Interaction::Rest;
-namespace pt = boost::posix_time;
+
 namespace net = Poco::Net;
 
 BittrexRequest::Response BittrexRequest::Send(
@@ -65,38 +64,4 @@ BittrexRequest::Response BittrexRequest::Send(
 FloodControl &BittrexRequest::GetFloodControl() const {
   static auto result = CreateDisabledFloodControl();
   return *result;
-}
-
-BittrexPrivateRequest::BittrexPrivateRequest(const std::string &name,
-                                             const std::string &uriParams,
-                                             const BittrexSettings &settings,
-                                             const Context &context,
-                                             ModuleEventsLog &log,
-                                             ModuleTradingLog *tradingLog)
-    : Base(name,
-           name,
-           AppendUriParams("apikey=" + settings.apiKey, uriParams),
-           context,
-           log,
-           tradingLog),
-      m_settings(settings) {}
-
-void BittrexPrivateRequest::PrepareRequest(
-    const net::HTTPClientSession &session,
-    const std::string &body,
-    net::HTTPRequest &request) const {
-  using namespace Crypto;
-  const auto &digest =
-      Hmac::CalcSha512Digest((session.secure() ? "https://" : "http://") +
-                                 session.getHost() + GetRequest().getURI(),
-                             m_settings.apiSecret);
-  request.set("apisign", EncodeToHex(&digest[0], digest.size()));
-  Base::PrepareRequest(session, body, request);
-}
-
-void BittrexPrivateRequest::WriteUri(std::string uri,
-                                     net::HTTPRequest &request) const {
-  Base::WriteUri(
-      uri + "?nonce=" + to_iso_string(pt::microsec_clock::universal_time()),
-      request);
 }

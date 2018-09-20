@@ -685,14 +685,6 @@ void MainWindow::ShowWalletSettings(QString symbol,
 
 void MainWindow::ShowWalletDepositDialog(QString symbol,
                                          const TradingSystem &tradingSystem) {
-  if (!tradingSystem.GetAccount().IsWithdrawsFunds()) {
-    QMessageBox::warning(this, tr("Funds receptions are not supported"),
-                         tr("Wallet does not support funds reception, so it "
-                            "cannot be deposited."),
-                         QMessageBox::Ok);
-    return;
-  }
-
   WalletsConfig config(m_engine);
   for (;;) {
     const auto configNode = "wallets";
@@ -725,9 +717,9 @@ void MainWindow::ShowWalletDepositDialog(QString symbol,
   }
 
   try {
-    dialog.GetSource().GetAccount().WithdrawFunds(
-        dialog.GetSymbol().toStdString(), dialog.GetVolume(),
-        dialog.GetTargetAddress().toStdString());
+    dialog.GetSource().Withdraw(dialog.GetSymbol().toStdString(),
+                                dialog.GetVolume(),
+                                dialog.GetTargetAddress().toStdString());
   } catch (const Exception &ex) {
     const auto &error =
         QString(tr("Failed to deposit funds: \"%1\".")).arg(ex.what());
