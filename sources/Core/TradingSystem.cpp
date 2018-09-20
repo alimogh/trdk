@@ -10,7 +10,6 @@
 
 #include "Prec.hpp"
 #include "TradingSystem.hpp"
-#include "Account.hpp"
 #include "Balances.hpp"
 #include "DropCopy.hpp"
 #include "OrderStatusHandler.hpp"
@@ -192,13 +191,13 @@ class TradingSystem::Implementation {
           [&ex](TradingRecord &record) { record % std::string(ex.what()); });
       try {
         throw;
-      } catch (const CommunicationError &ex) {
+      } catch (const CommunicationError &reEx) {
         m_log.Debug(
             "Communication error while sending order transaction: \"%1%\".",
-            ex.what());
-      } catch (const std::exception &ex) {
+            reEx.what());
+      } catch (const std::exception &reEx) {
         m_log.Error("Error while sending order transaction: \"%1%\".",
-                    ex.what());
+                    reEx.what());
       }
       ConfirmOrder(*order, ORDER_STATUS_ERROR, boost::none);
       throw;
@@ -1023,21 +1022,56 @@ void TradingSystem::OnOrderError(const pt::ptime &time,
                          emptyOrderTransactionContextCallback);
 }
 
-namespace {
-Account &GetDefaultAccount() {
-  static class DummyAccount : public Account {
-   public:
-    ~DummyAccount() override = default;
+bool TradingSystem::AreWithdrawalSupported() const { return false; }
+void TradingSystem::Withdraw(const std::string &symbol,
+                             const Volume &volume,
+                             const std::string &destinationInfo) {
+  m_pimpl->m_tradingLog.Write(
+      "{'withdrawal': {'new': {'symbol': '%1%', 'vol': %2%, 'destInfo': "
+      "'%3%'}}}",
+      [&](TradingRecord &record) {
+        record % symbol         // 1
+            % volume            // 2
+            % destinationInfo;  // 3
+      });
 
-    bool IsWithdrawsFunds() const override { return false; }
-    void WithdrawFunds(const std::string &,
-                       const Volume &,
-                       const std::string &) override {
-      throw Exception("Trading system account doesn't withdraw funds");
+  try {
+    SendWithdrawalTransaction(symbol, volume, destinationInfo);
+  } catch (const std::exception &ex) {
+    m_pimpl->m_tradingLog.Write(
+        "{'withdrawal': {'sendError': {'reason': '%1%'}}}",
+        [&ex](TradingRecord &record) { record % std::string(ex.what()); });
+    try {
+      throw;
+    } catch (const CommunicationError &reEx) {
+      m_pimpl->m_log.Debug(
+          "Communication error while sending withdrawal transaction: \"%1%\".",
+          reEx.what());
+    } catch (const std::exception &reEx) {
+      m_pimpl->m_log.Error(
+          "Error while sending withdrawal transaction: \"%1%\".", reEx.what());
     }
-  } result;
-  return result;
+    throw;
+  } catch (...) {
+    m_pimpl->m_tradingLog.Write(
+        "{'withdrawal': {'sendError': {'reason': 'Unknown exception'}}}");
+    m_pimpl->m_log.Error("Unknown error while sending withdrawal transaction.");
+    AssertFailNoException();
+    throw;
+  }
+
+  m_pimpl->m_tradingLog.Write(
+      "{'withdrawal': {'sent': {'symbol': '%1%', 'vol': %2%, 'destInfo': "
+      "'%3%'}}}",
+      [&](TradingRecord &record) {
+        record % symbol         // 1
+            % volume            // 2
+            % destinationInfo;  // 3
+      });
 }
-}  // namespace
-Account &TradingSystem::GetAccount() { return GetDefaultAccount(); }
-const Account &TradingSystem::GetAccount() const { return GetDefaultAccount(); }
+
+void TradingSystem::SendWithdrawalTransaction(const std::string &,
+                                              const Volume &,
+                                              const std::string &) {
+  throw Exception("Trading system doesn't support withdrawal");
+}

@@ -60,30 +60,6 @@ class BittrexPublicRequest : public BittrexRequest {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-
-class BittrexPrivateRequest : public BittrexRequest {
- public:
-  typedef BittrexRequest Base;
-
-  explicit BittrexPrivateRequest(const std::string &name,
-                                 const std::string &uriParams,
-                                 const BittrexSettings &settings,
-                                 const Context &context,
-                                 ModuleEventsLog &log,
-                                 ModuleTradingLog *tradingLog = nullptr);
-  ~BittrexPrivateRequest() override = default;
-
- protected:
-  void PrepareRequest(const Poco::Net::HTTPClientSession &,
-                      const std::string &,
-                      Poco::Net::HTTPRequest &) const override;
-  void WriteUri(std::string uri, Poco::Net::HTTPRequest &) const override;
-
- private:
-  const BittrexSettings &m_settings;
-};
-
-////////////////////////////////////////////////////////////////////////////////
 }  // namespace Rest
 }  // namespace Interaction
 }  // namespace trdk

@@ -18,7 +18,6 @@ class PriceBook;
 
 class Security;
 
-class Account;
 class Balances;
 
 class OrderTransactionContext;

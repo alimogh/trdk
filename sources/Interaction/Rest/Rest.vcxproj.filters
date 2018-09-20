@@ -223,9 +223,6 @@
     <ClCompile Include="CoinbaseExchange.cpp">
       <Filter>Coinbase</Filter>
     </ClCompile>
-    <ClCompile Include="BittrexAccount.cpp">
-      <Filter>Bittrex\Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CexioMarketDataSource.hpp">
@@ -338,9 +335,6 @@
     </ClInclude>
     <ClInclude Include="Common.hpp">
       <Filter>General\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BittrexAccount.hpp">
-      <Filter>Bittrex\Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
