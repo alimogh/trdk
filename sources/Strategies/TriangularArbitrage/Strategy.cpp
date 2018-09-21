@@ -47,11 +47,14 @@ class BuyLegPolicy : public LegPolicy {
   Qty GetOrderQtyAllowedByBalance(const TradingSystem &tradingSystem,
                                   const Security &security,
                                   const Price &price) const override {
+    // Also see GetOrderQtyAllowedByBalance method
+    // OrderPolicy::GetOpenOrderPrice.
+    const auto correctedPrice = price * 1.03;
     auto balance = tradingSystem.GetBalances().GetAvailableToTrade(
         security.GetSymbol().GetQuoteSymbol());
-    balance -= tradingSystem.CalcCommission(balance / price, price,
+    balance -= tradingSystem.CalcCommission(balance / correctedPrice, price,
                                             ORDER_SIDE_BUY, security);
-    return balance / price;
+    return balance / correctedPrice;
   }
 
   Qty CalcPnl(const Qty &thisLegQty, const Qty &leg1Qty) const override {
