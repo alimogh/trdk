@@ -15,9 +15,11 @@ using namespace trdk;
 using namespace Strategies::TriangularArbitrage;
 
 Price OrderPolicy::GetOpenOrderPrice(Position &position) const {
-  return Base::GetOpenOrderPrice(position) * (position.IsLong() ? 1.05 : 0.95);
+  // Also see GetOrderQtyAllowedByBalance method.
+  return Base::GetOpenOrderPrice(position) * (position.IsLong() ? 1.03 : 0.97);
 }
 
 Price OrderPolicy::GetCloseOrderPrice(Position &position) const {
-  return Base::GetCloseOrderPrice(position) + (position.IsLong() ? 0.95 : 1.05);
+  // Also see GetOrderQtyAllowedByBalance method.
+  return Base::GetCloseOrderPrice(position) + (position.IsLong() ? 0.97 : 1.03);
 }
