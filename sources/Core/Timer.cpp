@@ -15,8 +15,7 @@
 #include "TradingLog.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-
+using namespace Lib;
 namespace pt = boost::posix_time;
 
 namespace {
@@ -116,7 +115,7 @@ class Timer::Implementation : private boost::noncopyable {
   }
 
   void Schedule(const pt::time_duration &time,
-                const boost::function<void()> &&callback,
+                boost::function<void()> callback,
                 Scope &scope) {
     {
       const Lock lock(m_mutex);
@@ -291,12 +290,12 @@ size_t TimerScope::Cancel() noexcept {
 
 Timer::Timer(const Context &context)
     : m_pimpl(boost::make_unique<Implementation>(context)) {}
-
+Timer::Timer(Timer &&) noexcept = default;
 Timer::~Timer() = default;
 
 void Timer::Schedule(const pt::time_duration &time,
-                     boost::function<void()> &&callback,
-                     Timer::Scope &scope) const {
+                     boost::function<void()> callback,
+                     Scope &scope) const {
   Assert(!scope.m_timer || scope.m_timer == this);
   Assert(time != pt::not_a_date_time);
   if (scope.m_timer && scope.m_timer != this) {
@@ -308,7 +307,7 @@ void Timer::Schedule(const pt::time_duration &time,
   scope.m_timer = this;
 }
 
-void Timer::Schedule(boost::function<void()> &&callback, Scope &scope) const {
+void Timer::Schedule(boost::function<void()> callback, Scope &scope) const {
   m_pimpl->Schedule(pt::not_a_date_time, std::move(callback), scope);
 }
 

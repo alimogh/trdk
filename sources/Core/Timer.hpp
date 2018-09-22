@@ -10,21 +10,19 @@
 
 #pragma once
 
-#include "Api.h"
-
 namespace trdk {
 
-////////////////////////////////////////////////////////////////////////////////
-
 class TRDK_CORE_API TimerScope {
-  friend class trdk::Timer;
+  friend class Timer;
 
  public:
   typedef uintmax_t Id;
 
- public:
   explicit TimerScope();
   TimerScope(TimerScope &&) = default;
+  TimerScope(const TimerScope &) = delete;
+  TimerScope &operator=(TimerScope &&) = delete;
+  TimerScope &operator=(const TimerScope &) = delete;
   ~TimerScope();
 
   void Swap(TimerScope &rhs) noexcept {
@@ -32,11 +30,6 @@ class TRDK_CORE_API TimerScope {
     std::swap(m_timer, rhs.m_timer);
   }
 
- private:
-  TimerScope(const TimerScope &);
-  const TimerScope operator=(const TimerScope &);
-
- public:
   //! If scope is not empty it activated for one or more scheduling.
   bool IsEmpty() const { return m_timer ? false : true; }
 
@@ -48,27 +41,23 @@ class TRDK_CORE_API TimerScope {
   const Timer *m_timer;
 };
 
-////////////////////////////////////////////////////////////////////////////////
-
 class TRDK_CORE_API Timer {
-  friend class trdk::TimerScope;
+  friend class TimerScope;
 
  public:
-  typedef trdk::TimerScope Scope;
+  typedef TimerScope Scope;
 
- public:
-  explicit Timer(const trdk::Context &);
+  explicit Timer(const Context &);
+  Timer(Timer &&) noexcept;
+  Timer(const Timer &) = delete;
+  const Timer &operator=(Timer &&) = delete;
+  const Timer &operator=(const Timer &) = delete;
   ~Timer();
 
- private:
-  Timer(const Timer &);
-  const Timer &operator=(const Timer &);
-
- public:
   void Schedule(const boost::posix_time::time_duration &,
-                boost::function<void()> &&,
+                boost::function<void()>,
                 Scope &) const;
-  void Schedule(boost::function<void()> &&, Scope &) const;
+  void Schedule(boost::function<void()>, Scope &) const;
 
   void Stop();
 
@@ -77,5 +66,4 @@ class TRDK_CORE_API Timer {
   std::unique_ptr<Implementation> m_pimpl;
 };
 
-////////////////////////////////////////////////////////////////////////////////
 }  // namespace trdk

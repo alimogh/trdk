@@ -10,9 +10,6 @@
 
 #pragma once
 
-#include "OperationModelUtils.hpp"
-#include "OrderModelUtils.hpp"
-
 namespace trdk {
 namespace FrontEnd {
 namespace Detail {
@@ -26,10 +23,10 @@ struct BalanceRecord {
   QTime time;
   const bool isUsed;
 
-  explicit BalanceRecord(const std::string &symbol,
-                         const Volume &available,
-                         const Volume &locked,
-                         bool isUsed);
+      explicit BalanceRecord(const std::string &symbol,
+                             const Volume &available,
+                             const Volume &locked,
+                             bool isUsed);
   void Update(const Volume &newAvailable, const Volume &newLocked);
   Volume GetTotal() const;
 };

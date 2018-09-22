@@ -18,7 +18,8 @@ class TRDK_FRONTEND_LIB_API WalletSettingsDialog : public QDialog {
  public:
   typedef QDialog Base;
 
-  explicit WalletSettingsDialog(QString symbol,
+  explicit WalletSettingsDialog(Engine &,
+                                QString symbol,
                                 const TradingSystem &,
                                 WalletsConfig,
                                 bool isAddressRequired,

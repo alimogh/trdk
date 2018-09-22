@@ -14,6 +14,7 @@
 #include "Charts/ChartToolbarWidget.hpp"
 #include "Lib/BalanceListModel.hpp"
 #include "Lib/BalanceListView.hpp"
+#include "Lib/DropCopy.hpp"
 #include "Lib/Engine.hpp"
 #include "Lib/MarketScannerModel.hpp"
 #include "Lib/MarketScannerView.hpp"
@@ -35,7 +36,6 @@
 #include "Lib/TotalResultsReportView.hpp"
 #include "Lib/WalletDepositDialog.hpp"
 #include "Lib/WalletSettingsDialog.hpp"
-#include "Lib/WalletsConfig.hpp"
 
 using namespace trdk;
 using namespace Lib;
@@ -67,6 +67,8 @@ MainWindow::MainWindow(FrontEnd::Engine &engine,
   m_ui.centalTabs->setCurrentIndex(0);
 
   ConnectSignals();
+
+  ReloadWalletsConfig();
 }
 
 MainWindow::~MainWindow() = default;
@@ -135,6 +137,9 @@ void MainWindow::ConnectSignals() {
                  this, &MainWindow::CreateNewStandaloneOrderListWindow));
   Verify(connect(m_ui.createNewTotalResultsReportWindow, &QAction::triggered,
                  this, &MainWindow::CreateNewTotalResultsReportWindow));
+
+  Verify(connect(&m_engine.GetDropCopy(), &FrontEnd::DropCopy::BalanceUpdate,
+                 this, &MainWindow::RechargeWallet, Qt::QueuedConnection));
 }
 
 FrontEnd::Engine &MainWindow::GetEngine() { return m_engine; }
@@ -261,7 +266,7 @@ void MainWindow::CreateNewChartWindow(const QString &symbol) {
         : QMainWindow(parent),
           m_symbol(symbol.toStdString()),
           m_engine(engine) {}
-    ChartMainWindow(ChartMainWindow &&) = default;
+    ChartMainWindow(ChartMainWindow &&) = delete;
     ChartMainWindow(const ChartMainWindow &) = delete;
     ChartMainWindow &operator=(ChartMainWindow &&) = delete;
     ChartMainWindow &operator=(const ChartMainWindow &) = delete;
@@ -325,7 +330,7 @@ void MainWindow::CreateNewChartWindow(const QString &symbol) {
       Verify(connect(
           &toolbar, &ChartToolbarWidget::NumberOfSecondsInFrameChange, &chart,
           [&windowRef, &chart,
-           numberOfFrames](size_t newNumberOfSecondsInFrame) {
+           numberOfFrames](const size_t newNumberOfSecondsInFrame) {
             windowRef.StopBars();
             windowRef.StartBars(numberOfFrames, newNumberOfSecondsInFrame);
             chart.SetNumberOfSecondsInFrame(newNumberOfSecondsInFrame);
@@ -669,28 +674,19 @@ void MainWindow::ShowRequestedStrategy(const QString &title,
   }
 }
 
-void MainWindow::ShowWalletSettings(QString symbol,
+void MainWindow::ShowWalletSettings(const QString symbol,
                                     const TradingSystem &tradingSystem) {
-  const auto configNode = "wallets";
-  WalletSettingsDialog dialog(
-      std::move(symbol), tradingSystem,
-      WalletsConfig{m_engine, m_engine.LoadConfig().get_child(configNode, {})},
-      false, this);
+  WalletSettingsDialog dialog(m_engine, symbol, tradingSystem, m_walletsConfig,
+                              false, this);
   if (dialog.exec() == QDialog::Accepted) {
-    auto config = m_engine.LoadConfig();
-    config.put_child(configNode, dialog.GetConfig().Dump());
-    m_engine.StoreConfig(config);
+    StoreWalletsConfig(dialog.GetConfig().Dump(), symbol, tradingSystem);
   }
 }
 
 void MainWindow::ShowWalletDepositDialog(QString symbol,
                                          const TradingSystem &tradingSystem) {
-  WalletsConfig config(m_engine);
   for (;;) {
-    const auto configNode = "wallets";
-    config = WalletsConfig{m_engine,
-                           m_engine.LoadConfig().get_child(configNode, {})};
-    if (!config.GetAddress(symbol, tradingSystem).isEmpty()) {
+    if (!m_walletsConfig.GetAddress(symbol, tradingSystem).isEmpty()) {
       break;
     }
     if (QMessageBox::information(this, tr("Address is not set"),
@@ -700,18 +696,17 @@ void MainWindow::ShowWalletDepositDialog(QString symbol,
         QMessageBox::Ok) {
       return;
     }
-    WalletSettingsDialog settingsDialog(symbol, tradingSystem,
-                                        std::move(config), true, this);
+    WalletSettingsDialog settingsDialog(m_engine, symbol, tradingSystem,
+                                        m_walletsConfig, true, this);
     if (settingsDialog.exec() != QDialog::Accepted) {
       return;
     }
-    auto fullConfig = m_engine.LoadConfig();
-    fullConfig.put_child(configNode, settingsDialog.GetConfig().Dump());
-    m_engine.StoreConfig(fullConfig);
+    StoreWalletsConfig(settingsDialog.GetConfig().Dump(), symbol,
+                       tradingSystem);
   }
 
-  WalletDepositDialog dialog(m_engine, std::move(symbol), tradingSystem, config,
-                             this);
+  WalletDepositDialog dialog(m_engine, std::move(symbol), tradingSystem,
+                             m_walletsConfig, this);
   if (dialog.exec() != WalletDepositDialog::Accepted) {
     return;
   }
@@ -726,4 +721,86 @@ void MainWindow::ShowWalletDepositDialog(QString symbol,
     QMessageBox::critical(this, tr("Failed to deposit funds."), error,
                           QMessageBox::Ok);
   }
+}
+
+void MainWindow::RechargeWallet(const TradingSystem *tradingSystem,
+                                const std::string &symbol,
+                                const Volume &available,
+                                const Volume &locked) {
+  const auto &symbolIt =
+      m_walletsConfig.Get().find(QString::fromStdString(symbol));
+  if (symbolIt == m_walletsConfig.Get().cend()) {
+    return;
+  }
+  const auto &tradingSystemIt = symbolIt.value().find(tradingSystem);
+  if (tradingSystemIt == symbolIt.value().cend()) {
+    return;
+  }
+  const auto &recharging = tradingSystemIt->second.wallet.recharging;
+  if (!recharging) {
+    return;
+  }
+  Assert(!tradingSystemIt->second.wallet.address->isEmpty());
+  auto transactionVolume =
+      recharging->minDepositToRecharge - available + locked;
+  if (transactionVolume < 0) {
+    return;
+  }
+  if (transactionVolume < recharging->minRechargingTransactionVolume) {
+    transactionVolume = recharging->minRechargingTransactionVolume;
+  }
+  const auto &sourceIt = symbolIt->find(recharging->source);
+  Assert(sourceIt != symbolIt->cend());
+  if (sourceIt == symbolIt->cend()) {
+    return;
+  }
+  Assert(sourceIt->second.source);
+  if (!sourceIt->second.source) {
+    return;
+  }
+  const auto availableInSource =
+      recharging->source->GetBalances().GetAvailableToTrade(symbol) -
+      sourceIt->second.source->minDeposit;
+  if (availableInSource <= 0) {
+    return;
+  }
+  if (availableInSource < transactionVolume) {
+    transactionVolume = availableInSource;
+  }
+  auto &source = *recharging->source;
+  const auto address = *tradingSystemIt->second.wallet.address;
+  m_engine.GetContext().GetTimer().Schedule(
+      [&source, address, symbol, transactionVolume]() {
+        source.Withdraw(symbol, transactionVolume, address.toStdString());
+      },
+      m_timerScope);
+}
+
+void MainWindow::ReloadWalletsConfig() {
+  m_walletsConfig =
+      WalletsConfig{m_engine, m_engine.LoadConfig().get_child("wallets", {})};
+}
+
+void MainWindow::StoreWalletsConfig(const ptr::ptree &config,
+                                    const QString &symbolQStr,
+                                    const TradingSystem &tradingSystem) {
+  auto fullConfig = m_engine.LoadConfig();
+  fullConfig.put_child("wallets", config);
+  m_engine.StoreConfig(fullConfig);
+
+  ReloadWalletsConfig();
+
+  const auto &symbol = symbolQStr.toStdString();
+  Volume available = 0;
+  Volume locked = 0;
+  tradingSystem.GetBalances().ForEach(
+      [&symbol, &available, &locked](const std::string &balanceSymbol,
+                                     const Volume &balanceAvailable,
+                                     const Volume &balanceLocked) {
+        if (symbol == balanceSymbol) {
+          available = balanceAvailable;
+          locked = balanceLocked;
+        }
+      });
+  RechargeWallet(&tradingSystem, symbol, available, locked);
 }
