@@ -304,7 +304,8 @@ class ta::Strategy::Implementation : private boost::noncopyable {
           return configurationError;
         } else
 #else
-        ReportSignal("config. error", opportunity, false);
+        // Too many records in log, so it disabled:
+        // ReportSignal("config. error", opportunity, false);
         {
           std::vector<std::string> points;
           for (size_t i = 0; i < points.size(); ++i) {
