@@ -354,8 +354,8 @@ class Strategy::Implementation : private boost::noncopyable {
   PositionMutableList m_positions;
   sig::signal<PositionUpdateSlotSignature> m_positionUpdateSignal;
 
-  boost::shared_mutex m_proftRatioMutex;
-  boost::optional<Double> m_proftRatio;
+  boost::shared_mutex m_profitRatioMutex;
+  boost::optional<Double> m_profitRatio;
   SignalTrait<ProfitScannerSlotSignature>::Signal m_profitScannerSignal;
 
   std::vector<Position*> m_delayedPositionToForget;
@@ -988,18 +988,18 @@ Strategy::ProfitScannerSlotConnection Strategy::SubscribeToProfitScanner(
 
 void Strategy::SetProfitOpportunityRatio(const Double& ratio) {
   const boost::unique_lock<boost::shared_mutex> lock(
-      m_pimpl->m_proftRatioMutex);
-  if (m_pimpl->m_proftRatio == ratio) {
+      m_pimpl->m_profitRatioMutex);
+  if (m_pimpl->m_profitRatio == ratio) {
     return;
   }
-  m_pimpl->m_proftRatio = ratio;
-  m_pimpl->m_profitScannerSignal(*m_pimpl->m_proftRatio);
+  m_pimpl->m_profitRatio = ratio;
+  m_pimpl->m_profitScannerSignal(*m_pimpl->m_profitRatio);
 }
 
 boost::optional<Double> Strategy::GetProfitOpportunityRatio() const {
   const boost::shared_lock<boost::shared_mutex> lock(
-      m_pimpl->m_proftRatioMutex);
-  return m_pimpl->m_proftRatio;
+      m_pimpl->m_profitRatioMutex);
+  return m_pimpl->m_profitRatio;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

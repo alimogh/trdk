@@ -305,3 +305,20 @@ void Huobi::TradingSystem::UpdateOrder(const OrderId &orderId) {
                  boost::none, ex.what());
   }
 }
+
+bool Huobi::TradingSystem::AreWithdrawalSupported() const { return true; }
+
+void Huobi::TradingSystem::SendWithdrawalTransaction(
+    const std::string &symbol,
+    const Volume &volume,
+    const std::string &address) {
+  boost::format params("currency=%1%&amount=%2%&address=%3%");
+  params % symbol  // 1
+      % volume     // 2
+      % address;   // 3
+
+  PrivateRequest("v1/dw/withdraw/api/create", net::HTTPRequest::HTTP_POST,
+                 params.str(), GetContext(), m_settings, false, GetLog(),
+                 &GetTradingLog())
+      .Send(m_tradingSession);
+}

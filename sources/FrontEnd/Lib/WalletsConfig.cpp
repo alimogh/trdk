@@ -16,10 +16,8 @@ using namespace trdk;
 using namespace FrontEnd;
 namespace ptr = boost::property_tree;
 
-WalletsConfig::WalletsConfig(const FrontEnd::Engine &engine)
-    : m_engine(&engine) {}
-WalletsConfig::WalletsConfig(const FrontEnd::Engine &engine,
-                             const ptr::ptree &config)
+WalletsConfig::WalletsConfig(FrontEnd::Engine &engine) : m_engine(&engine) {}
+WalletsConfig::WalletsConfig(FrontEnd::Engine &engine, const ptr::ptree &config)
     : m_engine(&engine), m_config(config) {}
 
 const WalletsConfig::Symbols &WalletsConfig::Get() const {
@@ -101,11 +99,10 @@ void WalletsConfig::RemoveSource(const QString &symbol,
   }
 }
 
-const TradingSystem *WalletsConfig::FindTradingSystem(
-    const std::string &name) const {
-  const auto &context = m_engine->GetContext();
+TradingSystem *WalletsConfig::FindTradingSystem(const std::string &name) const {
+  auto &context = m_engine->GetContext();
   for (size_t i = 0; i < context.GetNumberOfTradingSystems(); ++i) {
-    const auto &result = context.GetTradingSystem(i, TRADING_MODE_LIVE);
+    auto &result = context.GetTradingSystem(i, TRADING_MODE_LIVE);
     if (result.GetInstanceName() == name) {
       return &result;
     }
@@ -142,7 +139,7 @@ WalletsConfig::Symbols WalletsConfig::Load() const {
           const auto recharging =
               symbolNode.second.get_child_optional("recharging");
           if (recharging) {
-            const auto &sourceTradingSystem =
+            const auto sourceTradingSystem =
                 FindTradingSystem(recharging->get<std::string>("source"));
             if (!sourceTradingSystem) {
               continue;

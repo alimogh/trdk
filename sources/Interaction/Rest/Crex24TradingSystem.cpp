@@ -322,7 +322,7 @@ Crex24TradingSystem::SendOrderTransaction(trdk::Security &security,
   }
   const auto &product = productIt->second;
 
-  boost::format requestParams("\"Pair\":\"%1%\",\"Course\":%2%,\"Volume\":%3%");
+  boost::format requestParams(R"("Pair":"%1%","Course":%2%,"Volume":%3%)");
   requestParams % product.id  // 1
       % *price                // 2
       % qty;                  // 3
@@ -338,7 +338,7 @@ Crex24TradingSystem::SendOrderTransaction(trdk::Security &security,
         *this, response.get<OrderId>("Id"));
   } catch (const ptr::ptree_error &ex) {
     boost::format error(
-        "Wrong server response to the request \"%1%\" (%2%): \"%3%\"");
+        R"(Wrong server response to the request "%1%" (%2%): "%3%")");
     error % request.GetName()            // 1
         % request.GetRequest().getURI()  // 2
         % ex.what();                     // 3
@@ -361,6 +361,21 @@ void Crex24TradingSystem::OnTransactionSent(
     const trdk::OrderTransactionContext &transaction) {
   Base::OnTransactionSent(transaction);
   m_pollingTask.AccelerateNextPolling();
+}
+
+bool Crex24TradingSystem::AreWithdrawalSupported() const { return true; }
+
+void Crex24TradingSystem::SendWithdrawalTransaction(
+    const std::string &symbol,
+    const Volume &volume,
+    const std::string &address) {
+  boost::format requestParams(R"("Currency":"%1%","Sum":%2%,"Address":%3%)");
+  requestParams % symbol  // 1
+      % volume            // 2
+      % address;          // 3
+  PrivateRequest("Withdraw", requestParams.str(), m_settings, m_nonces, true,
+                 GetContext(), GetLog(), &GetTradingLog())
+      .Send(m_tradingSession);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

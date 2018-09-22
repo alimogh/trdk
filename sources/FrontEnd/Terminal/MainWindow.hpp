@@ -11,6 +11,7 @@
 #pragma once
 
 #include "Lib/ModuleApi.hpp"
+#include "Lib/WalletsConfig.hpp"
 #include "ui_MainWindow.h"
 
 namespace trdk {
@@ -38,6 +39,11 @@ class MainWindow : public QMainWindow {
                              const QString &params);
   void ShowWalletSettings(QString symbol, const TradingSystem &);
   void ShowWalletDepositDialog(QString symbol, const TradingSystem &);
+  void ReloadWalletsConfig();
+  void RechargeWallet(const TradingSystem *,
+                      const std::string &symbol,
+                      const Volume &available,
+                      const Volume &locked);
 
  private:
   void ConnectSignals();
@@ -59,11 +65,19 @@ class MainWindow : public QMainWindow {
   void EditExchangeList();
   void AddDefaultSymbol();
 
+  void StoreWalletsConfig(const boost::property_tree::ptree &,
+                          const QString &symbol,
+                          const TradingSystem &);
+
   Engine &m_engine;
   Ui::MainWindow m_ui;
   std::vector<std::unique_ptr<Lib::Dll>> &m_moduleDlls;
 
   boost::unordered_map<const Security *, QWidget *> m_orderWindows;
+
+  WalletsConfig m_walletsConfig{m_engine};
+
+  TimerScope m_timerScope;
 };
 }  // namespace Terminal
 }  // namespace FrontEnd

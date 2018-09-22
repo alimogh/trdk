@@ -46,15 +46,13 @@ class BuyLegPolicy : public LegPolicy {
 
   Qty GetOrderQtyAllowedByBalance(const TradingSystem &tradingSystem,
                                   const Security &security,
-                                  const Price &price) const override {
-    // Also see GetOrderQtyAllowedByBalance method
-    // OrderPolicy::GetOpenOrderPrice.
-    const auto correctedPrice = price * 1.03;
+                                  const Price &marketPrice) const override {
+    const auto orderPrice = CorrectMarketPriceToOrderPrice(marketPrice, true);
     auto balance = tradingSystem.GetBalances().GetAvailableToTrade(
         security.GetSymbol().GetQuoteSymbol());
-    balance -= tradingSystem.CalcCommission(balance / correctedPrice, price,
+    balance -= tradingSystem.CalcCommission(balance / orderPrice, orderPrice,
                                             ORDER_SIDE_BUY, security);
-    return balance / correctedPrice;
+    return balance / orderPrice;
   }
 
   Qty CalcPnl(const Qty &thisLegQty, const Qty &leg1Qty) const override {
@@ -306,7 +304,8 @@ class ta::Strategy::Implementation : private boost::noncopyable {
           return configurationError;
         } else
 #else
-        ReportSignal("config. error", opportunity, false);
+        // Too many records in log, so it disabled:
+        // ReportSignal("config. error", opportunity, false);
         {
           std::vector<std::string> points;
           for (size_t i = 0; i < points.size(); ++i) {

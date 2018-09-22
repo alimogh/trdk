@@ -15,10 +15,12 @@
 
 #include "Common/Common.hpp"
 #include "Lib/Common.hpp"
+#include "Core/Balances.hpp"
 #include "Core/Context.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/Security.hpp"
 #include "Core/Settings.hpp"
+#include "Core/Timer.hpp"
 #include "Core/TradingSystem.hpp"
 #include "Engine/Fwd.hpp"
 #include "Lib/Util.hpp"
