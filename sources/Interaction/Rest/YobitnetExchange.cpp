@@ -32,7 +32,7 @@ namespace ptr = boost::property_tree;
 
 namespace {
 
-const auto newOrderSeachPeriod = pt::minutes(2);
+const auto newOrderSearchPeriod = pt::minutes(2);
 
 struct Settings : Rest::Settings {
   struct Auth {
@@ -61,7 +61,6 @@ struct Settings : Rest::Settings {
       }
     }
     Log(log);
-    Validate();
   }
 
   void Log(ModuleEventsLog& log) {
@@ -74,8 +73,6 @@ struct Settings : Rest::Settings {
                tradingAuth->secret.empty() ? "not set" : "is set");  // 2
     }
   }
-
-  void Validate() {}
 };
 
 struct Auth {
@@ -482,6 +479,8 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     return m_symbolListHint;
   }
 
+  bool AreWithdrawalSupported() const override { return true; }
+
  protected:
   void CreateConnection() override {
     GetTsLog().Debug(
@@ -649,6 +648,18 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
           % ex.what();                     // 3
       throw Exception(error.str().c_str());
     }
+  }
+
+  void SendWithdrawalTransaction(const std::string& symbol,
+                                 const Volume& volume,
+                                 const std::string& address) override {
+    boost::format params("coinName=%1%&amount=%2%&address=%3%");
+    params % symbol  // 1
+        % volume     // 2
+        % address;   // 3
+    TradeRequest("WithdrawCoinsToAddress", m_tradingAuth, false, params.str(),
+                 GetContext(), GetTsLog(), &GetTsTradingLog())
+        .Send(m_tradingSession);
   }
 
  private:
@@ -1054,13 +1065,13 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
                 order.get<Qty>("amount") > qty ||
                 order.get<Price>("rate") != price ||
                 ParseTimeStamp(order, "timestamp_created") +
-                        newOrderSeachPeriod <
+                        newOrderSearchPeriod <
                     startTime) {
               return;
             }
             Verify(orderIds.emplace(std::move(orderId)).second);
           });
-      ForEachRemoteTrade(productId, startTime - newOrderSeachPeriod,
+      ForEachRemoteTrade(productId, startTime - newOrderSearchPeriod,
                          m_tradingSession, m_tradingAuth, true,
                          [&](const std::string&, const ptr::ptree& trade) {
                            const auto& orderId = trade.get<OrderId>("order_id");
@@ -1071,7 +1082,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
                            orderIds.emplace(std::move(orderId));
                          });
 
-      for (const auto& orderId : orderIds) {
+      for (auto& orderId : orderIds) {
         TradeRequest request(
             "OrderInfo", m_tradingAuth, true,
             "order_id=" + boost::lexical_cast<std::string>(orderId),
@@ -1084,7 +1095,8 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
           AssertEq(side, order.get<std::string>("type"));
           if (order.get<Qty>("start_amount") != qty ||
               order.get<Price>("rate") != price ||
-              ParseTimeStamp(order, "timestamp_created") + newOrderSeachPeriod <
+              ParseTimeStamp(order, "timestamp_created") +
+                      newOrderSearchPeriod <
                   startTime) {
             continue;
           }
@@ -1111,7 +1123,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       const std::string& productId,
       std::unique_ptr<net::HTTPSClientSession>& session,
       Auth& auth,
-      bool isPriority,
+      const bool isPriority,
       const Callback& callback) const {
     TradeRequest request("ActiveOrders", auth, isPriority, "pair=" + productId,
                          GetContext(), GetTsLog(), &GetTsTradingLog());
@@ -1131,7 +1143,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
                           const pt::ptime& tradeListStartTime,
                           std::unique_ptr<net::HTTPSClientSession>& session,
                           Auth& auth,
-                          bool isPriority,
+                          const bool isPriority,
                           const Callback& callback) const {
     TradeRequest request("TradeHistory", auth, isPriority,
                          "pair=" + productId + "&since=" +
@@ -1157,7 +1169,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   }
 
   void RegisterLastOrder(const pt::ptime& startTime, const OrderId& id) {
-    const auto& start = startTime - newOrderSeachPeriod;
+    const auto& start = startTime - newOrderSearchPeriod;
     while (!m_lastOrders.empty() && m_lastOrders.front().first < start) {
       m_lastOrders.pop_front();
     }
