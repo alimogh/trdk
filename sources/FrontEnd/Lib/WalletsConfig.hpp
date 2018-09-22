@@ -19,7 +19,7 @@ class TRDK_FRONTEND_LIB_API WalletsConfig {
     Volume minDeposit;
   };
   struct Recharging {
-    const TradingSystem *source;
+    TradingSystem *source;
     Volume minDepositToRecharge;
     Volume minRechargingTransactionVolume;
   };
@@ -34,8 +34,8 @@ class TRDK_FRONTEND_LIB_API WalletsConfig {
   typedef QMap<QString, boost::unordered_map<const TradingSystem *, Symbol>>
       Symbols;
 
-  explicit WalletsConfig(const Engine &);
-  explicit WalletsConfig(const Engine &, const boost::property_tree::ptree &);
+  explicit WalletsConfig(Engine &);
+  explicit WalletsConfig(Engine &, const boost::property_tree::ptree &);
   WalletsConfig(WalletsConfig &&) = default;
   WalletsConfig(const WalletsConfig &) = default;
   WalletsConfig &operator=(WalletsConfig &&) = default;
@@ -63,9 +63,9 @@ class TRDK_FRONTEND_LIB_API WalletsConfig {
 
  private:
   Symbols Load() const;
-  const TradingSystem *FindTradingSystem(const std::string &) const;
+  TradingSystem *FindTradingSystem(const std::string &) const;
 
-  const FrontEnd::Engine *m_engine;
+  FrontEnd::Engine *m_engine;
   boost::property_tree::ptree m_config;
   boost::optional<Symbols> m_symbols;
 };

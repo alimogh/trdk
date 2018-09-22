@@ -14,6 +14,8 @@ namespace trdk {
 namespace Strategies {
 namespace TriangularArbitrage {
 
+Price CorrectMarketPriceToOrderPrice(const Price &marketPrice, bool isBuy);
+
 class OrderPolicy : public TradingLib::LimitIocOrderPolicy {
  public:
   typedef LimitIocOrderPolicy Base;

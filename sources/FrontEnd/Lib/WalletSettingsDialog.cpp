@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "WalletSettingsDialog.hpp"
+#include "Engine.hpp"
 #include "WalletsConfig.hpp"
 #include "ui_WalletSettingsDialog.h"
 
@@ -22,6 +23,7 @@ class WalletSettingsDialog::Implementation {
   // ReSharper restore CppImplicitDefaultConstructorNotAvailable
  public:
   WalletSettingsDialog &m_self;
+  FrontEnd::Engine &m_engine;
   QString m_symbol;
   const TradingSystem &m_tradingSystem;
   WalletsConfig m_config;
@@ -54,14 +56,6 @@ class WalletSettingsDialog::Implementation {
         m_ui.depositSource->setFocus();
         return false;
       }
-      if (Double(m_ui.minDepositVolume->value()) <= 0) {
-        QMessageBox::warning(&m_self, tr("Minimal deposit volume is not set"),
-                             tr("Please provide a minimum deposit volume to "
-                                "start recharge wallet."),
-                             QMessageBox::Ok);
-        m_ui.minDepositVolume->setFocus();
-        return false;
-      }
       if (Double(m_ui.minDepositTransactionVolume->value()) <= 0) {
         QMessageBox::warning(
             &m_self, tr("Minimal deposit transaction volume is not set"),
@@ -92,7 +86,7 @@ class WalletSettingsDialog::Implementation {
     if (m_ui.rechargingSettings->isChecked()) {
       m_config.SetRecharging(
           m_symbol, m_tradingSystem,
-          {&m_tradingSystem.GetContext().GetTradingSystem(
+          {&m_engine.GetContext().GetTradingSystem(
                m_ui.depositSource->currentData().toULongLong(),
                TRADING_MODE_LIVE),
            m_ui.minDepositVolume->value(),
@@ -103,7 +97,8 @@ class WalletSettingsDialog::Implementation {
   }
 };
 
-WalletSettingsDialog::WalletSettingsDialog(QString symbol,
+WalletSettingsDialog::WalletSettingsDialog(FrontEnd::Engine &engine,
+                                           QString symbol,
                                            const TradingSystem &tradingSystem,
                                            WalletsConfig config,
                                            const bool isAddressRequired,
@@ -111,6 +106,7 @@ WalletSettingsDialog::WalletSettingsDialog(QString symbol,
     : Base(parent),
       m_pimpl(
           boost::make_unique<Implementation>(Implementation{*this,
+                                                            engine,
                                                             std::move(symbol),
                                                             tradingSystem,
                                                             std::move(config),

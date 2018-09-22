@@ -101,6 +101,8 @@ class Crex24TradingSystem : public TradingSystem {
 
   bool CheckSymbol(const std::string &) const override;
 
+  bool AreWithdrawalSupported() const override;
+
  protected:
   void CreateConnection() override;
 
@@ -125,6 +127,10 @@ class Crex24TradingSystem : public TradingSystem {
   void UpdateOrder(OrderTransactionContext &,
                    const boost::posix_time::ptime &,
                    const boost::property_tree::ptree &);
+
+  void SendWithdrawalTransaction(const std::string &,
+                                 const Volume &,
+                                 const std::string &) override;
 
   Settings m_settings;
   const boost::posix_time::time_duration m_serverTimeDiff;
