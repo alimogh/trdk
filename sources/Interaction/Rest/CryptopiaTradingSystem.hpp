@@ -148,6 +148,8 @@ class CryptopiaTradingSystem : public TradingSystem {
 
   bool CheckSymbol(const std::string &) const override;
 
+  bool AreWithdrawalSupported() const override;
+
  protected:
   void CreateConnection() override;
 
@@ -161,6 +163,10 @@ class CryptopiaTradingSystem : public TradingSystem {
       const TimeInForce &) override;
 
   void SendCancelOrderTransaction(const OrderTransactionContext &) override;
+
+  void SendWithdrawalTransaction(const std::string &,
+                                 const Volume &,
+                                 const std::string &) override;
 
   void OnTransactionSent(const OrderTransactionContext &) override;
 

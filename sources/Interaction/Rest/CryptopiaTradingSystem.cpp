@@ -141,7 +141,6 @@ class CryptopiaTradingSystem::OrderTransactionRequest : public PrivateRequest {
  public:
   typedef PrivateRequest Base;
 
- public:
   explicit OrderTransactionRequest(const std::string &name,
                                    NonceStorage &nonces,
                                    const Settings &settings,
@@ -150,10 +149,10 @@ class CryptopiaTradingSystem::OrderTransactionRequest : public PrivateRequest {
                                    ModuleEventsLog &log,
                                    ModuleTradingLog &tradingLog)
       : Base(name, nonces, settings, params, true, context, log, &tradingLog) {}
-  virtual ~OrderTransactionRequest() override = default;
+  ~OrderTransactionRequest() override = default;
 
  protected:
-  virtual bool IsPriority() const override { return true; }
+  bool IsPriority() const override { return true; }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -344,7 +343,7 @@ CryptopiaTradingSystem::SendOrderTransaction(
                                     const Qty &qty,
                                     const Price &price) {
       boost::format result(
-          "{\"TradePairId\":%1%,\"Type\":\"%2%\",\"Rate\":%3%,\"Amount\":%4%}");
+          R"({"TradePairId":%1%,"Type":"%2%","Rate":%3%,"Amount":%4%})");
       result % productId  // 1
           % side          // 2
           % price         // 3
@@ -608,6 +607,22 @@ bool CryptopiaTradingSystem::IsIdRegisterInLastOrders(const OrderId &id) const {
     }
   }
   return false;
+}
+
+bool CryptopiaTradingSystem::AreWithdrawalSupported() const { return true; }
+
+void CryptopiaTradingSystem::SendWithdrawalTransaction(
+    const std::string &symbol,
+    const Volume &volume,
+    const std::string &address) {
+  boost::format params(
+      R"({"Currency":"%1%","Amount":"%2%","Address":"%3%"})");
+  params % symbol  // 1
+      % volume     // 2
+      % address;   // 3
+  PrivateRequest("SubmitWithdraw", m_nonces, m_settings, params.str(), false,
+                 GetContext(), GetLog(), &GetTradingLog())
+      .Send(m_tradingSession);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
