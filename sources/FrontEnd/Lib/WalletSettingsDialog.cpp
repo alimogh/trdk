@@ -90,7 +90,8 @@ class WalletSettingsDialog::Implementation {
                m_ui.depositSource->currentData().toULongLong(),
                TRADING_MODE_LIVE),
            m_ui.minDepositVolume->value(),
-           m_ui.minDepositTransactionVolume->value()});
+           m_ui.minDepositTransactionVolume->value(),
+           QTime(m_ui.periodHours->value(), m_ui.periodMinutes->value())});
     } else {
       m_config.RemoveRecharging(m_symbol, m_tradingSystem);
     }
@@ -139,14 +140,20 @@ WalletSettingsDialog::WalletSettingsDialog(FrontEnd::Engine &engine,
           }
           if (remoteTradingSystem.second.wallet.recharging) {
             m_pimpl->m_ui.rechargingSettings->setChecked(true);
+            const auto &settings =
+                *remoteTradingSystem.second.wallet.recharging;
             m_pimpl->m_ui.minDepositTransactionVolume->setValue(
-                remoteTradingSystem.second.wallet.recharging
-                    ->minRechargingTransactionVolume);
+                settings.minRechargingTransactionVolume);
             m_pimpl->m_ui.minDepositVolume->setValue(
-                remoteTradingSystem.second.wallet.recharging
-                    ->minDepositToRecharge);
-            rechargingSource =
-                remoteTradingSystem.second.wallet.recharging->source;
+                settings.minDepositToRecharge);
+            m_pimpl->m_ui.periodHours->setValue(settings.period.hour());
+            m_pimpl->m_ui.periodMinutes->setValue(settings.period.minute());
+            m_pimpl->m_ui.lastRecharginTime->setText(
+                remoteTradingSystem.second.wallet.lastRechargingTime.isValid()
+                    ? remoteTradingSystem.second.wallet.lastRechargingTime
+                          .toString()
+                    : QString());
+            rechargingSource = settings.source;
           }
         } else {
           m_pimpl->m_ui.depositSource->addItem(

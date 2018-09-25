@@ -44,6 +44,17 @@ class MainWindow : public QMainWindow {
                       const std::string &symbol,
                       const Volume &available,
                       const Volume &locked);
+  void RechargeWallets();
+
+ signals:
+  void WalletsRecharged(const TradingSystem *,
+                        const QString &symbol,
+                        const QDateTime &);
+
+ private slots:
+  void StoreWalletRecharingLastTime(const TradingSystem *,
+                                    const QString &symbol,
+                                    const QDateTime &);
 
  private:
   void ConnectSignals();
@@ -65,9 +76,7 @@ class MainWindow : public QMainWindow {
   void EditExchangeList();
   void AddDefaultSymbol();
 
-  void StoreWalletsConfig(const boost::property_tree::ptree &,
-                          const QString &symbol,
-                          const TradingSystem &);
+  void StoreWalletsConfig(const boost::property_tree::ptree &);
 
   Engine &m_engine;
   Ui::MainWindow m_ui;
@@ -78,6 +87,7 @@ class MainWindow : public QMainWindow {
   WalletsConfig m_walletsConfig{m_engine};
 
   TimerScope m_timerScope;
+  QTimer m_timer{this};
 };
 }  // namespace Terminal
 }  // namespace FrontEnd

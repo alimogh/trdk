@@ -140,6 +140,13 @@ void MainWindow::ConnectSignals() {
 
   Verify(connect(&m_engine.GetDropCopy(), &FrontEnd::DropCopy::BalanceUpdate,
                  this, &MainWindow::RechargeWallet, Qt::QueuedConnection));
+  Verify(connect(this, &MainWindow::WalletsRecharged, this,
+                 &MainWindow::StoreWalletRecharingLastTime,
+                 Qt::QueuedConnection));
+
+  Verify(
+      connect(&m_timer, &QTimer::timeout, this, &MainWindow::RechargeWallets));
+  m_timer.start((15 * 60) * 1000);
 }
 
 FrontEnd::Engine &MainWindow::GetEngine() { return m_engine; }
@@ -679,7 +686,7 @@ void MainWindow::ShowWalletSettings(const QString symbol,
   WalletSettingsDialog dialog(m_engine, symbol, tradingSystem, m_walletsConfig,
                               false, this);
   if (dialog.exec() == QDialog::Accepted) {
-    StoreWalletsConfig(dialog.GetConfig().Dump(), symbol, tradingSystem);
+    StoreWalletsConfig(dialog.GetConfig().Dump());
   }
 }
 
@@ -701,8 +708,7 @@ void MainWindow::ShowWalletDepositDialog(QString symbol,
     if (settingsDialog.exec() != QDialog::Accepted) {
       return;
     }
-    StoreWalletsConfig(settingsDialog.GetConfig().Dump(), symbol,
-                       tradingSystem);
+    StoreWalletsConfig(settingsDialog.GetConfig().Dump());
   }
 
   WalletDepositDialog dialog(m_engine, std::move(symbol), tradingSystem,
@@ -723,6 +729,30 @@ void MainWindow::ShowWalletDepositDialog(QString symbol,
   }
 }
 
+void MainWindow::RechargeWallets() {
+  for (auto symbol = m_walletsConfig.Get().cbegin();
+       symbol != m_walletsConfig.Get().cend(); ++symbol) {
+    for (const auto &tradingSystem : symbol.value()) {
+      if (!tradingSystem.second.wallet.recharging) {
+        continue;
+      }
+      const auto &symbolCode = symbol.key().toStdString();
+      Volume available = 0;
+      Volume locked = 0;
+      tradingSystem.first->GetBalances().ForEach(
+          [&symbolCode, &available, &locked](const std::string &balanceSymbol,
+                                             const Volume &balanceAvailable,
+                                             const Volume &balanceLocked) {
+            if (symbolCode == balanceSymbol) {
+              available = balanceAvailable;
+              locked = balanceLocked;
+            }
+          });
+      RechargeWallet(tradingSystem.first, symbolCode, available, locked);
+    }
+  }
+}
+
 void MainWindow::RechargeWallet(const TradingSystem *tradingSystem,
                                 const std::string &symbol,
                                 const Volume &available,
@@ -737,6 +767,12 @@ void MainWindow::RechargeWallet(const TradingSystem *tradingSystem,
     return;
   }
   const auto &recharging = tradingSystemIt->second.wallet.recharging;
+  if (tradingSystemIt->second.wallet.lastRechargingTime.isValid() &&
+      tradingSystemIt->second.wallet.lastRechargingTime.addMSecs(
+          recharging->period.msecsSinceStartOfDay()) >
+          QDateTime::currentDateTime()) {
+    return;
+  }
   if (!recharging) {
     return;
   }
@@ -770,8 +806,10 @@ void MainWindow::RechargeWallet(const TradingSystem *tradingSystem,
   auto &source = *recharging->source;
   const auto address = *tradingSystemIt->second.wallet.address;
   m_engine.GetContext().GetTimer().Schedule(
-      [&source, address, symbol, transactionVolume]() {
+      [this, tradingSystem, &source, address, symbol, transactionVolume]() {
         source.Withdraw(symbol, transactionVolume, address.toStdString());
+        emit WalletsRecharged(tradingSystem, QString::fromStdString(symbol),
+                              QDateTime::currentDateTime());
       },
       m_timerScope);
 }
@@ -781,26 +819,22 @@ void MainWindow::ReloadWalletsConfig() {
       WalletsConfig{m_engine, m_engine.LoadConfig().get_child("wallets", {})};
 }
 
-void MainWindow::StoreWalletsConfig(const ptr::ptree &config,
-                                    const QString &symbolQStr,
-                                    const TradingSystem &tradingSystem) {
-  auto fullConfig = m_engine.LoadConfig();
-  fullConfig.put_child("wallets", config);
-  m_engine.StoreConfig(fullConfig);
-
+void MainWindow::StoreWalletsConfig(const ptr::ptree &config) {
+  {
+    auto fullConfig = m_engine.LoadConfig();
+    fullConfig.put_child("wallets", config);
+    m_engine.StoreConfig(fullConfig);
+  }
   ReloadWalletsConfig();
+  RechargeWallets();
+}
 
-  const auto &symbol = symbolQStr.toStdString();
-  Volume available = 0;
-  Volume locked = 0;
-  tradingSystem.GetBalances().ForEach(
-      [&symbol, &available, &locked](const std::string &balanceSymbol,
-                                     const Volume &balanceAvailable,
-                                     const Volume &balanceLocked) {
-        if (symbol == balanceSymbol) {
-          available = balanceAvailable;
-          locked = balanceLocked;
-        }
-      });
-  RechargeWallet(&tradingSystem, symbol, available, locked);
+void MainWindow::StoreWalletRecharingLastTime(
+    const TradingSystem *tradingSystem,
+    const QString &symbol,
+    const QDateTime &time) {
+  m_walletsConfig.SetLastRechargingTime(symbol, *tradingSystem, time);
+  auto fullConfig = m_engine.LoadConfig();
+  fullConfig.put_child("wallets", m_walletsConfig.Dump());
+  m_engine.StoreConfig(fullConfig);
 }

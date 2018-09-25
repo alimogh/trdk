@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>386</width>
-    <height>454</height>
+    <width>315</width>
+    <height>433</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -94,22 +94,25 @@
      <property name="checked">
       <bool>false</bool>
      </property>
-     <layout class="QGridLayout" name="gridLayout_2" rowstretch="0,0,0,0,0,1">
-      <item row="1" column="0">
+     <layout class="QGridLayout" name="gridLayout_2">
+      <item row="0" column="0">
        <widget class="QLabel" name="depositSourceLabel">
         <property name="text">
          <string>Source:</string>
         </property>
        </widget>
       </item>
-      <item row="2" column="0">
+      <item row="0" column="1">
+       <widget class="QComboBox" name="depositSource"/>
+      </item>
+      <item row="1" column="0">
        <widget class="QLabel" name="minDepositVolumeLabel">
         <property name="text">
          <string>Min. deposit: </string>
         </property>
        </widget>
       </item>
-      <item row="2" column="1">
+      <item row="1" column="1">
        <widget class="QDoubleSpinBox" name="minDepositVolume">
         <property name="decimals">
          <number>8</number>
@@ -119,14 +122,14 @@
         </property>
        </widget>
       </item>
-      <item row="2" column="2">
+      <item row="1" column="2">
        <widget class="QLabel" name="minDepositVolumeSymbol">
         <property name="text">
          <string>SYMBOL</string>
         </property>
        </widget>
       </item>
-      <item row="3" column="1" colspan="2">
+      <item row="2" column="1" colspan="2">
        <widget class="QLabel" name="minDepositVolumeHint">
         <property name="text">
          <string>The funds will be deposit to this wallet if it has such or a smaller volume of funds.</string>
@@ -139,14 +142,14 @@
         </property>
        </widget>
       </item>
-      <item row="4" column="0">
+      <item row="3" column="0">
        <widget class="QLabel" name="minDepositTransactionVolumeLabel">
         <property name="text">
          <string>Min. recharging:</string>
         </property>
        </widget>
       </item>
-      <item row="4" column="1">
+      <item row="3" column="1">
        <widget class="QDoubleSpinBox" name="minDepositTransactionVolume">
         <property name="decimals">
          <number>8</number>
@@ -156,14 +159,14 @@
         </property>
        </widget>
       </item>
-      <item row="4" column="2">
+      <item row="3" column="2">
        <widget class="QLabel" name="minDepositTransactionVolumeSymbol">
         <property name="text">
          <string>SYMBOL</string>
         </property>
        </widget>
       </item>
-      <item row="5" column="1" colspan="2">
+      <item row="4" column="1" colspan="2">
        <widget class="QLabel" name="minDepositTransactionVolumeHint">
         <property name="text">
          <string>Each deposit transaction will have such or bigger volume.</string>
@@ -176,8 +179,84 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="1">
-       <widget class="QComboBox" name="depositSource"/>
+      <item row="5" column="0">
+       <widget class="QLabel" name="periodLabel">
+        <property name="text">
+         <string>Period:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="1" colspan="2">
+       <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <item>
+         <widget class="QSpinBox" name="periodHours">
+          <property name="maximum">
+           <number>23</number>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="periodHoursLabel">
+          <property name="text">
+           <string>hours</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QSpinBox" name="periodMinutes">
+          <property name="maximum">
+           <number>59</number>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="periodMinutesLabel">
+          <property name="text">
+           <string>minutes</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </item>
+      <item row="6" column="1" colspan="2">
+       <widget class="QLabel" name="periodHint">
+        <property name="text">
+         <string>Recharging will not be made more than once in this period.</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="0">
+       <widget class="QLabel" name="lastRecharginTimeLabel">
+        <property name="text">
+         <string>Last recharging:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="1" colspan="2">
+       <widget class="QLineEdit" name="lastRecharginTime">
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+       </widget>
       </item>
      </layout>
     </widget>
