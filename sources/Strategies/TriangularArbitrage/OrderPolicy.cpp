@@ -15,9 +15,9 @@ using namespace trdk;
 using namespace Strategies;
 using namespace TriangularArbitrage;
 
-Price TriangularArbitrage::CorrectMarketPriceToOrderPrice(
-    const Price &marketPrice, const bool isBuy) {
-  return marketPrice * (isBuy ? 1.03 : 0.97);
+const Price &TriangularArbitrage::CorrectMarketPriceToOrderPrice(
+    const Price &marketPrice, const bool) {
+  return marketPrice;
 }
 
 Price OrderPolicy::GetOpenOrderPrice(Position &position) const {
