@@ -67,9 +67,11 @@ void WalletsConfig::SetRecharging(const QString &symbol,
   node.add("minDepositToRecharge", settings.minDepositToRecharge);
   node.add("minRechargingTransactionVolume",
            settings.minRechargingTransactionVolume);
+  node.add("period", settings.period.toString("hh:mm:ss").toStdString());
   m_config.put_child(tradingSystem.GetInstanceName() + "." +
                          symbol.toStdString() + ".recharging",
                      node);
+  m_symbols.reset();
 }
 void WalletsConfig::RemoveRecharging(const QString &symbol,
                                      const TradingSystem &tradingSystem) {
@@ -79,6 +81,16 @@ void WalletsConfig::RemoveRecharging(const QString &symbol,
     node->erase("recharging");
     m_symbols.reset();
   }
+}
+
+void WalletsConfig::SetLastRechargingTime(const QString &symbol,
+                                          const TradingSystem &tradingSystem,
+                                          const QDateTime &time) {
+  Assert(time.isValid());
+  m_config.put(tradingSystem.GetInstanceName() + "." + symbol.toStdString() +
+                   ".lastRechargingTime",
+               time.toString("yyyy.MM.dd hh:mm:ss"));
+  m_symbols.reset();
 }
 
 void WalletsConfig::SetSource(const QString &symbol,
@@ -136,6 +148,14 @@ WalletsConfig::Symbols WalletsConfig::Load() const {
           }
         }
         {
+          const auto &lastRechargingTime =
+              symbolNode.second.get_optional<std::string>("lastRechargingTime");
+          if (lastRechargingTime) {
+            symbol.wallet.lastRechargingTime = QDateTime::fromString(
+                lastRechargingTime->c_str(), "yyyy.MM.dd hh:mm:ss");
+          }
+        }
+        {
           const auto recharging =
               symbolNode.second.get_child_optional("recharging");
           if (recharging) {
@@ -147,7 +167,10 @@ WalletsConfig::Symbols WalletsConfig::Load() const {
             symbol.wallet.recharging.emplace(Recharging{
                 sourceTradingSystem,
                 recharging->get<Volume>("minDepositToRecharge"),
-                recharging->get<Volume>("minRechargingTransactionVolume")});
+                recharging->get<Volume>("minRechargingTransactionVolume"),
+                QTime::fromString(
+                    recharging->get<std::string>("period", "01:00:00").c_str(),
+                    "hh:mm:ss")});
           }
         }
       }

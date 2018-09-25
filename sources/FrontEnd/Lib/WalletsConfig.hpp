@@ -22,9 +22,11 @@ class TRDK_FRONTEND_LIB_API WalletsConfig {
     TradingSystem *source;
     Volume minDepositToRecharge;
     Volume minRechargingTransactionVolume;
+    QTime period;
   };
   struct Wallet {
     boost::optional<QString> address;
+    QDateTime lastRechargingTime;
     boost::optional<Recharging> recharging;
   };
   struct Symbol {
@@ -55,6 +57,10 @@ class TRDK_FRONTEND_LIB_API WalletsConfig {
                      const TradingSystem &,
                      const Recharging &);
   void RemoveRecharging(const QString &symbol, const TradingSystem &);
+
+  void SetLastRechargingTime(const QString &symbol,
+                             const TradingSystem &,
+                             const QDateTime &);
 
   void SetSource(const QString &symbol, const TradingSystem &, const Source &);
   void RemoveSource(const QString &symbol, const TradingSystem &);
