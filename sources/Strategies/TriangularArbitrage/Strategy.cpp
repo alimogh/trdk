@@ -184,6 +184,8 @@ class ta::Strategy::Implementation : private boost::noncopyable {
 
   boost::unordered_set<const TradingSystem *> m_failedTargets;
 
+  bool m_isConfigError = false;
+
   explicit Implementation(Strategy &self)
       : m_self(self), m_isStopped(false), m_numberOfSecuriries(0) {}
 
@@ -249,7 +251,7 @@ class ta::Strategy::Implementation : private boost::noncopyable {
 
     if (configurationError) {
       m_opportunitySignal(opportunities);
-      throw Exception(configurationError->c_str());
+      return;
     }
     if (!m_isTradingEnabled) {
       m_opportunitySignal(opportunities);
@@ -297,37 +299,32 @@ class ta::Strategy::Implementation : private boost::noncopyable {
     }
     {
       const auto configurationError = CheckCalcs(opportunity);
-      if (configurationError) {
-#if 0
-        if (m_isTradingEnabled) {
+      if (!configurationError) {
+        m_isConfigError = false;
+      } else {
+        if (!m_isConfigError) {
           ReportSignal("config. error", opportunity, false);
-          return configurationError;
-        } else
-#else
-        // Too many records in log, so it disabled:
-        // ReportSignal("config. error", opportunity, false);
-        {
-          std::vector<std::string> points;
-          for (size_t i = 0; i < points.size(); ++i) {
-            if (calcQtysPoints[i].IsNan()) {
-              continue;
+          {
+            std::vector<std::string> points;
+            for (size_t i = 0; i < calcQtysPoints.size(); ++i) {
+              if (calcQtysPoints[i].IsNan()) {
+                continue;
+              }
+              boost::format str("%1% = %2%");
+              str % i % calcQtysPoints[i];
+              points.emplace_back(str.str());
             }
-            boost::format str("%1% = %2%");
-            str % i % calcQtysPoints[i];
-            points.emplace_back(str.str());
+            m_self.GetLog().Error("Configuration error. Points: %1%.",
+                                  boost::join(points, ", "));
           }
-          m_self.GetLog().Error("Configuration error. Points: %1%.",
-                                boost::join(points, ", "));
-        }
-#endif
-        {
           if (!opportunity.checkError) {
             Assert(!opportunity.errorTradingSystem);
             static const std::string error("config. error");
             opportunity.checkError = &error;
           }
-          return boost::none;
+          m_isConfigError = true;
         }
+        return configurationError;
       }
     }
     opportunity.isSignaled = opportunity.pnlVolume.IsNotNan() &&
@@ -518,7 +515,8 @@ class ta::Strategy::Implementation : private boost::noncopyable {
                     const Opportunity &opportunity,
                     bool isAsync) const {
     m_self.GetTradingLog().Write(
-        "{'signal': {'%13%': {'pnlRatio': %14%, 'pnlVolume': %15%, 'async': "
+        "{'signal': {'%13%': {'pnlRatio': %14%, 'pnlVolume': %15%, "
+        "'async': "
         "%16%, 'legs': {'%1%': {'qty': %2%, 'price': %3%, 'side': '%4%'}, "
         "'%5%': {'qty': %6%, 'price': %7%, 'side': '%8%'}, '%9%': {'qty': "
         "%10%, 'price': %11%, 'side': '%12%'}}}}}",
