@@ -216,14 +216,15 @@ class ta::Strategy::Implementation : private boost::noncopyable {
           auto &leg3Trading =
               m_self.GetTradingSystem(leg3->GetSource().GetIndex());
           try {
-            const auto thisConfigurationError = CheckSignal(
+            auto thisConfigurationError = CheckSignal(
                 opportunities,
                 {Opportunity::Target{leg1, &leg1Trading,
                                      m_legs[LEG_1]->GetPrice(*leg1)},
                  Opportunity::Target{leg2, &leg2Trading,
                                      m_legs[LEG_2]->GetPrice(*leg2)},
                  Opportunity::Target{leg3, &leg3Trading,
-                                     m_legs[LEG_3]->GetPrice(*leg3)}});
+                                     m_legs[LEG_3]->GetPrice(*leg3)}},
+                configurationError ? true : false);
             if (thisConfigurationError && !configurationError) {
               configurationError = std::move(thisConfigurationError);
             }
@@ -279,7 +280,8 @@ class ta::Strategy::Implementation : private boost::noncopyable {
 
   boost::optional<std::string> CheckSignal(
       std::vector<Opportunity> &opportunities,
-      Opportunity::Targets &&targetsSource) {
+      Opportunity::Targets &&targetsSource,
+      const bool isConfigError) {
     opportunities.emplace_back(
         Opportunity{std::move(targetsSource), numberOfLegs,
                     std::numeric_limits<double>::quiet_NaN(),
@@ -300,7 +302,9 @@ class ta::Strategy::Implementation : private boost::noncopyable {
     {
       const auto configurationError = CheckCalcs(opportunity);
       if (!configurationError) {
-        m_isConfigError = false;
+        if (!isConfigError) {
+          m_isConfigError = false;
+        }
       } else {
         if (!m_isConfigError) {
           ReportSignal("config. error", opportunity, false);
