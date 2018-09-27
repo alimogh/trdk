@@ -197,14 +197,14 @@ Huobi::TradingSystem::SendOrderTransaction(trdk::Security &security,
   const auto &product = productIt->second;
 
   std::ostringstream requestParams;
-  requestParams <<
-      R"({"account-id":")" << m_settings.account << R"(","amount":")"
-                << std::fixed << std::setprecision(product.qtyPrecision)
-                << qty.Get() << R"(","price":")" << std::fixed
-                << std::setprecision(product.pricePrecision) << price->Get()
-                << R"(","symbol":")" << product.id << R"(","type":")"
-                << (side == ORDER_SIDE_BUY ? "buy-limit" : "sell-limit")
-                << R"("})";
+  requestParams
+      << R"({"account-id":")" << m_settings.account << R"(","amount":")"
+      << std::fixed << std::setprecision(product.qtyPrecision)
+      << RoundDownByPrecisionPower(qty, product.qtyPrecisionPower).Get()
+      << R"(","price":")" << std::fixed
+      << std::setprecision(product.pricePrecision) << price->Get()
+      << R"(","symbol":")" << product.id << R"(","type":")"
+      << (side == ORDER_SIDE_BUY ? "buy-limit" : "sell-limit") << R"("})";
 
   TradingRequest request("v1/order/orders/place", requestParams.str(),
                          GetContext(), m_settings, GetLog(), GetTradingLog());

@@ -26,6 +26,7 @@ struct Product {
   boost::optional<OrderRequirements> orderRequirements;
   uint8_t pricePrecision;
   uint8_t qtyPrecision;
+  uintmax_t qtyPrecisionPower;
 };
 
 boost::unordered_map<std::string, Product> RequestProductList(
