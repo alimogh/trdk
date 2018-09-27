@@ -767,13 +767,13 @@ void MainWindow::RechargeWallet(const TradingSystem *tradingSystem,
     return;
   }
   const auto &recharging = tradingSystemIt->second.wallet.recharging;
+  if (!recharging) {
+    return;
+  }
   if (tradingSystemIt->second.wallet.lastRechargingTime.isValid() &&
       tradingSystemIt->second.wallet.lastRechargingTime.addMSecs(
           recharging->period.msecsSinceStartOfDay()) >
           QDateTime::currentDateTime()) {
-    return;
-  }
-  if (!recharging) {
     return;
   }
   Assert(!tradingSystemIt->second.wallet.address->isEmpty());

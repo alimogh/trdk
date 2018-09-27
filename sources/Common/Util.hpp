@@ -21,15 +21,15 @@ namespace Lib {
 
 //////////////////////////////////////////////////////////////////////////
 
-inline trdk::Lib::Double RoundByPrecisionPower(double value,
-                                               uintmax_t precisionPower) {
+inline Double RoundByPrecisionPower(const double value,
+                                    const uintmax_t precisionPower) {
   return precisionPower
              ? boost::math::round(value * precisionPower) / precisionPower
              : boost::math::round(value);
 }
 
-inline trdk::Lib::Double RoundDownByPrecisionPower(double value,
-                                                   uintmax_t precisionPower) {
+inline Double RoundDownByPrecisionPower(const double value,
+                                        const uintmax_t precisionPower) {
   return precisionPower ? std::floor(value * precisionPower) / precisionPower
                         : std::floor(value);
 }

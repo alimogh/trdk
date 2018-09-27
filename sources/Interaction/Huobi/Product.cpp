@@ -669,11 +669,14 @@ boost::unordered_map<std::string, Product> Huobi::RequestProductList(
       auto symbol = data.get<std::string>("base-currency") + "_" +
                     data.get<std::string>("quote-currency");
       boost::to_upper(symbol);
+      const auto &qtyPrecision = data.get<uint8_t>("amount-precision");
       result.emplace(
           std::move(symbol),
           Product{data.get<std::string>("symbol"), GetOrderRequirements(symbol),
-                  data.get<uint8_t>("price-precision"),
-                  data.get<uint8_t>("amount-precision")});
+                  data.get<uint8_t>("price-precision"), qtyPrecision,
+                  static_cast<uintmax_t>(
+                      std::pow(static_cast<uintmax_t>(10),
+                               static_cast<uintmax_t>(qtyPrecision)))});
     }
   } catch (const std::exception &ex) {
     log.Error(
