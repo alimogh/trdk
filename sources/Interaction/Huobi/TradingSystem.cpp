@@ -80,11 +80,11 @@ void Huobi::TradingSystem::CreateConnection() {
   m_pollingTask.AccelerateNextPolling();
 }
 
-Volume Huobi::TradingSystem::CalcCommission(const Qty &,
-                                            const Price &,
+Volume Huobi::TradingSystem::CalcCommission(const Qty &qty,
+                                            const Price &price,
                                             const OrderSide &,
                                             const trdk::Security &) const {
-  return 0;
+  return (qty * price) * (0.2 / 100);
 }
 
 Balances &Huobi::TradingSystem::GetBalancesStorage() { return m_balances; }
