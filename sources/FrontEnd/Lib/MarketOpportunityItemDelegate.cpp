@@ -37,6 +37,7 @@ void MarketOpportunityItemDelegate::initStyleOption(
     QStyleOptionViewItem *options, const QModelIndex &index) const {
   Base::initStyleOption(options, index);
 
+  static const QColor colorOfInactive(125, 125, 125);
   static const QColor colorOfSuspicion(255, 255, 0);
   static const QColor colorOfSuspicionAlt(255, 240, 0);
   static const QColor colorOfSuspicionText(Qt::red);
@@ -48,15 +49,27 @@ void MarketOpportunityItemDelegate::initStyleOption(
   const auto &item = ResolveModelIndexItem<MarketOpportunityItem>(index);
   const auto &profit = item.GetProfit();
   if (!profit.isNull()) {
+    const auto isAvailable = item.IsAvailable();
     if (Double(profit.toDouble()) > 10) {
       options->backgroundBrush =
           index.row() % 2 ? colorOfSuspicionAlt : colorOfSuspicion;
       options->palette.setColor(QPalette::Text, colorOfSuspicionText);
     } else if (Double(profit.toDouble()) > .5) {
-      options->backgroundBrush =
-          index.row() % 2 ? colorOfProfitAlt : colorOfProfit;
+      if (isAvailable) {
+        options->backgroundBrush =
+            index.row() % 2 ? colorOfProfitAlt : colorOfProfit;
+      } else {
+        options->palette.setColor(QPalette::Text, colorOfProfitAlt);
+      }
     } else if (Double(profit.toDouble()) <= 0) {
-      options->backgroundBrush = index.row() % 2 ? colorOfLossAlt : colorOfLoss;
+      if (isAvailable) {
+        options->backgroundBrush =
+            index.row() % 2 ? colorOfLossAlt : colorOfLoss;
+      } else {
+        options->palette.setColor(QPalette::Text, colorOfLoss);
+      }
+    } else if (!isAvailable) {
+      options->palette.setColor(QPalette::Text, colorOfInactive);
     }
   }
 }

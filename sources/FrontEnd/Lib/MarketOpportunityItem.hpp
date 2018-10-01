@@ -25,6 +25,7 @@ class MarketOpportunityItem : public QObject {
   virtual ~MarketOpportunityItem();
 
   QVariant GetProfit() const;
+  bool IsAvailable() const;
   const Strategy &GetStrategy() const;
   const QString &GetSymbolsTitle() const;
 

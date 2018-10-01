@@ -22,7 +22,8 @@ class TRDK_CORE_API Strategy : public Consumer {
   typedef boost::function<PositionUpdateSlotSignature> PositionUpdateSlot;
   typedef boost::signals2::connection PositionUpdateSlotConnection;
 
-  typedef void(ProfitScannerSlotSignature)(const Lib::Double &profitRatio);
+  typedef void(ProfitScannerSlotSignature)(const Lib::Double &profitRatio,
+                                           bool isAvailableRightNow);
   typedef boost::function<ProfitScannerSlotSignature> ProfitScannerSlot;
   typedef boost::signals2::connection ProfitScannerSlotConnection;
 
@@ -213,7 +214,15 @@ class TRDK_CORE_API Strategy : public Consumer {
 
   void OnPositionMarkedAsCompleted(Position &);
 
-  boost::optional<Lib::Double> GetProfitOpportunityRatio() const;
+  //! Current profit opportunity.
+  /**
+   * @return The pair, where the first value is the current profit opportunity
+   * ratio, and second value - opportunity availability flag. If opportunity
+   * availability flag is true - the opportunity maybe implemented right now
+   * (the funds are enough, all conditions for correct orders is present, and
+   * so on).
+   */
+  boost::optional<std::pair<Lib::Double, bool>> GetProfitOpportunity() const;
 
  protected:
   virtual void OnLevel1Update(Security &,
@@ -239,7 +248,7 @@ class TRDK_CORE_API Strategy : public Consumer {
    */
   virtual bool OnBlocked(const std::string *reason = nullptr) noexcept;
 
-  void SetProfitOpportunityRatio(const Lib::Double &);
+  void SetProfitOpportunity(const Lib::Double &, bool isAvailableRightNow);
 
  private:
   class Implementation;
