@@ -29,7 +29,7 @@ class MarketOpportunityItem::Implementation {
         m_symbols(std::move(symbols)),
         m_strategy(strategy),
         m_strategySignalConnection(m_strategy.SubscribeToProfitScanner(
-            [this](const Double &) { emit m_self.ProfitUpdated(); })) {}
+            [this](const Double &, bool) { emit m_self.ProfitUpdated(); })) {}
 };
 
 MarketOpportunityItem::MarketOpportunityItem(QString symbols,
@@ -39,11 +39,18 @@ MarketOpportunityItem::MarketOpportunityItem(QString symbols,
 MarketOpportunityItem::~MarketOpportunityItem() = default;
 
 QVariant MarketOpportunityItem::GetProfit() const {
-  const auto &ratio = m_pimpl->m_strategy.GetProfitOpportunityRatio();
-  if (!ratio) {
+  const auto &opportunity = m_pimpl->m_strategy.GetProfitOpportunity();
+  if (!opportunity) {
     return {};
   }
-  return ratio->Get() * 100;
+  return opportunity->first.Get() * 100;
+}
+bool MarketOpportunityItem::IsAvailable() const {
+  const auto &opportunity = m_pimpl->m_strategy.GetProfitOpportunity();
+  if (!opportunity) {
+    return false;
+  }
+  return opportunity->second;
 }
 const Strategy &MarketOpportunityItem::GetStrategy() const {
   return m_pimpl->m_strategy;

@@ -256,18 +256,26 @@ class ta::Strategy::Implementation : private boost::noncopyable {
     }
     if (!m_isTradingEnabled) {
       m_opportunitySignal(opportunities);
-      m_self.SetProfitOpportunityRatio(
-          !opportunities.empty() ? (opportunities.front().pnlRatio - 1).Get()
-                                 : 0);
+      if (!opportunities.empty()) {
+        m_self.SetProfitOpportunity(
+            (opportunities.front().pnlRatio - 1).Get(),
+            opportunities.front().checkError == nullptr);
+      } else {
+        m_self.SetProfitOpportunity(0, false);
+      }
       return;
     }
 
     auto opportunitySignalFuture = boost::async([this, &opportunities]() {
       try {
         m_opportunitySignal(opportunities);
-        m_self.SetProfitOpportunityRatio(
-            !opportunities.empty() ? (opportunities.front().pnlRatio - 1).Get()
-                                   : 0);
+        if (!opportunities.empty()) {
+          m_self.SetProfitOpportunity(
+              (opportunities.front().pnlRatio - 1).Get(),
+              opportunities.front().checkError == nullptr);
+        } else {
+          m_self.SetProfitOpportunity(0, false);
+        }
       } catch (const std::exception &ex) {
         throw boost::enable_current_exception(ex);
       }

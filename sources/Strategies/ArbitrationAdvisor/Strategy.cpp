@@ -271,7 +271,7 @@ class aa::Strategy::Implementation : boost::noncopyable {
                spreadRatio,
                spreadRatio >= m_minPriceDifferenceRatioToAdvice,
                allSecurities});
-    m_self.SetProfitOpportunityRatio(spreadRatio);
+    m_self.SetProfitOpportunity(spreadRatio, true);
   }
 
   void CheckTradeSignal(std::vector<AdviceSecuritySignal> &allSecurities,
