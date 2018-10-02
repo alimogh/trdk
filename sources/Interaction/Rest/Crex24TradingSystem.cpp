@@ -275,12 +275,12 @@ boost::optional<OrderCheckError> Crex24TradingSystem::CheckOrder(
       }
       result->price = product.minPrice;
     }
-    if ((!result || !result->volume) && (*price * qty) < product.minVolume) {
-      if (!result) {
-        result = OrderCheckError{};
-      }
-      result->volume = product.minVolume;
+  }
+  if ((!result || !result->qty) && qty < product.minQty) {
+    if (!result) {
+      result = OrderCheckError{};
     }
+    result->qty = product.minQty;
   }
 
   return result;
