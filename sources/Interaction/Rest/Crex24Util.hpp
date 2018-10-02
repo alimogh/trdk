@@ -18,7 +18,7 @@ struct Crex24Product {
   std::string id;
   Price tickSize;
   Price minPrice;
-  Volume minVolume;
+  Volume minQty;
 };
 
 boost::unordered_map<std::string, Crex24Product> RequestCrex24ProductList(
