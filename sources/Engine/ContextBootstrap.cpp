@@ -107,6 +107,11 @@ Engine::LoadSources(trdk::Context &context) {
     const auto &instanceName = node.first;
     const auto &config = node.second;
     try {
+      if (!config.get<bool>("isEnabled", true)) {
+        context.GetLog().Debug(R"(Source instance "%1%" is disabled.)",
+                               instanceName);
+        continue;
+      }
       const auto &type = config.get<std::string>("tradingMode");
       const auto mode = type == "live"
                             ? TRADING_MODE_LIVE

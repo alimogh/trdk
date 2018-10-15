@@ -140,6 +140,10 @@ enum Profile { PROFILE_RELAX, PROFILE_HFT, numberOfProfiles };
 #define TRDK_INTERACTION_HUOBI_DLL_FILE_NAME \
   TRDK_INTERACTION_HUOBI_FILE_NAME TRDK_FILE_MODIFICATOR ".dll"
 
+#define TRDK_INTERACTION_KRAKEN_FILE_NAME "Kraken"
+#define TRDK_INTERACTION_KRAKEN_DLL_FILE_NAME \
+  TRDK_INTERACTION_KRAKEN_FILE_NAME TRDK_FILE_MODIFICATOR ".dll"
+
 #define TRDK_FRONTEND_LIB_FILE_NAME "FrontEnd"
 #define TRDK_FRONTEND_LIB_DLL_FILE_NAME \
   TRDK_FRONTEND_LIB_FILE_NAME TRDK_FILE_MODIFICATOR ".dll"
@@ -152,19 +156,19 @@ enum Profile { PROFILE_RELAX, PROFILE_HFT, numberOfProfiles };
 #define TRDK_FRONTEND_TERMINAL_EXE_FILE_NAME \
   TRDK_FRONTEND_TERMINAL_FILE_NAME TRDK_FILE_MODIFICATOR ".exe"
 
-#define TRDK_GET_MODUE_FILE_NAME_LIST()                                        \
+#define TRDK_GET_MODULE_FILE_NAME_LIST()                                       \
   {                                                                            \
     TRDK_CORE_FILE_NAME, TRDK_ENGINE_FILE_NAME, TRDK_ENGINE_SERVER_FILE_NAME,  \
         TRDK_TESTS_FILE_NAME, TRDK_INTERACTION_TEST_FILE_NAME,                 \
         TRDK_INTERACTION_CSV_FILE_NAME,                                        \
         TRDK_INTERACTION_FIXPROTOCOL_FILE_NAME,                                \
         TRDK_INTERACTION_REST_FILE_NAME, TRDK_INTERACTION_EXMO_FILE_NAME,      \
-        TRDK_INTERACTION_HUOBI_FILE_NAME, TRDK_STRATEGY_TEST_FILE_NAME,        \
+        TRDK_INTERACTION_HUOBI_FILE_NAME, TRDK_INTERACTION_KRAKEN_FILE_NAME,   \
+        TRDK_STRATEGY_TEST_FILE_NAME,                                          \
         TRDK_STRATEGY_ARBITRATIONADVISOR_FILE_NAME,                            \
         TRDK_STRATEGY_MARKETMAKER_FILE_NAME, TRDK_STRATEGY_PINGPONG_FILE_NAME, \
         TRDK_STRATEGY_TRIANGULARARBITRAGE_FILE_NAME,                           \
         TRDK_FRONTEND_LIB_FILE_NAME, TRDK_FRONTEND_CHARTS_FILE_NAME            \
-  \
-}
+  }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -7,13 +7,44 @@
     <x>0</x>
     <y>0</y>
     <width>353</width>
-    <height>200</height>
+    <height>223</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Source Properties</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
+   <item row="4" column="1">
+    <widget class="QLineEdit" name="apiSecret">
+     <property name="echoMode">
+      <enum>QLineEdit::Password</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="1">
+    <widget class="QLineEdit" name="apiPassphrase">
+     <property name="echoMode">
+      <enum>QLineEdit::Password</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="0">
+    <widget class="QLabel" name="apiPassphraseLabel">
+     <property name="text">
+      <string>API passphrase:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1">
+    <widget class="QComboBox" name="exchange"/>
+   </item>
+   <item row="2" column="0">
+    <widget class="QLabel" name="userIdLabel">
+     <property name="text">
+      <string>User ID / account:</string>
+     </property>
+    </widget>
+   </item>
    <item row="0" column="0">
     <widget class="QLabel" name="exchangeLabel">
      <property name="text">
@@ -21,20 +52,17 @@
      </property>
     </widget>
    </item>
-   <item row="0" column="1">
-    <widget class="QComboBox" name="exchange"/>
+   <item row="3" column="1">
+    <widget class="QLineEdit" name="apiKey"/>
    </item>
-   <item row="1" column="0">
-    <widget class="QLabel" name="userIdLabel">
+   <item row="4" column="0">
+    <widget class="QLabel" name="apiSecretLabel">
      <property name="text">
-      <string>User ID / account:</string>
+      <string>API secret:</string>
      </property>
     </widget>
    </item>
-   <item row="1" column="1">
-    <widget class="QLineEdit" name="userId"/>
-   </item>
-   <item row="2" column="0">
+   <item row="3" column="0">
     <widget class="QLabel" name="apiKeyLabel">
      <property name="text">
       <string>API key:</string>
@@ -42,37 +70,9 @@
     </widget>
    </item>
    <item row="2" column="1">
-    <widget class="QLineEdit" name="apiKey"/>
+    <widget class="QLineEdit" name="userId"/>
    </item>
-   <item row="3" column="0">
-    <widget class="QLabel" name="apiSecretLabel">
-     <property name="text">
-      <string>API secret:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="1">
-    <widget class="QLineEdit" name="apiSecret">
-     <property name="echoMode">
-      <enum>QLineEdit::Password</enum>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="0">
-    <widget class="QLabel" name="apiPassphraseLabel">
-     <property name="text">
-      <string>API passphrase:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="1">
-    <widget class="QLineEdit" name="apiPassphrase">
-     <property name="echoMode">
-      <enum>QLineEdit::Password</enum>
-     </property>
-    </widget>
-   </item>
-   <item row="5" column="0" colspan="2">
+   <item row="6" column="0" colspan="2">
     <layout class="QHBoxLayout">
      <property name="spacing">
       <number>6</number>
@@ -117,6 +117,23 @@
       </widget>
      </item>
     </layout>
+   </item>
+   <item row="1" column="1">
+    <widget class="QCheckBox" name="enabled">
+     <property name="text">
+      <string/>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="enabledLabel">
+     <property name="text">
+      <string>Enabled:</string>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>

@@ -42,6 +42,7 @@ class SourcePropertiesDialog::Implementation {
         m_ui.exchange->addItem(title, impl);
       };
       addExchange("Coinbase Pro", "Coinbase");
+      addExchange("Kraken", "Kraken");
       addExchange("CEX.IO", "Cexio");
       addExchange("Bittrex", "Bittrex");
       addExchange("EXMO", "Exmo");
@@ -57,6 +58,7 @@ class SourcePropertiesDialog::Implementation {
 
     if (config) {
       m_ui.exchange->setEnabled(false);
+      m_ui.enabled->setChecked(config->get<bool>("isEnabled", true));
       if (m_ui.userId->isEnabled()) {
         const auto &path = m_ui.exchange->currentData().toString() == "Huobi"
                                ? "config.account"
@@ -101,12 +103,13 @@ class SourcePropertiesDialog::Implementation {
     result.add("impl", impl);
     result.add("tradingMode", "live");
     result.add("title", m_ui.exchange->currentText().toStdString());
-    if (impl != "Exmo" && impl != "Huobi") {
+    if (impl != "Exmo" && impl != "Huobi" && impl != "Kraken") {
       result.add("module", "Rest");
       result.add("factory", "Create" + impl);
     } else {
       result.add("module", impl);
     }
+    result.add("isEnabled", m_ui.enabled->isChecked());
     if (m_ui.userId->isEnabled()) {
       if (impl == "Huobi") {
         result.add("config.account", m_ui.userId->text().toStdString());

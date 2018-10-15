@@ -65,7 +65,9 @@ boost::array<unsigned char, 32> CalcSha256Digest(const std::string &source,
 }
 }  // namespace Hmac
 
-boost::array<unsigned char, 16> CalcMd5Digest(const std::string &);
+boost::array<unsigned char, 16> CalcMd5(const std::string &);
+
+boost::array<unsigned char, 32> CalcSha256(const std::string &);
 }  // namespace Crypto
 }  // namespace Lib
 }  // namespace trdk
