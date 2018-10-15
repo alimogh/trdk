@@ -58,6 +58,7 @@ class SourcePropertiesDialog::Implementation {
 
     if (config) {
       m_ui.exchange->setEnabled(false);
+      m_ui.enabled->setChecked(config->get<bool>("isEnabled", true));
       if (m_ui.userId->isEnabled()) {
         const auto &path = m_ui.exchange->currentData().toString() == "Huobi"
                                ? "config.account"
@@ -108,6 +109,7 @@ class SourcePropertiesDialog::Implementation {
     } else {
       result.add("module", impl);
     }
+    result.add("isEnabled", m_ui.enabled->isChecked());
     if (m_ui.userId->isEnabled()) {
       if (impl == "Huobi") {
         result.add("config.account", m_ui.userId->text().toStdString());
