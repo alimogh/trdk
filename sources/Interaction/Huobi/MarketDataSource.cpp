@@ -86,6 +86,7 @@ void Huobi::MarketDataSource::SubscribeToSecurities() {
             "market/depth", "symbol=" + security.first + "&type=step1",
             GetContext(), GetLog())));
   }
+  requests.shrink_to_fit();
   m_pollingTask->ReplaceTask(
       "Prices", 1,
       [this, requests]() {

@@ -24,9 +24,12 @@ class SourcesListWidget::Implementation {
     const QSignalBlocker signalBlocker(m_ui.list);
     m_ui.list->clear();
     for (const auto &node : m_result) {
-      auto &item = *new QListWidgetItem(
-          QString::fromStdString(node.second.get<std::string>("title")),
-          m_ui.list);
+      auto title =
+          QString::fromStdString(node.second.get<std::string>("title"));
+      if (!node.second.get<bool>("isEnabled", true)) {
+        title += tr(" (disabled)");
+      }
+      auto &item = *new QListWidgetItem(title, m_ui.list);
       item.setData(Qt::UserRole, QString::fromStdString(node.first));
       m_ui.list->addItem(&item);
     }

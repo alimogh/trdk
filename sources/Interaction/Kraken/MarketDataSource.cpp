@@ -1,5 +1,5 @@
 ﻿//
-//    Created: 2018/04/07 3:47 PM
+//    Created: 2018/10/11 08:24
 //     Author: Eugene V. Palchukovsky
 //     E-mail: eugene@palchukovsky.com
 // ------------------------------------------
@@ -16,24 +16,24 @@
 using namespace trdk;
 using namespace Lib::TimeMeasurement;
 using namespace Interaction;
-using namespace Exmo;
+using namespace Kraken;
 using namespace Rest;
 using namespace Lib;
 namespace pt = boost::posix_time;
 namespace ptr = boost::property_tree;
 
-Exmo::MarketDataSource::MarketDataSource(const App &,
-                                         Context &context,
-                                         std::string instanceName,
-                                         std::string title,
-                                         const ptr::ptree &conf)
+Kraken::MarketDataSource::MarketDataSource(const App &,
+                                           Context &context,
+                                           std::string instanceName,
+                                           std::string title,
+                                           const ptr::ptree &conf)
     : Base(context, std::move(instanceName), std::move(title)),
       m_settings(conf, GetLog()),
       m_session(CreateSession(m_settings, false)),
       m_pollingTask(boost::make_unique<PollingTask>(m_settings.pollingSetttings,
                                                     GetLog())) {}
 
-Exmo::MarketDataSource::~MarketDataSource() {
+Kraken::MarketDataSource::~MarketDataSource() {
   try {
     m_pollingTask.reset();
   } catch (...) {
@@ -50,12 +50,13 @@ boost::shared_ptr<trdk::MarketDataSource> CreateMarketDataSource(
     std::string instanceName,
     std::string title,
     const ptr::ptree &conf) {
-  return boost::make_shared<Exmo::MarketDataSource>(App::GetInstance(), context,
-                                                    std::move(instanceName),
-                                                    std::move(title), conf);
+#pragma comment(linker, "/EXPORT:" __FUNCTION__ "=" __FUNCDNAME__)
+  return boost::make_shared<Kraken::MarketDataSource>(
+      App::GetInstance(), context, std::move(instanceName), std::move(title),
+      conf);
 }
 
-void Exmo::MarketDataSource::Connect() {
+void Kraken::MarketDataSource::Connect() {
   GetLog().Debug("Creating connection...");
 
   boost::unordered_map<std::string, Product> products;
@@ -74,34 +75,30 @@ void Exmo::MarketDataSource::Connect() {
   m_symbolListHint = std::move(symbolListHint);
 }
 
-void Exmo::MarketDataSource::SubscribeToSecurities() {
-  std::string requestList;
+void Kraken::MarketDataSource::SubscribeToSecurities() {
+  std::vector<std::pair<std::pair<ProductId, boost::shared_ptr<Rest::Security>>,
+                        boost::shared_ptr<Request>>>
+      requests;
   for (const auto &security : m_securities) {
-    if (!requestList.empty()) {
-      requestList += ',';
-    }
-    requestList += security.first;
+    requests.emplace_back(std::make_pair(
+        security, boost::make_shared<PublicRequest>(
+                      "Depth", "pair=" + security.first + "&count=1",
+                      GetContext(), GetLog())));
   }
-  if (requestList.empty()) {
-    return;
-  }
-  auto request = boost::make_shared<PublicRequest>(
-      "order_book", "limit=0&pair=" + requestList, GetContext(), GetLog());
+  requests.shrink_to_fit();
   m_pollingTask->ReplaceTask(
       "Prices", 1,
-      [this, request]() {
-        UpdatePrices(*request);
+      [this, requests]() {
+        for (const auto &request : requests) {
+          UpdatePrices(request.first.first, *request.first.second,
+                       *request.second);
+        }
         return true;
       },
       m_settings.pollingSetttings.GetPricesRequestFrequency(), false);
 }
 
-const boost::unordered_set<std::string>
-    &Exmo::MarketDataSource::GetSymbolListHint() const {
-  return m_symbolListHint;
-}
-
-trdk::Security &Exmo::MarketDataSource::CreateNewSecurityObject(
+trdk::Security &Kraken::MarketDataSource::CreateNewSecurityObject(
     const Symbol &symbol) {
   const auto &product = m_products.find(symbol.GetSymbol());
   if (product == m_products.cend()) {
@@ -122,31 +119,26 @@ trdk::Security &Exmo::MarketDataSource::CreateNewSecurityObject(
   return *result.first->second;
 }
 
-void Exmo::MarketDataSource::UpdatePrices(Rest::Request &request) {
+const boost::unordered_set<std::string>
+    &Kraken::MarketDataSource::GetSymbolListHint() const {
+  return m_symbolListHint;
+}
+
+void Kraken::MarketDataSource::UpdatePrices(const ProductId &productId,
+                                            Rest::Security &security,
+                                            Rest::Request &request) {
   try {
     const auto &response = request.Send(m_session);
     const auto &time = boost::get<0>(response);
     const auto &delayMeasurement = boost::get<2>(response);
-    for (const auto &node : boost::get<1>(response)) {
-      const auto &productId = node.first;
-      const auto &product = m_securities.find(productId);
-      if (product == m_securities.cend()) {
-        GetLog().Error(
-            "Market data source sent price update with unknown product ID "
-            "\"%1%\".",
-            productId);
-        continue;
-      }
-      UpdatePrices(time, node.second, *product->second, delayMeasurement);
-    }
+    UpdatePrices(time, boost::get<1>(response).get_child(productId), security,
+                 delayMeasurement);
   } catch (const std::exception &ex) {
-    for (auto &security : m_securities) {
-      try {
-        security.second->SetOnline(pt::not_a_date_time, false);
-      } catch (...) {
-        AssertFailNoException();
-        throw;
-      }
+    try {
+      security.SetOnline(pt::not_a_date_time, false);
+    } catch (...) {
+      AssertFailNoException();
+      throw;
     }
     boost::format error("Failed to read prices: \"%1%\"");
     error % ex.what();
@@ -193,17 +185,18 @@ boost::optional<std::pair<Level1TickValue, Level1TickValue>> ReadTopPrice(
   return std::make_pair(*price, *qty);
 }
 #pragma warning(pop)
-}
+}  // namespace
 
-void Exmo::MarketDataSource::UpdatePrices(const pt::ptime &time,
-                                          const ptr::ptree &source,
-                                          Rest::Security &security,
-                                          const Milestones &delayMeasurement) {
+void Kraken::MarketDataSource::UpdatePrices(
+    const pt::ptime &time,
+    const ptr::ptree &source,
+    Rest::Security &security,
+    const Milestones &delayMeasurement) {
   try {
     const auto &ask = ReadTopPrice<LEVEL1_TICK_ASK_PRICE, LEVEL1_TICK_ASK_QTY>(
-        source.get_child_optional("ask"));
+        source.get_child_optional("asks"));
     const auto &bid = ReadTopPrice<LEVEL1_TICK_BID_PRICE, LEVEL1_TICK_BID_QTY>(
-        source.get_child_optional("bid"));
+        source.get_child_optional("bids"));
 
     if (bid && ask) {
       security.SetLevel1(time, bid->first, bid->second, ask->first, ask->second,

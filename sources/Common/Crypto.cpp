@@ -12,8 +12,8 @@
 #include "Crypto.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Lib::Crypto;
+using namespace Lib;
+using namespace Crypto;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -81,7 +81,9 @@ std::string Crypto::EncodeToHex(const unsigned char *source, size_t sourceLen) {
 ////////////////////////////////////////////////////////////////////////////////
 
 boost::array<unsigned char, SHA512_DIGEST_LENGTH> Hmac::CalcSha512Digest(
-    const unsigned char *source, size_t sourceLen, const std::string &key) {
+    const unsigned char *source,
+    const size_t sourceLen,
+    const std::string &key) {
   return CalcSha512Digest(source, sourceLen,
                           reinterpret_cast<const unsigned char *>(key.c_str()),
                           key.size());
@@ -96,23 +98,25 @@ boost::array<unsigned char, SHA512_DIGEST_LENGTH> Hmac::CalcSha512Digest(
 
 boost::array<unsigned char, SHA512_DIGEST_LENGTH> Hmac::CalcSha512Digest(
     const unsigned char *source,
-    size_t sourceLen,
+    const size_t sourceLen,
     const unsigned char *key,
-    size_t keyLen) {
+    const size_t keyLen) {
   boost::array<unsigned char, SHA512_DIGEST_LENGTH> result;
   HMAC(EVP_sha512(), key, static_cast<int>(keyLen), source, sourceLen,
        &result[0], nullptr);
   return result;
 }
 boost::array<unsigned char, SHA512_DIGEST_LENGTH> Hmac::CalcSha512Digest(
-    const std::string &source, const unsigned char *key, size_t keyLen) {
+    const std::string &source, const unsigned char *key, const size_t keyLen) {
   return CalcSha512Digest(
       reinterpret_cast<const unsigned char *>(source.c_str()), source.size(),
       key, keyLen);
 }
 
 boost::array<unsigned char, SHA256_DIGEST_LENGTH> Hmac::CalcSha256Digest(
-    const unsigned char *source, size_t sourceLen, const std::string &key) {
+    const unsigned char *source,
+    const size_t sourceLen,
+    const std::string &key) {
   return CalcSha256Digest(source, sourceLen,
                           reinterpret_cast<const unsigned char *>(key.c_str()),
                           key.size());
@@ -125,16 +129,16 @@ boost::array<unsigned char, SHA256_DIGEST_LENGTH> Hmac::CalcSha256Digest(
 }
 boost::array<unsigned char, SHA256_DIGEST_LENGTH> Hmac::CalcSha256Digest(
     const unsigned char *source,
-    size_t sourceLen,
+    const size_t sourceLen,
     const unsigned char *key,
-    size_t keyLen) {
+    const size_t keyLen) {
   boost::array<unsigned char, SHA256_DIGEST_LENGTH> result;
   HMAC(EVP_sha256(), key, static_cast<int>(keyLen), source, sourceLen,
        &result[0], nullptr);
   return result;
 }
 boost::array<unsigned char, SHA256_DIGEST_LENGTH> Hmac::CalcSha256Digest(
-    const std::string &source, const unsigned char *key, size_t keyLen) {
+    const std::string &source, const unsigned char *key, const size_t keyLen) {
   return CalcSha256Digest(
       reinterpret_cast<const unsigned char *>(source.c_str()), source.size(),
       key, keyLen);
@@ -142,11 +146,21 @@ boost::array<unsigned char, SHA256_DIGEST_LENGTH> Hmac::CalcSha256Digest(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-boost::array<unsigned char, MD5_DIGEST_LENGTH> Crypto::CalcMd5Digest(
+boost::array<unsigned char, MD5_DIGEST_LENGTH> Crypto::CalcMd5(
     const std::string &source) {
   boost::array<unsigned char, MD5_DIGEST_LENGTH> result;
   MD5(reinterpret_cast<const unsigned char *>(source.c_str()), source.size(),
       &result[0]);
+  return result;
+}
+
+boost::array<unsigned char, SHA256_DIGEST_LENGTH> Crypto::CalcSha256(
+    const std::string &source) {
+  boost::array<unsigned char, SHA256_DIGEST_LENGTH> result;
+  SHA256_CTX ctx;
+  SHA256_Init(&ctx);
+  SHA256_Update(&ctx, source.c_str(), source.size());
+  SHA256_Final(result.data(), &ctx);
   return result;
 }
 

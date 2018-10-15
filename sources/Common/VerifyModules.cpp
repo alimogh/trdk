@@ -23,7 +23,7 @@ void Lib::VerifyModules(
     const boost::function<void(const fs::path &)> &onModule) {
   boost::unordered_map<std::string, bool /* is required */> moduleList;
   {
-    const std::string fullModuleList[] = TRDK_GET_MODUE_FILE_NAME_LIST();
+    const std::string fullModuleList[] = TRDK_GET_MODULE_FILE_NAME_LIST();
     for (const auto &module : fullModuleList) {
       AssertEq(0, moduleList.count(module));
       moduleList[module] = false;
