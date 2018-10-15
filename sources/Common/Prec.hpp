@@ -43,6 +43,7 @@
 #include <boost/unordered_map.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <openssl/md5.h>
+#include <openssl/sha.h>
 #include <iomanip>
 #include <iostream>
 

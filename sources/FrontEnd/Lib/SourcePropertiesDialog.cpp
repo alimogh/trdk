@@ -42,6 +42,7 @@ class SourcePropertiesDialog::Implementation {
         m_ui.exchange->addItem(title, impl);
       };
       addExchange("Coinbase Pro", "Coinbase");
+      addExchange("Kraken", "Kraken");
       addExchange("CEX.IO", "Cexio");
       addExchange("Bittrex", "Bittrex");
       addExchange("EXMO", "Exmo");
@@ -101,7 +102,7 @@ class SourcePropertiesDialog::Implementation {
     result.add("impl", impl);
     result.add("tradingMode", "live");
     result.add("title", m_ui.exchange->currentText().toStdString());
-    if (impl != "Exmo" && impl != "Huobi") {
+    if (impl != "Exmo" && impl != "Huobi" && impl != "Kraken") {
       result.add("module", "Rest");
       result.add("factory", "Create" + impl);
     } else {

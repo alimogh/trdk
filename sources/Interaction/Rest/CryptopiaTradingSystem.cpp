@@ -81,7 +81,7 @@ CryptopiaTradingSystem::PrivateRequest::PrivateRequest(
            tradingLog),
       m_settings(settings),
       m_isPriority(isPriority),
-      m_paramsDigest(Base64::Encode(CalcMd5Digest(params), false)),
+      m_paramsDigest(Base64::Encode(CalcMd5(params), false)),
       m_nonces(nonces) {
   SetBody(params);
 }
@@ -473,8 +473,7 @@ bool CryptopiaTradingSystem::UpdateOrders() {
           OnOrderRemainingQtyUpdated(ParseTimeStamp(order), *it.first,
                                      order.get<Qty>("Remaining"));
         } catch (const std::exception &ex) {
-          boost::format error(
-              R"(Failed to read order: "%1%". Message: "%2%")");
+          boost::format error(R"(Failed to read order: "%1%". Message: "%2%")");
           error % ex.what()                     // 1
               % ConvertToString(order, false);  // 2
           throw Exception(error.str().c_str());
@@ -615,8 +614,7 @@ void CryptopiaTradingSystem::SendWithdrawalTransaction(
     const std::string &symbol,
     const Volume &volume,
     const std::string &address) {
-  boost::format params(
-      R"({"Currency":"%1%","Amount":"%2%","Address":"%3%"})");
+  boost::format params(R"({"Currency":"%1%","Amount":"%2%","Address":"%3%"})");
   params % symbol  // 1
       % volume     // 2
       % address;   // 3
