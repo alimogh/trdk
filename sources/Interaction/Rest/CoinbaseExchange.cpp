@@ -511,19 +511,21 @@ class CoinbaseExchange : public TradingSystem, public MarketDataSource {
     boost::unordered_map<std::string, Product> products;
     PublicRequest request("products", "", GetContext(), GetTsLog());
     const auto response = boost::get<1>(request.Send(m_marketDataSession));
-    std::vector<std::string> log;
     for (const auto& node : response) {
       const auto& productNode = node.second;
       Product product = {productNode.get<std::string>("id"),
                          productNode.get<Qty>("base_min_size"),
                          productNode.get<Qty>("base_max_size")};
-      const auto& quoteIncrement =
-          productNode.get<std::string>("quote_increment");
-      const auto dotPos = quoteIncrement.find('.');
-      if (dotPos != std::string::npos && quoteIncrement.size() > dotPos) {
-        product.precisionPower = quoteIncrement.size() - dotPos - 1;
-        product.precisionPower = static_cast<decltype(product.precisionPower)>(
-            std::pow(10, product.precisionPower));
+      {
+        auto quoteIncrement = productNode.get<std::string>("quote_increment");
+        boost::trim_right_if(quoteIncrement, boost::is_any_of("0"));
+        const auto dotPos = quoteIncrement.find('.');
+        if (dotPos != std::string::npos && quoteIncrement.size() > dotPos) {
+          product.precisionPower = quoteIncrement.size() - dotPos - 1;
+          product.precisionPower =
+              static_cast<decltype(product.precisionPower)>(
+                  std::pow(10, product.precisionPower));
+        }
       }
       const auto& symbol = RestoreSymbol(product.id);
       const auto& productIt =
@@ -533,11 +535,6 @@ class CoinbaseExchange : public TradingSystem, public MarketDataSource {
         Assert(productIt.second);
         continue;
       }
-      boost::format logStr("%1% (ID: \"%2%\", price step: %3%)");
-      logStr % productIt.first->first   // 1
-          % productIt.first->second.id  // 2
-          % quoteIncrement;             // 3
-      log.emplace_back(logStr.str());
     }
 
     boost::unordered_set<std::string> symbolListHint;
@@ -547,8 +544,6 @@ class CoinbaseExchange : public TradingSystem, public MarketDataSource {
 
     m_products = std::move(products);
     m_symbolListHint = std::move(symbolListHint);
-
-    GetTsLog().Info("Products: %1%.", boost::join(log, ", "));
   }
 
   void UpdateBalances() {
