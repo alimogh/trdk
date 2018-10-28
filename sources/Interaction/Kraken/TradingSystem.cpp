@@ -214,8 +214,6 @@ void Kraken::TradingSystem::OnTransactionSent(
   m_pollingTask.AccelerateNextPolling();
 }
 
-bool Kraken::TradingSystem::AreWithdrawalSupported() const { return false; }
-
 void Kraken::TradingSystem::SubscribeToOrderUpdates() {
   m_pollingTask.AddTask(
       "Orders", 0, [this]() { return UpdateOrders(); },

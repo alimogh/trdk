@@ -172,7 +172,7 @@ MarketDataSource::MarketDataSource(Context &context,
                                    std::string title)
     : m_pimpl(std::make_unique<Implementation>(
           *this, context, std::move(instanceName), std::move(title))) {}
-MarketDataSource::MarketDataSource(MarketDataSource &&) = default;
+MarketDataSource::MarketDataSource(MarketDataSource &&) noexcept = default;
 MarketDataSource::~MarketDataSource() {
   try {
     if (!m_pimpl->m_asyncTasks.list.empty()) {

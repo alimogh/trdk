@@ -12,8 +12,8 @@
 #include "Util.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Interaction;
+using namespace Lib;
+using namespace Interaction;
 
 namespace is = boost::iostreams;
 namespace ptr = boost::property_tree;

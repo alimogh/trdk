@@ -19,7 +19,7 @@ namespace trdk {
 
 //! Log record with delayed formatting with tag.
 /** @sa trdk::TradingRecord
-        */
+ */
 class TradingRecord : public trdk::AsyncLogRecord {
  public:
   typedef trdk::AsyncLogRecord Base;
@@ -134,4 +134,4 @@ class ModuleTradingLog : private boost::noncopyable {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-}
+}  // namespace trdk

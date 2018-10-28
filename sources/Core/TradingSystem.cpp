@@ -168,7 +168,8 @@ class TradingSystem::Implementation {
     }
   }
 
-  void SendOrder(const boost::shared_ptr<Order> &order,
+  void SendOrder(const pt::ptime &time,
+                 const boost::shared_ptr<Order> &order,
                  const OrderParams &params) {
     ReportNewOrder(*order, "sending");
 
@@ -183,6 +184,17 @@ class TradingSystem::Implementation {
         Assert(order->transactionContext);
         ReportNewOrder(*order, ConvertToPch(ORDER_STATUS_SENT));
         RegisterCallback(order);
+        m_context.InvokeDropCopy([this, &order, &time](DropCopy &dropCopy) {
+          order->position
+              ? dropCopy.CopySubmittedOrder(
+                    order->transactionContext->GetOrderId(), time,
+                    *order->position, order->side, order->qty, order->price,
+                    order->tif)
+              : dropCopy.CopySubmittedOrder(
+                    order->transactionContext->GetOrderId(), time,
+                    order->security, order->currency, m_self, order->side,
+                    order->qty, order->price, order->tif);
+        });
       }
       m_self.OnTransactionSent(*order->transactionContext);
     } catch (const std::exception &ex) {
@@ -677,7 +689,7 @@ boost::shared_ptr<const OrderTransactionContext> TradingSystem::SendOrder(
                                      : security.GetBidPrice(),
       tif, delayMeasurement, riskControlScope, nullptr);
   try {
-    m_pimpl->SendOrder(order, params);
+    m_pimpl->SendOrder(time, order, params);
   } catch (const std::exception &ex) {
     GetContext().InvokeDropCopy([this, &order, &time, &ex](DropCopy &dropCopy) {
       dropCopy.CopyOrderSubmitError(time, order->security, order->currency,
@@ -686,12 +698,6 @@ boost::shared_ptr<const OrderTransactionContext> TradingSystem::SendOrder(
     });
     throw;
   }
-  GetContext().InvokeDropCopy([this, &order, &time](DropCopy &dropCopy) {
-    dropCopy.CopySubmittedOrder(order->transactionContext->GetOrderId(), time,
-                                order->security, order->currency, *this,
-                                order->side, order->qty, order->price,
-                                order->tif);
-  });
   return order->transactionContext;
 }
 boost::shared_ptr<const OrderTransactionContext> TradingSystem::SendOrder(
@@ -718,20 +724,15 @@ boost::shared_ptr<const OrderTransactionContext> TradingSystem::SendOrder(
       // be canceled or filled:
       std::move(position));
   try {
-    m_pimpl->SendOrder(order, params);
+    m_pimpl->SendOrder(time, order, params);
   } catch (const std::exception &ex) {
-    GetContext().InvokeDropCopy([this, &order, &time, &ex](DropCopy &dropCopy) {
+    GetContext().InvokeDropCopy([&order, &time, &ex](DropCopy &dropCopy) {
       dropCopy.CopyOrderSubmitError(time, *order->position, order->side,
                                     order->qty, order->price, order->tif,
                                     ex.what());
     });
     throw;
   }
-  GetContext().InvokeDropCopy([this, &order, &time](DropCopy &dropCopy) {
-    dropCopy.CopySubmittedOrder(order->transactionContext->GetOrderId(), time,
-                                *order->position, order->side, order->qty,
-                                order->price, order->tif);
-  });
   return order->transactionContext;
 }
 

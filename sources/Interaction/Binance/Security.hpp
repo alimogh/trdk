@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/10/30 22:56:12
+ *   Created: 2018/04/07 13:50:39
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -12,15 +12,17 @@
 
 namespace trdk {
 namespace Interaction {
-namespace Rest {
+namespace Binance {
 
-TRDK_INTERACTION_REST_API std::string ConvertToString(
-    const boost::property_tree::ptree &, bool multiline);
-TRDK_INTERACTION_REST_API boost::property_tree::ptree ReadJson(
-    const std::string &);
+class Security : public trdk::Security {
+ public:
+  typedef trdk::Security Base;
 
-TRDK_INTERACTION_REST_API std::unique_ptr<Poco::Net::HTTPSClientSession>
-CreateSession(const std::string &host, const Settings &, bool isTrading);
-}  // namespace Rest
+  explicit Security(Context &,
+                    const Lib::Symbol &,
+                    MarketDataSource &,
+                    const SupportedLevel1Types &);
+};
+}  // namespace Binance
 }  // namespace Interaction
 }  // namespace trdk

@@ -72,7 +72,7 @@ Request::Request(std::string uri,
   m_request->set("User-Agent", TRDK_NAME " " TRDK_BUILD_IDENTITY);
   m_request->set("Connection", "keep-alive");
   m_request->set("DNT", "1");
-  if (m_request->getMethod() == net::HTTPRequest::HTTP_POST) {
+  if (m_request->getMethod() != net::HTTPRequest::HTTP_GET) {
     m_request->setContentType(contentType);
   }
 }
@@ -206,7 +206,7 @@ boost::tuple<pt::ptime, ptr::ptree, TimeMeasurement::Milestones> Request::Send(
 
 void Request::CreateBody(const net::HTTPClientSession&,
                          std::string& result) const {
-  if (m_request->getMethod() != net::HTTPRequest::HTTP_POST) {
+  if (m_request->getMethod() == net::HTTPRequest::HTTP_GET) {
     return;
   }
   AppendUriParams(m_uriParams, result);
