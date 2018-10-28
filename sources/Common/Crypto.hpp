@@ -27,6 +27,11 @@ std::vector<unsigned char> Decode(const std::string &);
 
 std::string EncodeToHex(const unsigned char *source, size_t sourceLen);
 
+template <typename Source>
+std::string EncodeToHex(const Source &source) {
+  return EncodeToHex(&source[0], source.size());
+}
+
 namespace Hmac {
 boost::array<unsigned char, 64> CalcSha512Digest(const unsigned char *source,
                                                  size_t sourceLen,

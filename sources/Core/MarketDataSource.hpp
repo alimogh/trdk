@@ -26,7 +26,7 @@ class TRDK_CORE_API MarketDataSource : virtual public Interactor {
   explicit MarketDataSource(Context&,
                             std::string instanceName,
                             std::string title);
-  MarketDataSource(MarketDataSource&&);
+  MarketDataSource(MarketDataSource&&) noexcept;
   MarketDataSource(const MarketDataSource&) = delete;
   MarketDataSource& operator=(MarketDataSource&&) = delete;
   MarketDataSource& operator=(const MarketDataSource&) = delete;

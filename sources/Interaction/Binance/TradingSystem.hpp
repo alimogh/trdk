@@ -1,5 +1,5 @@
 ﻿//
-//    Created: 2018/10/14 8:51 PM
+//    Created: 2018/04/07 3:47 PM
 //     Author: Eugene V. Palchukovsky
 //     E-mail: eugene@palchukovsky.com
 // ------------------------------------------
@@ -12,11 +12,10 @@
 
 #include "AuthSettings.hpp"
 #include "Product.hpp"
-#include "Request.hpp"
 
 namespace trdk {
 namespace Interaction {
-namespace Kraken {
+namespace Binance {
 
 class TradingSystem : public trdk::TradingSystem {
  public:
@@ -36,27 +35,18 @@ class TradingSystem : public trdk::TradingSystem {
 
   bool IsConnected() const override;
 
-  Balances &GetBalancesStorage() override;
-
   Volume CalcCommission(const Qty &,
                         const Price &,
                         const OrderSide &,
-                        const Security &) const override;
+                        const trdk::Security &) const override;
 
-  boost::optional<OrderCheckError> CheckOrder(
-      const Security &security,
-      const Lib::Currency &currency,
-      const Qty &qty,
-      const boost::optional<Price> &price,
-      const OrderSide &side) const override;
-
-  bool CheckSymbol(const std::string &) const override;
+  Balances &GetBalancesStorage() override;
 
  protected:
   void CreateConnection() override;
 
   std::unique_ptr<OrderTransactionContext> SendOrderTransaction(
-      Security &,
+      trdk::Security &,
       const Lib::Currency &,
       const Qty &,
       const boost::optional<Price> &,
@@ -66,31 +56,42 @@ class TradingSystem : public trdk::TradingSystem {
 
   void SendCancelOrderTransaction(const OrderTransactionContext &) override;
 
-  void OnTransactionSent(const OrderTransactionContext &) override;
+  boost::optional<OrderCheckError> CheckOrder(
+      const trdk::Security &security,
+      const Lib::Currency &currency,
+      const Qty &qty,
+      const boost::optional<Price> &price,
+      const OrderSide &side) const override;
+
+  bool CheckSymbol(const std::string &) const override;
 
  private:
-  void UpdateBalances();
+  boost::shared_ptr<TradingSystemConnection> CreateListeningConnection();
+  void ScheduleListeningConnectionReconnect();
 
-  void SubscribeToOrderUpdates();
-  bool UpdateOrders();
-  void UpdateOrder(const boost::posix_time::ptime &,
-                   const OrderId &,
-                   const boost::property_tree::ptree &);
+  void HandleMessage(const boost::posix_time::ptime &,
+                     const boost::property_tree::ptree &,
+                     const Lib::TimeMeasurement::Milestones &);
+
+  void UpdateBalances(const boost::property_tree::ptree &);
+  void UpdateOrder(const boost::property_tree::ptree &);
 
   AuthSettings m_settings;
   const boost::posix_time::time_duration m_serverTimeDiff;
+
+  std::string m_key;
   boost::unordered_map<std::string, Product> m_products;
 
-  Rest::NonceStorage m_nonces;
-
-  PrivateRequest m_balancesRequest;
   TradingLib::BalancesContainer m_balances;
 
-  std::unique_ptr<Poco::Net::HTTPSClientSession> m_tradingSession;
-  std::unique_ptr<Poco::Net::HTTPSClientSession> m_pollingSession;
+  std::unique_ptr<Poco::Net::HTTPSClientSession> m_session;
 
-  Rest::PollingTask m_pollingTask;
+  boost::mutex m_listeningConnectionMutex;
+  boost::shared_ptr<TradingSystemConnection> m_listeningConnection;
+
+  Timer::Scope m_timerScope;
 };
-}  // namespace Kraken
+
+}  // namespace Binance
 }  // namespace Interaction
 }  // namespace trdk

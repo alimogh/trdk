@@ -13,15 +13,13 @@
 #include "PollingSettings.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Interaction;
-using namespace trdk::Interaction::Rest;
-
+using namespace Lib;
+using namespace Interaction;
+using namespace Rest;
 namespace pt = boost::posix_time;
 namespace ch = boost::chrono;
 
-PollingTask::PollingTask(const PollingSettings &setttings,
-                         ModuleEventsLog &log)
+PollingTask::PollingTask(const PollingSettings &setttings, ModuleEventsLog &log)
     : m_log(log),
       m_pollingInterval(
           ch::microseconds(setttings.GetInterval().total_microseconds())),
@@ -127,7 +125,7 @@ void PollingTask::RunTasks() {
 
     auto nextStartTime = ch::system_clock::now() + m_pollingInterval;
     while (!m_tasks.empty()) {
-      const bool isAccelerated = m_isAccelerated;
+      const auto isAccelerated = m_isAccelerated;
       m_isAccelerated = false;
       if (!isAccelerated) {
         nextStartTime = ch::system_clock::now() + m_pollingInterval;

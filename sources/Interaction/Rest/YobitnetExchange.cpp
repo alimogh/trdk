@@ -623,7 +623,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       return result;
     } catch (const ptr::ptree_error& ex) {
       boost::format error(
-          "Wrong server response to the request \"%1%\" (%2%): \"%3%\"");
+          R"(Wrong server response to the request "%1%" (%2%): "%3%")");
       error % request.GetName()            // 1
           % request.GetRequest().getURI()  // 2
           % ex.what();                     // 3
@@ -642,7 +642,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       SetBalances(response);
     } catch (const ptr::ptree_error& ex) {
       boost::format error(
-          "Wrong server response to the request \"%1%\" (%2%): \"%3%\"");
+          R"(Wrong server response to the request "%1%" (%2%): "%3%")");
       error % request.GetName()            // 1
           % request.GetRequest().getURI()  // 2
           % ex.what();                     // 3
