@@ -22,6 +22,10 @@ class TRDK_ENGINE_API Context : public trdk::Context {
   typedef trdk::Context Base;
 
   explicit Context(Log &, TradingLog &, Settings &&);
+  Context(Context &&) noexcept;
+  Context(const Context &) = delete;
+  Context &operator=(Context &&) = delete;
+  Context &operator=(const Context &) = delete;
   ~Context() override;
 
   void Start(
@@ -30,8 +34,7 @@ class TRDK_ENGINE_API Context : public trdk::Context {
       DropCopy * = nullptr);
   void Stop(const StopMode &);
 
-  void Add(const boost::property_tree::ptree &) override;
-  void Update(const boost::property_tree::ptree &);
+  std::unique_ptr<AddingTransaction> StartAdding() override;
 
   std::unique_ptr<DispatchingLock> SyncDispatching() const override;
 
@@ -56,10 +59,10 @@ class TRDK_ENGINE_API Context : public trdk::Context {
                                         const TradingMode &) const override;
   TradingSystem &GetTradingSystem(size_t index, const TradingMode &) override;
 
-  Strategy &GetSrategy(const boost::uuids::uuid &id) override;
-  const Strategy &GetSrategy(const boost::uuids::uuid &id) const override;
+  Strategy &GetStrategy(const boost::uuids::uuid &id) override;
+  const Strategy &GetStrategy(const boost::uuids::uuid &id) const override;
 
-  void CloseSrategiesPositions() override;
+  void CloseStrategiesPositions() override;
 
  protected:
   DropCopy *GetDropCopy() const override;

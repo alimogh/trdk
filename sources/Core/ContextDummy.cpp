@@ -101,18 +101,19 @@ DropCopy *Dummies::Context::GetDropCopy() const {
   throw std::logic_error("Not supported");
 }
 
-Strategy &Dummies::Context::GetSrategy(const ids::uuid &) {
+Strategy &Dummies::Context::GetStrategy(const ids::uuid &) {
   throw std::logic_error("Not supported");
 }
 
-const Strategy &Dummies::Context::GetSrategy(const ids::uuid &) const {
+const Strategy &Dummies::Context::GetStrategy(const ids::uuid &) const {
   throw std::logic_error("Not supported");
 }
 
-void Dummies::Context::CloseSrategiesPositions() {
+void Dummies::Context::CloseStrategiesPositions() {
   throw std::logic_error("Not supported");
 }
 
-void Dummies::Context::Add(const boost::property_tree::ptree &) {
+std::unique_ptr<Dummies::Context::AddingTransaction>
+Dummies::Context::StartAdding() {
   throw std::logic_error("Not supported");
 }

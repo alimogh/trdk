@@ -12,9 +12,10 @@
 #include "Strategy.hpp"
 #include "StrategyWindow.hpp"
 
-using namespace trdk::Strategies::PingPong;
-using namespace trdk::FrontEnd;
-namespace pp = trdk::Strategies::PingPong;
+using namespace trdk;
+using namespace Strategies::PingPong;
+using namespace FrontEnd;
+namespace pp = Strategies::PingPong;
 namespace ptr = boost::property_tree;
 
 StrategyMenuActionList CreateMenuActions(Engine &engine) {
@@ -22,25 +23,29 @@ StrategyMenuActionList CreateMenuActions(Engine &engine) {
           {QObject::tr("&Ping Pong..."),
            [&engine](QWidget *parent) -> StrategyWidgetList {
              StrategyWidgetList result;
+             auto transaction = engine.GetContext().StartAdding();
              for (const auto &symbol :
                   SymbolSelectionDialog(engine, parent).RequestSymbols()) {
-               result.emplace_back(
-                   boost::make_unique<StrategyWindow>(engine, symbol, parent));
+               result.emplace_back(boost::make_unique<StrategyWindow>(
+                   engine, symbol, *transaction, parent));
              }
+             transaction->Commit();
              return result;
            }}};
 }
 
-StrategyWidgetList RestoreStrategyWidgets(Engine &engine,
-                                          const QUuid &typeId,
-                                          const QUuid &instanceId,
-                                          const QString &name,
-                                          const ptr::ptree &config,
-                                          QWidget *parent) {
+StrategyWidgetList RestoreStrategyWidgets(
+    Engine &engine,
+    const QUuid &typeId,
+    const QUuid &instanceId,
+    const QString &name,
+    const ptr::ptree &config,
+    Context::AddingTransaction &transaction,
+    QWidget *parent) {
   StrategyWidgetList result;
   if (ConvertToBoostUuid(typeId) == pp::Strategy::typeId) {
     result.emplace_back(boost::make_unique<StrategyWindow>(
-        engine, instanceId, name, config, parent));
+        engine, instanceId, name, config, transaction, parent));
   }
   return result;
 }

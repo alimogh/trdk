@@ -19,6 +19,10 @@ namespace Dummies {
 class Context : public trdk::Context {
  public:
   Context();
+  Context(Context&&) = default;
+  Context(const Context&) = delete;
+  Context& operator=(Context&&) = delete;
+  Context& operator=(const Context&) = delete;
   ~Context() override = default;
 
   static Context& GetInstance();
@@ -48,12 +52,12 @@ class Context : public trdk::Context {
                                         const TradingMode&) const override;
   TradingSystem& GetTradingSystem(size_t, const TradingMode&) override;
 
-  Strategy& GetSrategy(const boost::uuids::uuid&) override;
-  const Strategy& GetSrategy(const boost::uuids::uuid&) const override;
+  Strategy& GetStrategy(const boost::uuids::uuid&) override;
+  const Strategy& GetStrategy(const boost::uuids::uuid&) const override;
 
-  void CloseSrategiesPositions() override;
+  void CloseStrategiesPositions() override;
 
-  void Add(const boost::property_tree::ptree&) override;
+  std::unique_ptr<AddingTransaction> StartAdding() override;
 
  protected:
   DropCopy* GetDropCopy() const override;

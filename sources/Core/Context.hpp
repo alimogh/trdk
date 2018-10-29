@@ -58,8 +58,22 @@ class TRDK_CORE_API Context {
   typedef boost::function<StateUpdateSlotSignature> StateUpdateSlot;
   typedef boost::signals2::connection StateUpdateConnection;
 
+  class AddingTransaction {
+   public:
+    AddingTransaction() = default;
+    AddingTransaction(AddingTransaction&&) = delete;
+    AddingTransaction(const AddingTransaction&) = delete;
+    AddingTransaction& operator=(AddingTransaction&&) = delete;
+    AddingTransaction& operator=(const AddingTransaction&) = delete;
+    virtual ~AddingTransaction() = default;
+    virtual void Add(const boost::property_tree::ptree&) = 0;
+    virtual void Commit() = 0;
+    virtual void Rollback() noexcept = 0;
+    virtual Strategy& GetStrategy(const boost::uuids::uuid&) = 0;
+  };
+
   explicit Context(Log&, TradingLog&, Settings&&);
-  Context(Context&&);
+  Context(Context&&) noexcept;
   Context(const Context&) = delete;
   Context& operator=(Context&&) = delete;
   Context& operator=(const Context&) = delete;
@@ -208,13 +222,13 @@ class TRDK_CORE_API Context {
    */
   virtual TradingSystem& GetTradingSystem(size_t index, const TradingMode&) = 0;
 
-  virtual Strategy& GetSrategy(const boost::uuids::uuid& id) = 0;
-  virtual const Strategy& GetSrategy(const boost::uuids::uuid& id) const = 0;
+  virtual Strategy& GetStrategy(const boost::uuids::uuid& id) = 0;
+  virtual const Strategy& GetStrategy(const boost::uuids::uuid& id) const = 0;
 
   //! Asks each strategy to close all opened positions if it has.
-  virtual void CloseSrategiesPositions() = 0;
+  virtual void CloseStrategiesPositions() = 0;
 
-  virtual void Add(const boost::property_tree::ptree&) = 0;
+  virtual std::unique_ptr<AddingTransaction> StartAdding() = 0;
 
  protected:
   //! Returns Drop Copy or nullptr.
