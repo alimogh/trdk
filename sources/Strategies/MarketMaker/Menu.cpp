@@ -19,11 +19,13 @@ StrategyMenuActionList CreateMenuActions(Engine &engine) {
           {QObject::tr("&Market Maker \"Taker\"..."),
            [&engine](QWidget *parent) -> StrategyWidgetList {
              StrategyWidgetList result;
+             auto transaction = engine.GetContext().StartAdding();
              for (const auto &symbol :
                   SymbolSelectionDialog(engine, parent).RequestSymbols()) {
                result.emplace_back(boost::make_unique<TakerStrategyWindow>(
-                   engine, symbol, parent));
+                   engine, symbol, *transaction, parent));
              }
+             transaction->Commit();
              return result;
            }}};
 }

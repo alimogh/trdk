@@ -43,36 +43,41 @@ LegsConf ParseLegsConf(const ptr::ptree &config) {
 
 }  // namespace
 
-StrategyWidgetList RestoreStrategyWidgets(Engine &engine,
-                                          const QUuid &typeId,
-                                          const QUuid &instanceId,
-                                          const QString &name,
-                                          const ptr::ptree &config,
-                                          QWidget *parent) {
+StrategyWidgetList RestoreStrategyWidgets(
+    Engine &engine,
+    const QUuid &typeId,
+    const QUuid &instanceId,
+    const QString &name,
+    const ptr::ptree &config,
+    Context::AddingTransaction &transaction,
+    QWidget *parent) {
 #pragma comment(linker, "/EXPORT:" __FUNCTION__ "=" __FUNCDNAME__)
   StrategyWidgetList result;
   if (ConvertToBoostUuid(typeId) == ta::Strategy::typeId) {
     result.emplace_back(boost::make_unique<StrategyWindow>(
-        engine, instanceId, name, config, parent));
+        engine, instanceId, name, config, transaction, parent));
   }
   return result;
 }
 
-StrategyWidgetList CreateStrategyWidgetsForSymbols(Engine &engine,
-                                                   const QString &configString,
-                                                   QWidget *parent) {
+StrategyWidgetList CreateStrategyWidgetsForSymbols(
+    Engine &engine,
+    const QString &configString,
+    Context::AddingTransaction &transaction,
+    QWidget *parent) {
 #pragma comment(linker, "/EXPORT:" __FUNCTION__ "=" __FUNCDNAME__)
   StrategyWidgetList result;
   std::istringstream configStream(configString.toStdString());
   ptr::ptree config;
   ptr::json_parser::read_json(configStream, config);
   result.emplace_back(boost::make_unique<StrategyWindow>(
-      engine, ParseLegsConf(config), parent));
+      engine, ParseLegsConf(config), transaction, parent));
   return result;
 }
 
 StrategyWindow::StrategyWindow(Engine &engine,
                                const LegsConf &legSet,
+                               Context::AddingTransaction &transaction,
                                QWidget *parent)
     : Base(parent), m_engine(engine) {
   std::string legsStr;
@@ -108,8 +113,10 @@ StrategyWindow::StrategyWindow(Engine &engine,
   m_config.add_child("config.legs", legs);
   m_config.add_child("requirements.level1Updates.symbols", symbols);
 
-  Init(id, m_engine.GenerateNewStrategyInstanceName("Triangular Arbitrage " +
-                                                    legsStr));
+  Init(id,
+       m_engine.GenerateNewStrategyInstanceName("Triangular Arbitrage " +
+                                                legsStr),
+       transaction);
 
   StoreConfig(true);
 }
@@ -118,15 +125,17 @@ StrategyWindow::StrategyWindow(Engine &engine,
                                const QUuid &strategyId,
                                const QString &name,
                                const ptr::ptree &config,
+                               Context::AddingTransaction &transaction,
                                QWidget *parent)
     : Base(parent), m_engine(engine), m_config(config) {
-  Init(ConvertToBoostUuid(strategyId), name.toStdString());
+  Init(ConvertToBoostUuid(strategyId), name.toStdString(), transaction);
 }
 
 StrategyWindow::~StrategyWindow() { m_strategy->Stop(); }
 
 void StrategyWindow::Init(const ids::uuid &id,
-                          const std::string &strategyName) {
+                          const std::string &strategyName,
+                          Context::AddingTransaction &transaction) {
   const auto &legSet = ParseLegsConf(m_config.get_child("config.legs"));
 
   m_investCurrency =
@@ -134,7 +143,7 @@ void StrategyWindow::Init(const ids::uuid &id,
   m_resultCurrency =
       legSet.front().symbol.left(legSet.front().symbol.indexOf('_'));
 
-  m_strategy = &CreateStrategyInstance(id, strategyName);
+  m_strategy = &CreateStrategyInstance(id, strategyName, transaction);
 
   m_ui.setupUi(this);
   m_legs = {
@@ -379,15 +388,17 @@ void StrategyWindow::ConnectSignals() {
       }));
 }
 
-ta::Strategy &StrategyWindow::CreateStrategyInstance(const ids::uuid &id,
-                                                     const std::string &name) {
+ta::Strategy &StrategyWindow::CreateStrategyInstance(
+    const ids::uuid &id,
+    const std::string &name,
+    Context::AddingTransaction &transaction) {
   {
-    ptr::ptree strategyTagedConfig;
-    strategyTagedConfig.add_child(name, m_config);
-    m_engine.GetContext().Add(strategyTagedConfig);
+    ptr::ptree strategyTaggedConfig;
+    strategyTaggedConfig.add_child(name, m_config);
+    transaction.Add(strategyTaggedConfig);
   }
   auto &result = *boost::polymorphic_downcast<ta::Strategy *>(
-      &m_engine.GetContext().GetSrategy(id));
+      &transaction.GetStrategy(id));
 
   m_opportunityUpdateConnection = result.SubscribeToOpportunity(
       [this](const std::vector<Opportunity> &opportunities) {

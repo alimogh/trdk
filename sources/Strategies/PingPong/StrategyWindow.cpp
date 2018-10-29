@@ -23,11 +23,12 @@ namespace ids = boost::uuids;
 
 StrategyWindow::StrategyWindow(Engine& engine,
                                const QString& symbol,
+                               Context::AddingTransaction& transaction,
                                QWidget* parent)
     : Base(parent),
       m_engine(engine),
       m_symbol(symbol.toStdString()),
-      m_strategy(GenerateNewStrategyInstance()) {
+      m_strategy(GenerateNewStrategyInstance(transaction)) {
   Init();
   StoreConfig(true);
 }
@@ -36,12 +37,13 @@ StrategyWindow::StrategyWindow(Engine& engine,
                                const QUuid& strategyId,
                                const QString& name,
                                const ptr::ptree& config,
+                               Context::AddingTransaction& transaction,
                                QWidget* parent)
     : Base(parent),
       m_engine(engine),
       m_symbol(config.get<std::string>("config.symbol")),
-      m_strategy(
-          RestoreStrategyInstance(strategyId, name.toStdString(), config)) {
+      m_strategy(RestoreStrategyInstance(
+          strategyId, name.toStdString(), config, transaction)) {
   Init();
 }
 
@@ -410,30 +412,35 @@ void StrategyWindow::ConnectSignals() {
 pp::Strategy& StrategyWindow::CreateStrategyInstance(
     const ids ::uuid& strategyId,
     const std::string& name,
-    const ptr::ptree& config) {
+    const ptr::ptree& config,
+    Context::AddingTransaction& transaction) {
   {
     ptr::ptree strategiesConfig;
     strategiesConfig.add_child(name, config);
-    m_engine.GetContext().Add(strategiesConfig);
+    transaction.Add(strategiesConfig);
   }
   return *boost ::polymorphic_downcast<Strategy*>(
-      &m_engine.GetContext().GetSrategy(strategyId));
+      &transaction.GetStrategy(strategyId));
 }
 
-pp::Strategy& StrategyWindow::GenerateNewStrategyInstance() {
+pp::Strategy& StrategyWindow::GenerateNewStrategyInstance(
+    Context::AddingTransaction& transaction) {
   static ids::random_generator generateStrategyId;
   const auto& id = generateStrategyId();
   return CreateStrategyInstance(
       id, m_engine.GenerateNewStrategyInstanceName("Ping Pong " + m_symbol),
       CreateConfig(id, false, false, true, .01, false, false, 12, 26, false,
-                   false, 14, 70, 30, 3, .75, 15, pt ::minutes(5)));
+                   false, 14, 70, 30, 3, .75, 15, pt ::minutes(5)),
+      transaction);
 }
 
 pp ::Strategy& StrategyWindow::RestoreStrategyInstance(
     const QUuid& strategyId,
     const std::string& name,
-    const ptr::ptree& config) {
-  return CreateStrategyInstance(ConvertToBoostUuid(strategyId), name, config);
+    const ptr::ptree& config,
+    Context::AddingTransaction& transaction) {
+  return CreateStrategyInstance(ConvertToBoostUuid(strategyId), name, config,
+                                transaction);
 }
 
 ptr::ptree StrategyWindow::CreateConfig(

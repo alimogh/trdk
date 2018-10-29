@@ -140,7 +140,7 @@ class Engine::Context::Implementation::State {
                              m_strategies.size());
   }
 
-  Strategy &GetSrategy(const ids::uuid &id) {
+  Strategy &GetStrategy(const ids::uuid &id) {
     for (auto &strategy : m_strategies) {
       if (strategy->GetId() == id) {
         return *strategy;
@@ -400,36 +400,99 @@ void Engine::Context::Stop(const StopMode &stopMode) {
   m_pimpl->m_state.reset();
 }
 
-void Engine::Context::Add(const ptr::ptree &newStrategiesConf) {
-  GetLog().Debug("Adding new entities into engine context...");
-  m_pimpl->m_state->m_subscriptionsManager.Suspend();
+std::unique_ptr<Engine::Context::AddingTransaction>
+Engine::Context::StartAdding() {
+  class Transaction : public AddingTransaction {
+   public:
+    explicit Transaction(Context &context) : m_context(context) {}
+    Transaction(Transaction &&) = delete;
+    Transaction(const Transaction &) = delete;
+    Transaction &operator=(Transaction &&) = delete;
+    Transaction &operator=(const Transaction &) = delete;
+    ~Transaction() override { Transaction::Rollback(); }
 
-  std::vector<DllObjectPtr<Strategy>> newStrategies;
-  try {
-    newStrategies = LoadStrategies(newStrategiesConf, *this,
-                                   m_pimpl->m_state->m_subscriptionsManager);
-  } catch (const Exception &ex) {
-    GetLog().Error("Failed to add new entities into engine context: \"%1%\".",
-                   ex);
-    throw Exception("Failed to add new m_strategies into engine context");
-  }
-  m_pimpl->m_state->m_strategies.insert(
-      m_pimpl->m_state->m_strategies.end(),
-      std::make_move_iterator(newStrategies.begin()),
-      std::make_move_iterator(newStrategies.end()));
-
-  m_pimpl->m_state->ReportState();
-  m_pimpl->m_state->m_subscriptionsManager.Activate();
-
-  ForEachMarketDataSource([&](MarketDataSource &source) {
-    try {
-      source.SubscribeToSecurities();
-    } catch (const Lib::Exception &ex) {
-      source.GetLog().Error(
-          R"(Failed to make market data subscription: "%1%".)", ex);
-      throw Exception("Failed to make market data subscription");
+    Strategy &GetStrategy(const ids::uuid &id) override {
+      for (auto &strategy : m_newStrategies) {
+        if (strategy->GetId() == id) {
+          return *strategy;
+        }
+      }
+      return m_context.GetStrategy(id);
     }
-  });
+
+    void Add(const ptr::ptree &newStrategiesConf) override {
+      if (m_isCommitted) {
+        m_context.GetLog().Debug("Adding new entities into engine context...");
+        AssertEq(0, m_newStrategies.size());
+        m_context.m_pimpl->m_state->m_subscriptionsManager.Suspend();
+        m_isCommitted = false;
+      }
+
+      std::vector<DllObjectPtr<Strategy>> newStrategies;
+      try {
+        newStrategies =
+            LoadStrategies(newStrategiesConf, m_context,
+                           m_context.m_pimpl->m_state->m_subscriptionsManager);
+      } catch (const Exception &ex) {
+        m_context.GetLog().Error(
+            "Failed to add new entities into engine context: \"%1%\".", ex);
+        throw Exception("Failed to add new strategies into engine context");
+      }
+      m_newStrategies.insert(m_newStrategies.end(),
+                             std::make_move_iterator(newStrategies.begin()),
+                             std::make_move_iterator(newStrategies.end()));
+    }
+
+    void Commit() override {
+      if (m_isCommitted) {
+        return;
+      }
+
+      auto &state = *m_context.m_pimpl->m_state;
+
+      auto strategies = state.m_strategies;
+      strategies.insert(strategies.end(), m_newStrategies.begin(),
+                        m_newStrategies.end());
+      state.ReportState();
+      state.m_subscriptionsManager.Activate();
+
+      m_context.ForEachMarketDataSource([&](MarketDataSource &source) {
+        try {
+          source.SubscribeToSecurities();
+        } catch (const Lib::Exception &ex) {
+          source.GetLog().Error(
+              R"(Failed to make market data subscription: "%1%".)", ex);
+          throw Exception("Failed to make market data subscription");
+        }
+      });
+
+      m_newStrategies.clear();
+      strategies.swap(state.m_strategies);
+      m_isCommitted = true;
+    }
+
+    void Rollback() noexcept override {
+      if (m_isCommitted) {
+        return;
+      }
+      m_context.GetLog().Debug(
+          "New entities were not added to engine context.");
+      try {
+        m_context.m_pimpl->m_state->m_subscriptionsManager.Activate();
+      } catch (...) {
+        AssertFailNoException();
+        terminate();
+      }
+      m_newStrategies.clear();
+      m_isCommitted = true;
+    }
+
+   private:
+    Context &m_context;
+    std::vector<DllObjectPtr<Strategy>> m_newStrategies;
+    bool m_isCommitted = true;
+  };
+  return boost::make_unique<Transaction>(*this);
 }
 
 namespace {
@@ -491,12 +554,12 @@ bool Engine::Context::HasExpirationCalendar() const {
 
 namespace {
 bool IsCurrencySupported(const std::string &symbol) {
-  const auto delimeter = symbol.find('_');
-  if (delimeter == std::string::npos) {
+  const auto delimiter = symbol.find('_');
+  if (delimiter == std::string::npos) {
     return true;
   }
   try {
-    ConvertCurrencyFromIso(symbol.substr(delimeter + 1));
+    ConvertCurrencyFromIso(symbol.substr(delimiter + 1));
   } catch (const Exception &) {
     return false;
   }
@@ -572,7 +635,7 @@ const TradingSystem &Engine::Context::GetTradingSystem(
   return const_cast<Context *>(this)->GetTradingSystem(index, mode);
 }
 
-void Engine::Context::CloseSrategiesPositions() {
+void Engine::Context::CloseStrategiesPositions() {
   if (!m_pimpl->m_state) {
     return;
   }
@@ -583,18 +646,18 @@ void Engine::Context::CloseSrategiesPositions() {
   GetLog().Debug("Closing positions: requests sent.");
 }
 
-Strategy &Engine::Context::GetSrategy(const ids::uuid &id) {
+Strategy &Engine::Context::GetStrategy(const ids::uuid &id) {
   if (!m_pimpl->m_state) {
     throw LogicError("Is not started");
   }
-  return m_pimpl->m_state->GetSrategy(id);
+  return m_pimpl->m_state->GetStrategy(id);
 }
 
-const Strategy &Engine::Context::GetSrategy(const ids::uuid &id) const {
+const Strategy &Engine::Context::GetStrategy(const ids::uuid &id) const {
   if (!m_pimpl->m_state) {
     throw LogicError("Is not started");
   }
-  return m_pimpl->m_state->GetSrategy(id);
+  return m_pimpl->m_state->GetStrategy(id);
 }
 
 //////////////////////////////////////////////////////////////////////////

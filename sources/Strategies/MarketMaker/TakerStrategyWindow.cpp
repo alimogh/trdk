@@ -19,12 +19,14 @@ using namespace Strategies::MarketMaker;
 namespace pt = boost::posix_time;
 namespace ptr = boost::property_tree;
 
-TakerStrategyWindow::TakerStrategyWindow(Engine& engine,
-                                         const QString& symbol,
-                                         QWidget* parent)
+TakerStrategyWindow::TakerStrategyWindow(
+    Engine& engine,
+    const QString& symbol,
+    Context::AddingTransaction& transaction,
+    QWidget* parent)
     : Base(parent),
       m_engine(engine),
-      m_strategy(CreateStrategyInstance(symbol)) {
+      m_strategy(CreateStrategyInstance(symbol, transaction)) {
   m_ui.setupUi(this);
 
   setWindowTitle(symbol + " " + tr(R"(Market Maker "Taker")") + " - " +
@@ -282,7 +284,7 @@ void TakerStrategyWindow::ConnectSignals() {
 }
 
 TakerStrategy& TakerStrategyWindow ::CreateStrategyInstance(
-    const QString& symbol) {
+    const QString& symbol, Context::AddingTransaction& transaction) {
   static boost::uuids::random_generator generateStrategyId;
   const auto& strategyId = generateStrategyId();
   {
@@ -301,10 +303,10 @@ TakerStrategy& TakerStrategyWindow ::CreateStrategyInstance(
         m_engine.GenerateNewStrategyInstanceName(R"(Market Maker "Taker" )" +
                                                  symbol.toStdString()),
         config);
-    m_engine.GetContext().Add(strategiesConfig);
+    transaction.Add(strategiesConfig);
   }
   auto& result = *boost::polymorphic_downcast<TakerStrategy*>(
-      &m_engine.GetContext().GetSrategy(strategyId));
+      &transaction.GetStrategy(strategyId));
 
   m_completedConnection =
       result.SubscribeToCompleted([this]() { emit Completed(); });

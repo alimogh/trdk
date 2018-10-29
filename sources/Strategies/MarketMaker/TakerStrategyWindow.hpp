@@ -24,6 +24,7 @@ class TakerStrategyWindow : public QMainWindow {
 
   explicit TakerStrategyWindow(FrontEnd::Engine &,
                                const QString &symbol,
+                               Context::AddingTransaction &,
                                QWidget *parent);
   ~TakerStrategyWindow();
 
@@ -44,7 +45,8 @@ class TakerStrategyWindow : public QMainWindow {
  private:
   bool LoadExchanges();
   void ConnectSignals();
-  TakerStrategy &CreateStrategyInstance(const QString &symbol);
+  TakerStrategy &CreateStrategyInstance(const QString &symbol,
+                                        Context::AddingTransaction &);
 
   void Disable();
 

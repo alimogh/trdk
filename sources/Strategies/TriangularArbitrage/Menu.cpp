@@ -21,12 +21,14 @@ StrategyMenuActionList CreateMenuActions(Engine &engine) {
           {QObject::tr("&Triangular Arbitrage..."),
            [&engine](QWidget *parent) -> StrategyWidgetList {
              StrategyWidgetList result;
+             auto transaction = engine.GetContext().StartAdding();
              const auto &conf =
                  LegSetSelectionDialog(engine, parent).RequestLegSet();
              if (conf) {
-               result.emplace_back(
-                   boost::make_unique<StrategyWindow>(engine, *conf, parent));
+               result.emplace_back(boost::make_unique<StrategyWindow>(
+                   engine, *conf, *transaction, parent));
              }
+             transaction->Commit();
              return result;
            }}};
 }
