@@ -347,7 +347,7 @@ Context::Context(Log& log, TradingLog& tradingLog, Settings&& settings)
   m_pimpl->m_timer = boost::make_unique<Timer>(*this);
 }
 
-Context::Context(Context&&) = default;
+Context::Context(Context&&) noexcept = default;
 Context::~Context() = default;
 
 void Context::OnStarted() {

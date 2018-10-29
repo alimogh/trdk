@@ -229,23 +229,26 @@ void MainWindow::ShowModuleWindows(StrategyWidgetList &widgets) {
 
 void MainWindow::RestoreModules() {
   StrategyWidgetList widgets;
-  m_engine.ForEachActiveStrategy(
-      [this, &widgets](const QUuid &typeId, const QUuid &instanceId,
-                       const QString &name, const ptr::ptree &config) {
-        for (const auto &module : m_moduleDlls) {
-          try {
-            for (auto &widget :
-                 module->GetFunction<StrategyWidgetList(
-                     Engine &, const QUuid &, const QUuid &, const QString &,
-                     const ptr::ptree &, QWidget *)>("RestoreStrategyWidgets")(
-                     m_engine, typeId, instanceId, name, config, this)) {
-              widgets.emplace_back(widget.release());
-            }
-          } catch (const Dll::DllFuncException &) {
-            continue;
-          }
+  auto transaction = m_engine.GetContext().StartAdding();
+  m_engine.ForEachActiveStrategy([this, &widgets, &transaction](
+                                     const QUuid &typeId,
+                                     const QUuid &instanceId,
+                                     const QString &name,
+                                     const ptr::ptree &config) {
+    for (const auto &module : m_moduleDlls) {
+      try {
+        for (auto &widget :
+             module->GetFunction<StrategyWidgetList(
+                 Engine &, const QUuid &, const QUuid &, const QString &,
+                 const ptr::ptree &, Context::AddingTransaction &, QWidget *)>(
+                 "RestoreStrategyWidgets")(m_engine, typeId, instanceId, name,
+                                           config, *transaction, this)) {
+          widgets.emplace_back(widget.release());
         }
-      });
+      } catch (const Dll::DllFuncException &) {
+      }
+    }
+  });
   ShowModuleWindows(widgets);
 
   boost::polymorphic_downcast<MarketScannerModel *>(
@@ -254,7 +257,9 @@ void MainWindow::RestoreModules() {
               m_ui.marketScanner->widget())
               ->model())
           ->sourceModel())
-      ->Refresh();
+      ->Refresh(*transaction);
+
+  transaction->Commit();
 }
 
 void MainWindow::CreateNewChartWindows() {
@@ -645,12 +650,13 @@ void MainWindow::ShowRequestedStrategy(const QString &title,
       continue;
     }
     boost::function<StrategyWidgetList(FrontEnd::Engine &, const QString &,
+                                       Context::AddingTransaction &,
                                        const QWidget *parent)>
         factory;
     try {
       factory = dll->GetFunction<StrategyWidgetList(
-          FrontEnd::Engine &, const QString &, const QWidget *parent)>(
-          factoryName.toStdString());
+          FrontEnd::Engine &, const QString &, Context::AddingTransaction &,
+          const QWidget *parent)>(factoryName.toStdString());
     } catch (const std::exception &ex) {
       const auto &error =
           QString(tr("Failed to load module front-end: \"%1\"."))
@@ -660,8 +666,9 @@ void MainWindow::ShowRequestedStrategy(const QString &title,
       return;
     }
     StrategyWidgetList widgets;
+    auto transaction = m_engine.GetContext().StartAdding();
     try {
-      widgets = factory(m_engine, params, this);
+      widgets = factory(m_engine, params, *transaction, this);
     } catch (const std::exception &ex) {
       const auto &error =
           QString(R"(Failed to create new strategy window: "%1".)")
@@ -670,6 +677,7 @@ void MainWindow::ShowRequestedStrategy(const QString &title,
                             QMessageBox::Abort);
       return;
     }
+    transaction->Commit();
     ShowModuleWindows(widgets);
     return;
   }

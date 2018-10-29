@@ -85,11 +85,13 @@ class StrategyWindow : public QMainWindow {
  public:
   explicit StrategyWindow(FrontEnd::Engine&,
                           const QString& symbol,
+                          Context::AddingTransaction&,
                           QWidget* parent);
   explicit StrategyWindow(FrontEnd::Engine&,
                           const QUuid& strategyId,
                           const QString& name,
                           const boost::property_tree::ptree& config,
+                          Context::AddingTransaction&,
                           QWidget* parent);
   ~StrategyWindow() override;
 
@@ -122,13 +124,15 @@ class StrategyWindow : public QMainWindow {
 
   bool IsAutoTradingActivated() const;
 
-  Strategy& GenerateNewStrategyInstance();
+  Strategy& GenerateNewStrategyInstance(Context::AddingTransaction&);
   Strategy& RestoreStrategyInstance(const QUuid& strategyId,
                                     const std::string& name,
-                                    const boost::property_tree::ptree& config);
+                                    const boost::property_tree::ptree& config,
+                                    Context::AddingTransaction&);
   Strategy& CreateStrategyInstance(const boost::uuids::uuid& strategyId,
                                    const std::string& name,
-                                   const boost::property_tree::ptree& config);
+                                   const boost::property_tree::ptree& config,
+                                   Context::AddingTransaction&);
 
   void AddTargetWidgets(TargetWidgets&);
 

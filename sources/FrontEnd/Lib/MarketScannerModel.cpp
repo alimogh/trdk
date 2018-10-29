@@ -30,10 +30,10 @@ const MarketOpportunityItem &GetMarketOpportunityItem(
 
 class ArbirageAdvisorMarketOpportunityItem : public MarketOpportunityItem {
  public:
-  explicit ArbirageAdvisorMarketOpportunityItem(const std::string &symbol,
-                                                front::Engine &engine)
+  explicit ArbirageAdvisorMarketOpportunityItem(
+      const std::string &symbol, Context::AddingTransaction &transaction)
       : MarketOpportunityItem(QString::fromStdString(symbol),
-                              CreateStrategy(engine, symbol)) {}
+                              CreateStrategy(symbol, transaction)) {}
   ArbirageAdvisorMarketOpportunityItem(
       ArbirageAdvisorMarketOpportunityItem &&) = delete;
   ArbirageAdvisorMarketOpportunityItem(
@@ -52,16 +52,16 @@ class ArbirageAdvisorMarketOpportunityItem : public MarketOpportunityItem {
   }
 
  private:
-  static const Strategy &CreateStrategy(front::Engine &engine,
-                                        const std::string &symbol) {
+  static const Strategy &CreateStrategy(
+      const std::string &symbol, Context::AddingTransaction &transaction) {
     static ids::random_generator generateUuid;
     const auto &id = generateUuid();
     {
       ptr::ptree namedConfig;
       namedConfig.add_child("Direct", CreateConfig(id, symbol));
-      engine.GetContext().Add(namedConfig);
+      transaction.Add(namedConfig);
     }
-    return engine.GetContext().GetSrategy(id);
+    return transaction.GetStrategy(id);
   }
 
   static ptr::ptree CreateConfig(const ids::uuid &id,
@@ -91,26 +91,27 @@ class ArbirageAdvisorMarketOpportunityItem : public MarketOpportunityItem {
 
 class TriangularArbitrageMarketOpportunityItem : public MarketOpportunityItem {
  public:
-  explicit TriangularArbitrageMarketOpportunityItem(std::string leg1Symbol,
-                                                    const OrderSide &leg1Side,
-                                                    std::string leg2Symbol,
-                                                    const OrderSide &leg2Side,
-                                                    std::string leg3Symbol,
-                                                    const OrderSide &leg3Side,
-                                                    front::Engine &engine)
+  explicit TriangularArbitrageMarketOpportunityItem(
+      std::string leg1Symbol,
+      const OrderSide &leg1Side,
+      std::string leg2Symbol,
+      const OrderSide &leg2Side,
+      std::string leg3Symbol,
+      const OrderSide &leg3Side,
+      Context::AddingTransaction &transaction)
       : MarketOpportunityItem(CreateSymbolsTitle(leg1Symbol,
                                                  leg1Side,
                                                  leg2Symbol,
                                                  leg2Side,
                                                  leg3Symbol,
                                                  leg3Side),
-                              CreateStrategy(engine,
-                                             leg1Symbol,
+                              CreateStrategy(leg1Symbol,
                                              leg1Side,
                                              leg2Symbol,
                                              leg2Side,
                                              leg3Symbol,
-                                             leg3Side)),
+                                             leg3Side,
+                                             transaction)),
         m_leg1Symbol(std::move(leg1Symbol)),
         m_leg1Side(leg1Side),
         m_leg2Symbol(std::move(leg2Symbol)),
@@ -160,13 +161,14 @@ class TriangularArbitrageMarketOpportunityItem : public MarketOpportunityItem {
              leg3Side == ORDER_SIDE_BUY ? "+" : "-", leg3Symbol.c_str());
   }
 
-  static const Strategy &CreateStrategy(front::Engine &engine,
-                                        const std::string &leg1Symbol,
-                                        const OrderSide &leg1Side,
-                                        const std::string &leg2Symbol,
-                                        const OrderSide &leg2Side,
-                                        const std::string &leg3Symbol,
-                                        const OrderSide &leg3Side) {
+  static const Strategy &CreateStrategy(
+      const std::string &leg1Symbol,
+      const OrderSide &leg1Side,
+      const std::string &leg2Symbol,
+      const OrderSide &leg2Side,
+      const std::string &leg3Symbol,
+      const OrderSide &leg3Side,
+      Context::AddingTransaction &transaction) {
     static ids::random_generator generateUuid;
     const auto &id = generateUuid();
     {
@@ -174,9 +176,9 @@ class TriangularArbitrageMarketOpportunityItem : public MarketOpportunityItem {
       namedConfig.add_child("Triangular",
                             CreateConfig(id, leg1Symbol, leg1Side, leg2Symbol,
                                          leg2Side, leg3Symbol, leg3Side));
-      engine.GetContext().Add(namedConfig);
+      transaction.Add(namedConfig);
     }
-    return engine.GetContext().GetSrategy(id);
+    return transaction.GetStrategy(id);
   }
 
   static ptr::ptree CreateConfig(const ids::uuid &id,
@@ -255,17 +257,17 @@ class MarketScannerModel::Implementation {
   explicit Implementation(front::Engine &engine, MarketScannerModel &self)
       : m_self(self), m_engine(engine), m_timer(&m_self) {}
 
-  bool Refresh() {
+  void Refresh(Context::AddingTransaction &transaction) {
     boost::unordered_set<std::string> quoteSymbols;
     boost::unordered_map<std::string, size_t> supportedSymbols;
     m_engine.GetContext().ForEachMarketDataSource(
         [&quoteSymbols, &supportedSymbols](const MarketDataSource &source) {
           for (auto symbol : source.GetSymbolListHint()) {
-            const auto delimeter = symbol.find('_');
-            if (delimeter == std::string::npos) {
+            const auto delimiter = symbol.find('_');
+            if (delimiter == std::string::npos) {
               continue;
             }
-            auto quoteSymbol = symbol.substr(delimeter + 1);
+            auto quoteSymbol = symbol.substr(delimiter + 1);
             boost::trim(quoteSymbol);
             if (quoteSymbol.empty()) {
               continue;
@@ -298,14 +300,14 @@ class MarketScannerModel::Implementation {
           continue;
         }
       }
-      const auto delimeter = symbol.find('_');
-      if (delimeter != std::string::npos) {
-        auto baseSymbol = symbol.substr(0, delimeter);
+      const auto delimiter = symbol.find('_');
+      if (delimiter != std::string::npos) {
+        auto baseSymbol = symbol.substr(0, delimiter);
         boost::trim(baseSymbol);
         if (baseSymbol.empty()) {
           continue;
         }
-        auto quoteSymbol = symbol.substr(delimeter + 1);
+        auto quoteSymbol = symbol.substr(delimiter + 1);
         boost::trim(quoteSymbol);
         if (quoteSymbol.empty()) {
           continue;
@@ -361,7 +363,7 @@ class MarketScannerModel::Implementation {
         continue;
       }
       AddItem(boost::make_shared<ArbirageAdvisorMarketOpportunityItem>(
-          pair.first, m_engine));
+          pair.first, transaction));
     }
 
     for (const auto &leg2PairSet : leg2Pairs) {
@@ -379,7 +381,7 @@ class MarketScannerModel::Implementation {
                 .second) {
           AddItem(boost::make_shared<TriangularArbitrageMarketOpportunityItem>(
               leg1Pair, ORDER_SIDE_BUY, leg2Pair, ORDER_SIDE_BUY, leg3Pair,
-              ORDER_SIDE_SELL, m_engine));
+              ORDER_SIDE_SELL, transaction));
         }
         if (m_itemIndex
                 .emplace((boost::format("-%1%-%2%+%3%") % leg1Pair % leg2Pair %
@@ -388,12 +390,10 @@ class MarketScannerModel::Implementation {
                 .second) {
           AddItem(boost::make_shared<TriangularArbitrageMarketOpportunityItem>(
               leg1Pair, ORDER_SIDE_SELL, leg2Pair, ORDER_SIDE_SELL, leg3Pair,
-              ORDER_SIDE_BUY, m_engine));
+              ORDER_SIDE_BUY, transaction));
         }
       }
     }
-
-    return true;
   }
 
   void AddItem(boost::shared_ptr<MarketOpportunityItem> item) {
@@ -494,8 +494,6 @@ int MarketScannerModel::columnCount(const QModelIndex &) const {
   return numberOfColumns;
 }
 
-void MarketScannerModel::Refresh() {
-  if (!m_pimpl->Refresh()) {
-    m_pimpl->m_timer.singleShot(15 * 1000, this, &MarketScannerModel::Refresh);
-  }
+void MarketScannerModel::Refresh(Context::AddingTransaction &transaction) {
+  m_pimpl->Refresh(transaction);
 }

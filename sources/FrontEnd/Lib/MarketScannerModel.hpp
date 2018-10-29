@@ -36,7 +36,7 @@ class TRDK_FRONTEND_LIB_API MarketScannerModel : public QAbstractItemModel {
   int columnCount(const QModelIndex &parent) const override;
 
  public slots:
-  void Refresh();
+  void Refresh(Context::AddingTransaction &);
 
  private:
   class Implementation;

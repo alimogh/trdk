@@ -34,11 +34,13 @@ class StrategyWindow : public QMainWindow {
  public:
   explicit StrategyWindow(FrontEnd::Engine &,
                           const LegsConf &,
+                          Context::AddingTransaction &,
                           QWidget *parent);
   explicit StrategyWindow(FrontEnd::Engine &,
                           const QUuid &strategyId,
                           const QString &name,
                           const boost::property_tree::ptree &config,
+                          Context::AddingTransaction &,
                           QWidget *parent);
   ~StrategyWindow() override;
 
@@ -56,13 +58,16 @@ class StrategyWindow : public QMainWindow {
   void closeEvent(QCloseEvent *) override;
 
  private:
-  void Init(const boost::uuids::uuid &, const std::string &name);
+  void Init(const boost::uuids::uuid &,
+            const std::string &name,
+            Context::AddingTransaction &);
 
   void StoreConfig(bool isActive);
 
   void ConnectSignals();
   Strategy &CreateStrategyInstance(const boost::uuids::uuid &,
-                                   const std::string &name);
+                                   const std::string &name,
+                                   Context::AddingTransaction &);
 
   void Disable();
 

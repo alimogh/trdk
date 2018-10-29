@@ -55,11 +55,11 @@ class Context : public trdk::Context {
   MOCK_METHOD2(GetTradingSystem,
                trdk::TradingSystem &(size_t index, const trdk::TradingMode &));
 
-  MOCK_METHOD1(GetSrategy, trdk::Strategy &(const boost::uuids::uuid &));
-  MOCK_CONST_METHOD1(GetSrategy,
+  MOCK_METHOD1(GetStrategy, trdk::Strategy &(const boost::uuids::uuid &));
+  MOCK_CONST_METHOD1(GetStrategy,
                      const trdk::Strategy &(const boost::uuids::uuid &));
 
-  MOCK_METHOD0(CloseSrategiesPositions, void());
+  MOCK_METHOD0(CloseStrategiesPositions, void());
 
   MOCK_CONST_METHOD0(GetCurrentTime, boost::posix_time::ptime());
 
