@@ -62,7 +62,7 @@ pt::time_duration CalcTimeZoneOffset(const pt::ptime &time1,
                                      const pt::ptime &time2) {
   return time1 - time2;
 }
-}
+}  // namespace
 
 std::string Lib::ConvertToFileName(const pt::ptime &source) {
   return ConvertToFileName(source.date()) + '_' +
@@ -243,7 +243,7 @@ fs::path GetModuleFilePath(void *) {
   return fs::path(path, path + count);
 }
 #endif
-}
+}  // namespace
 
 fs::path Lib::GetExeFilePath() { return GetModuleFilePath(NULL); }
 
@@ -293,7 +293,7 @@ fs::path Lib::Normalize(const fs::path &path, const fs::path &workingDir) {
   return result;
 }
 
-  //////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
 
 #ifdef BOOST_WINDOWS
 
@@ -340,7 +340,7 @@ std::wstring MultiByteToWideChar(const unsigned int codePage,
                         int(sourceLen), &result[0], int(result.size()));
   return result;
 }
-}
+}  // namespace
 
 std::string Lib::ConvertUtf8ToAscii(const std::string &source) {
   if (source.empty()) {
@@ -361,3 +361,12 @@ std::string Lib::ConvertUtf8ToAscii(const std::string &source) {
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
+
+std::uintmax_t Lib::ConvertTickSizeToPrecisionPower(std::string source) {
+  boost::trim_right_if(source, boost::is_any_of("0"));
+  const auto dotPos = source.find('.');
+  if (source.size() <= dotPos) {
+    return 0;
+  }
+  return static_cast<std::uintmax_t>(std::pow(10, source.size() - dotPos - 1));
+}
