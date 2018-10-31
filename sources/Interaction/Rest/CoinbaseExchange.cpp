@@ -515,18 +515,9 @@ class CoinbaseExchange : public TradingSystem, public MarketDataSource {
       const auto& productNode = node.second;
       Product product = {productNode.get<std::string>("id"),
                          productNode.get<Qty>("base_min_size"),
-                         productNode.get<Qty>("base_max_size")};
-      {
-        auto quoteIncrement = productNode.get<std::string>("quote_increment");
-        boost::trim_right_if(quoteIncrement, boost::is_any_of("0"));
-        const auto dotPos = quoteIncrement.find('.');
-        if (dotPos != std::string::npos && quoteIncrement.size() > dotPos) {
-          product.precisionPower = quoteIncrement.size() - dotPos - 1;
-          product.precisionPower =
-              static_cast<decltype(product.precisionPower)>(
-                  std::pow(10, product.precisionPower));
-        }
-      }
+                         productNode.get<Qty>("base_max_size"),
+                         ConvertTickSizeToPrecisionPower(
+                             productNode.get<std::string>("quote_increment"))};
       const auto& symbol = RestoreSymbol(product.id);
       const auto& productIt =
           products.emplace(std::move(symbol), std::move(product));
@@ -685,8 +676,7 @@ class CoinbaseExchange : public TradingSystem, public MarketDataSource {
           AssertFailNoException();
           throw;
         }
-        boost::format error(
-            R"(Failed to read order book for "%1%": "%2%")");
+        boost::format error(R"(Failed to read order book for "%1%": "%2%")");
         error % security  // 1
             % ex.what();  // 2
         throw Exception(error.str().c_str());

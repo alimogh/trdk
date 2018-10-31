@@ -166,7 +166,9 @@ std::unique_ptr<OrderTransactionContext> b::TradingSystem::SendOrderTransaction(
   requestParams % product.id                       // 1
       % (side == ORDER_SIDE_BUY ? "BUY" : "SELL")  // 2
       % qty                                        // 3
-      % *price;                                    // 4
+      % (product.priceFilter ? RoundByPrecisionPower(
+                                   *price, product.priceFilter->precisionPower)
+                             : *price);  // 4
 
   SignedRequest request("v3/order", net::HTTPRequest::HTTP_POST,
                         requestParams.str(), GetContext(), m_settings, GetLog(),

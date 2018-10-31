@@ -49,10 +49,14 @@ boost::unordered_map<std::string, Product> RequestProductList(
         if (type == "PRICE_FILTER") {
           Assert(!product.priceFilter);
           product.priceFilter.emplace(Product::Filter{
-              filter.get<Price>("minPrice"), filter.get<Price>("maxPrice"), 0});
+              filter.get<Price>("minPrice"), filter.get<Price>("maxPrice"),
+              ConvertTickSizeToPrecisionPower(
+                  filter.get<std::string>("tickSize"))});
         } else if (type == "LOT_SIZE") {
           product.qtyFilter.emplace(Product::Filter{
-              filter.get<Price>("minQty"), filter.get<Price>("maxQty"), 0});
+              filter.get<Price>("minQty"), filter.get<Price>("maxQty"),
+              ConvertTickSizeToPrecisionPower(
+                  filter.get<std::string>("stepSize"))});
         } else if (type == "MIN_NOTIONAL") {
           product.minVolume.emplace(filter.get<Qty>("minNotional"));
         }
