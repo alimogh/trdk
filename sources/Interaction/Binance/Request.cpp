@@ -103,9 +103,10 @@ SignedRequest::SignedRequest(const std::string &name,
 SignedRequest::Response SignedRequest::Send(
     std::unique_ptr<net::HTTPSClientSession> &session) {
   const auto params =
-      m_params + "recvWindow=10000&timestamp=" +
+      m_params + "recvWindow=100000&timestamp=" +
       boost::lexical_cast<std::string>(
-          ConvertToMicroseconds(pt::microsec_clock::universal_time()) / 1000);
+          (ConvertToMicroseconds(pt::microsec_clock::universal_time()) / 1000) -
+          30000);
   SetUriParams(
       params + "&signature=" +
       EncodeToHex(Hmac::CalcSha256Digest(params, GetSettings().apiSecret)));
