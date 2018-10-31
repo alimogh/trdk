@@ -50,6 +50,17 @@ boost::unordered_map<std::string, Product> RequestProductList(
           Assert(!product.priceFilter);
           product.priceFilter.emplace(Product::Filter{
               filter.get<Price>("minPrice"), filter.get<Price>("maxPrice"), 0});
+          {
+            auto quoteIncrement = filter.get<std::string>("tickSize");
+            boost::trim_right_if(quoteIncrement, boost::is_any_of("0"));
+            const auto dotPos = quoteIncrement.find('.');
+            if (dotPos != std::string::npos && quoteIncrement.size() > dotPos) {
+              product.precisionPower = quoteIncrement.size() - dotPos - 1;
+              product.precisionPower =
+                  static_cast<decltype(product.precisionPower)>(
+                      std::pow(10, product.precisionPower));
+            }
+          }
         } else if (type == "LOT_SIZE") {
           product.qtyFilter.emplace(Product::Filter{
               filter.get<Price>("minQty"), filter.get<Price>("maxQty"), 0});
