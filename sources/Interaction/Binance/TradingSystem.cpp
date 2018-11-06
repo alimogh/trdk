@@ -165,7 +165,9 @@ std::unique_ptr<OrderTransactionContext> b::TradingSystem::SendOrderTransaction(
       "symbol=%1%&side=%2%&type=LIMIT&timeInForce=GTC&quantity=%3%&price=%4%");
   requestParams % product.id                       // 1
       % (side == ORDER_SIDE_BUY ? "BUY" : "SELL")  // 2
-      % qty                                        // 3
+      % (product.qtyFilter
+             ? RoundByPrecisionPower(qty, product.qtyFilter->precisionPower)
+             : qty)  // 3
       % (product.priceFilter ? RoundByPrecisionPower(
                                    *price, product.priceFilter->precisionPower)
                              : *price);  // 4
