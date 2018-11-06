@@ -32,9 +32,12 @@ void aa::PositionController::OnUpdate(Position &position) {
   if (position.IsRejected() &&
       (position.GetNumberOfCloseOrders() == 0 ? !position.IsFullyOpened()
                                               : position.GetActiveQty() > 0) &&
-      boost::istarts_with(position.GetTradingSystem().GetInstanceName(),
-                          "yobit")) {
-    // Special logic for Yobit.net, see also https://trello.com/c/KYVxS36k
+      (boost::istarts_with(position.GetTradingSystem().GetInstanceName(),
+                           "crex24") ||
+       boost::istarts_with(position.GetTradingSystem().GetInstanceName(),
+                           "yobit"))) {
+    // Special logic for Yobit.net (see also https://trello.com/c/KYVxS36k) and
+    // CREX24.
     Assert(!position.HasActiveOrders());
     position.GetStrategy().GetLog().Error(
         "Order for position \"%1%/%2%\" (\"%3%\") is rejected by trading "
@@ -213,7 +216,8 @@ void aa::PositionController::Close(Position &position) {
     auto *const absolutePosition = CheckAbsolutePosition(position);
     if (!absolutePosition) {
       return;
-    } else if (&position != absolutePosition) {
+    }
+    if (&position != absolutePosition) {
       Close(*absolutePosition, position.GetCloseReason());
       return;
     }
