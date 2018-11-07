@@ -30,6 +30,10 @@ class Operation : public trdk::Operation {
       const Price &sellPrice,
       const Price &buyPrice,
       boost::optional<boost::posix_time::time_duration> stopLossDelay);
+  Operation(Operation &&) = default;
+  Operation(const Operation &) = delete;
+  Operation &operator=(Operation &&) = delete;
+  Operation &operator=(const Operation &) = delete;
   ~Operation() override = default;
 
   bool IsSame(const Security &sellTarget, const Security &buyTarget) const;

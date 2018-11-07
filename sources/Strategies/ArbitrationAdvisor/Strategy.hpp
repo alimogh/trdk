@@ -49,9 +49,6 @@ class Strategy : public trdk::Strategy {
   bool IsLowestSpreadEnabled() const;
   const Lib::Double &GetLowestSpreadRatio() const;
 
-  bool IsStopLossEnabled() const;
-  const boost::posix_time::time_duration &GetStopLossDelay() const;
-
   void ForEachSecurity(const Lib::Symbol &,
                        const boost::function<void(Security &)> &);
 

@@ -125,7 +125,7 @@ class Operation::Implementation : private boost::noncopyable {
 Operation::Operation(Strategy &strategy, std::unique_ptr<PnlContainer> &&pnl)
     : m_pimpl(boost::make_unique<Implementation>(strategy, std::move(pnl))) {}
 
-Operation::Operation(Operation &&) = default;
+Operation::Operation(Operation &&) noexcept = default;
 
 Operation::~Operation() = default;
 
@@ -212,8 +212,8 @@ void Operation::UpdatePnl(const Security &security,
   m_pimpl->CopyOperationUpdate();
 }
 
-void Operation::AddComission(const Security &security,
-                             const Volume &commission) {
+void Operation::AddCommission(const Security &security,
+                              const Volume &commission) {
   m_pimpl->m_pnl->AddCommission(security, commission);
   m_pimpl->CopyOperationUpdate();
 }
