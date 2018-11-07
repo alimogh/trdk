@@ -18,56 +18,50 @@ namespace trdk {
 //! Describes one or more operations with position.
 class TRDK_CORE_API Operation {
  public:
-  explicit Operation(trdk::Strategy &, std::unique_ptr<trdk::PnlContainer> &&);
-  Operation(Operation &&);
+  explicit Operation(Strategy &, std::unique_ptr<PnlContainer> &&);
+  Operation(Operation &&) noexcept;
+  Operation(const Operation &) = delete;
+  const Operation &operator=(Operation &&) = delete;
+  const Operation &operator=(const Operation &) = delete;
   virtual ~Operation();
 
- private:
-  Operation(const Operation &);
-  const Operation &operator=(const Operation &);
-
- public:
   const boost::uuids::uuid &GetId() const;
-  const trdk::Strategy &GetStrategy() const;
-  trdk::Strategy &GetStrategy();
+  const Strategy &GetStrategy() const;
+  Strategy &GetStrategy();
 
- public:
-  virtual trdk::TradingSystem &GetTradingSystem(trdk::Security &);
-  virtual const trdk::TradingSystem &GetTradingSystem(
-      const trdk::Security &) const;
+  virtual TradingSystem &GetTradingSystem(Security &);
+  virtual const TradingSystem &GetTradingSystem(const Security &) const;
 
   //! Order policy for position opening.
-  virtual const trdk::TradingLib::OrderPolicy &GetOpenOrderPolicy(
-      const trdk::Position &) const;
+  virtual const TradingLib::OrderPolicy &GetOpenOrderPolicy(
+      const Position &) const;
   //! Order policy for position closing.
-  virtual const trdk::TradingLib::OrderPolicy &GetCloseOrderPolicy(
-      const trdk::Position &) const;
+  virtual const TradingLib::OrderPolicy &GetCloseOrderPolicy(
+      const Position &) const;
 
   //! Setups new position.
   /** Place to attach stop-orders and so on.
    */
-  virtual void Setup(trdk::Position &,
-                     trdk::TradingLib::PositionController &) const;
+  virtual void Setup(Position &, TradingLib::PositionController &) const;
 
   //! Next new position direction.
-  virtual bool IsLong(const trdk::Security &) const;
+  virtual bool IsLong(const Security &) const;
 
   //! Next new position quantity.
-  virtual trdk::Qty GetPlannedQty(const trdk::Security &) const;
+  virtual Qty GetPlannedQty(const Security &) const;
 
   //! Returns true if the opened position should be closed as soon as possible.
-  virtual bool HasCloseSignal(const trdk::Position &) const;
+  virtual bool HasCloseSignal(const Position &) const;
 
   //! Will be called before each closing state changing.
   /** @return True, if reason can be changed, false otherwise.
    */
-  virtual bool OnCloseReasonChange(trdk::Position &,
-                                   const trdk::CloseReason &newReason);
+  virtual bool OnCloseReasonChange(Position &, const CloseReason &newReason);
 
   //! Returns parent operation or nullptr if doesn't have parent.
-  virtual boost::shared_ptr<const trdk::Operation> GetParent() const;
+  virtual boost::shared_ptr<const Operation> GetParent() const;
   //! Returns parent operation or nullptr if doesn't have parent.
-  virtual boost::shared_ptr<trdk::Operation> GetParent();
+  virtual boost::shared_ptr<Operation> GetParent();
 
   //! Returns object for inverted position.
   /** @return Pointer to an operation for inverted position or empty pointer if
@@ -78,18 +72,18 @@ class TRDK_CORE_API Operation {
 
   const trdk::Pnl &GetPnl() const;
 
-  void UpdatePnl(const trdk::Security &,
-                 const trdk::OrderSide &,
-                 const trdk::Qty &,
-                 const trdk::Price &);
-  void UpdatePnl(const trdk::Security &,
-                 const trdk::OrderSide &,
-                 const trdk::Qty &,
-                 const trdk::Price &,
-                 const trdk::Volume &commission);
-  void AddComission(const trdk::Security &, const trdk::Volume &commission);
+  void UpdatePnl(const Security &,
+                 const OrderSide &,
+                 const Qty &,
+                 const Price &);
+  void UpdatePnl(const Security &,
+                 const OrderSide &,
+                 const Qty &,
+                 const Price &,
+                 const Volume &commission);
+  void AddCommission(const Security &, const Volume &commission);
 
-  void OnNewPositionStart(trdk::Position &);
+  void OnNewPositionStart(Position &);
 
  private:
   class Implementation;

@@ -83,8 +83,6 @@ class ArbirageAdvisorMarketOpportunityItem : public MarketOpportunityItem {
     result.add("config.maxQty", 0);
     result.add("config.isLowestSpreadEnabled", false);
     result.add("config.lowestSpreadPercentage", 0);
-    result.add("config.isStopLossEnabled", false);
-    result.add("config.stopLossDelaySec", 0);
     return result;
   }
 };

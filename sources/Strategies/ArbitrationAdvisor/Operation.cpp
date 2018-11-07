@@ -45,9 +45,9 @@ void aa::Operation::Setup(Position &position,
     return;
   }
 
-  class StopLoss : public TradingLib::StopLossOrder {
+  class StopLoss : public StopLossOrder {
    public:
-    typedef TradingLib::StopLossOrder Base;
+    typedef StopLossOrder Base;
 
     explicit StopLoss(const Price &controlPrice,
                       Position &position,
@@ -55,6 +55,10 @@ void aa::Operation::Setup(Position &position,
                       const pt::time_duration &stopLossDelay)
         : Base(stopLossDelay, position, controller),
           m_controlPrice(controlPrice) {}
+    StopLoss(StopLoss &&) = default;
+    StopLoss(const StopLoss &) = delete;
+    StopLoss &operator=(StopLoss &&) = delete;
+    StopLoss &operator=(const StopLoss &) = delete;
     ~StopLoss() override = default;
 
     void Report(const char *action) const override {
@@ -107,19 +111,29 @@ void aa::Operation::Setup(Position &position,
 
     bool Activate() override {
       const auto &currentPrice = GetPosition().GetMarketOpenPrice();
-      if (GetPosition().IsLong()) {
-        if (currentPrice <= m_controlPrice) {
+      const auto &now =
+          GetPosition().GetStrategy().GetContext().GetCurrentTime();
+      const auto &liveTime = now - GetStartTime();
+
+      const char *reason;
+      if (liveTime > pt::minutes(15)) {
+        reason = "time";
+      } else {
+        if (GetPosition().IsLong()) {
+          if (currentPrice <= m_controlPrice) {
+            return false;
+          }
+        } else if (m_controlPrice <= currentPrice) {
           return false;
         }
-      } else if (m_controlPrice <= currentPrice) {
-        return false;
+        reason = "price";
       }
 
       GetTradingLog().Write(
-          "{'algo': {'action': 'hit', 'type': '%1%', 'price': '%2% %3% "
-          "%4%', 'bid': %5%, 'ask': %6%, 'position': {'side': '%9%', "
-          "'operation': '%7%/%8%'}}}",
-          [this, &currentPrice](TradingRecord &record) {
+          "{'algo': {'action': 'hit', 'type': '%1%-%10%', 'price': '%2% %3% "
+          "%4%', 'liveTime': '%11%', 'bid': %5%, 'ask': %6%, 'position': "
+          "{'side': '%9%', 'operation': '%7%/%8%'}}}",
+          [this, &currentPrice, &reason](TradingRecord &record) {
             record % GetName()                                    // 1
                 % currentPrice                                    // 2
                 % (GetPosition().IsLong() ? ">" : "<")            // 3
@@ -128,7 +142,9 @@ void aa::Operation::Setup(Position &position,
                 % GetPosition().GetSecurity().GetAskPriceValue()  // 6
                 % GetPosition().GetOperation()->GetId()           // 7
                 % GetPosition().GetSubOperationId()               // 8
-                % GetPosition().GetSide();                        // 9
+                % GetPosition().GetSide()                         // 9
+                % reason                                          // 10
+                % GetStartTime();                                 // 11
           });
 
       return true;

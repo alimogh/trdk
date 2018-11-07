@@ -143,9 +143,7 @@ class StrategyWindow : public QMainWindow {
       const Lib::Double& minPriceDifferenceToTradePercentage,
       const Qty& maxQty,
       bool isLowestSpreadEnabled,
-      const Lib::Double& lowestSpreadPercentage,
-      bool isStopLossEnabled,
-      size_t stopLossDelaySec) const;
+      const Lib::Double& lowestSpreadPercentage) const;
   boost::property_tree::ptree DumpConfig() const;
 
   void StoreConfig(bool isActive);

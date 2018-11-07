@@ -137,9 +137,6 @@ class aa::Strategy::Implementation : boost::noncopyable {
   const bool m_isLowestSpreadEnabled;
   const Double m_lowestSpreadRatio;
 
-  const bool m_isStopLossEnabled;
-  const pt::time_duration m_stopLossDelay;
-
   PositionController m_controller;
 
   sig::signal<void(const Advice &)> m_adviceSignal;
@@ -161,8 +158,6 @@ class aa::Strategy::Implementation : boost::noncopyable {
         m_isLowestSpreadEnabled(conf.get<bool>("config.isLowestSpreadEnabled")),
         m_lowestSpreadRatio(conf.get<Double>("config.lowestSpreadPercentage") /
                             100),
-        m_isStopLossEnabled(conf.get<bool>("config.isStopLossEnabled")),
-        m_stopLossDelay(pt::seconds(conf.get<long>("config.stopLossDelaySec"))),
         m_minPriceDifferenceRatioToAdvice(
             conf.get<Double>("config.minPriceDifferenceToHighlightPercentage") /
             100),
@@ -182,9 +177,6 @@ class aa::Strategy::Implementation : boost::noncopyable {
     if (m_isLowestSpreadEnabled) {
       m_self.GetLog().Info("Lowest spread: %1%%%.",
                            m_isLowestSpreadEnabled * 100);
-    }
-    if (m_isStopLossEnabled) {
-      m_self.GetLog().Info("Stop-loss uses delay %1%.", m_stopLossDelay);
     }
   }
 
@@ -452,13 +444,9 @@ class aa::Strategy::Implementation : boost::noncopyable {
     ReportSignal("trade", "start", sellTarget, buyTarget, spreadRatio,
                  bestSpreadRatio);
 
-    boost::optional<pt::time_duration> stopLossDelay;
-    if (m_isStopLossEnabled) {
-      stopLossDelay = m_stopLossDelay;
-    }
-    const auto operation = boost::make_shared<Operation>(
-        m_self, sellTarget, buyTarget, qty, sellPrice, buyPrice,
-        std::move(stopLossDelay));
+    const auto operation =
+        boost::make_shared<Operation>(m_self, sellTarget, buyTarget, qty,
+                                      sellPrice, buyPrice, pt::minutes(5));
 
     qtys.Return(qty);
 
@@ -590,7 +578,7 @@ class aa::Strategy::Implementation : boost::noncopyable {
   bool OpenPositionSync(Security &sellTarget,
                         Security &buyTarget,
                         const boost::shared_ptr<Operation> &operation,
-                        bool isBuyTargetInBlackList,
+                        const bool isBuyTargetInBlackList,
                         const Double &spreadRatio,
                         const Double &bestSpreadRatio,
                         const Milestones &delayMeasurement) {
@@ -789,13 +777,6 @@ bool aa::Strategy::IsLowestSpreadEnabled() const {
 }
 const Double &aa::Strategy::GetLowestSpreadRatio() const {
   return m_pimpl->m_lowestSpreadRatio;
-}
-
-bool aa::Strategy::IsStopLossEnabled() const {
-  return m_pimpl->m_isStopLossEnabled;
-}
-const pt::time_duration &aa::Strategy::GetStopLossDelay() const {
-  return m_pimpl->m_stopLossDelay;
 }
 
 void aa::Strategy::ForEachSecurity(

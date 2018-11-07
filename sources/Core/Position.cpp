@@ -227,7 +227,7 @@ class Position::Implementation : private boost::noncopyable {
       UpdateStat();
       Report(ORDER_STATUS_FILLED_FULLY);
       SignalUpdate(lock);
-      impl.m_operation->AddComission(*impl.m_security, comission);
+      impl.m_operation->AddCommission(*impl.m_security, comission);
     }
 
     virtual void OnTrade(const Trade &trade) override {
@@ -262,7 +262,7 @@ class Position::Implementation : private boost::noncopyable {
       SignalUpdate(lock);
       {
         auto &impl = GetPositionImpl();
-        impl.m_operation->AddComission(*impl.m_security, comission);
+        impl.m_operation->AddCommission(*impl.m_security, comission);
       }
     }
 
@@ -281,7 +281,7 @@ class Position::Implementation : private boost::noncopyable {
       SignalUpdate(lock);
       {
         auto &impl = GetPositionImpl();
-        impl.m_operation->AddComission(*impl.m_security, comission);
+        impl.m_operation->AddCommission(*impl.m_security, comission);
       }
     }
 
@@ -299,7 +299,7 @@ class Position::Implementation : private boost::noncopyable {
       SignalUpdate(lock);
       {
         auto &impl = GetPositionImpl();
-        impl.m_operation->AddComission(*impl.m_security, comission);
+        impl.m_operation->AddCommission(*impl.m_security, comission);
       }
     }
 

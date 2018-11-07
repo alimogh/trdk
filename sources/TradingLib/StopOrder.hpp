@@ -16,18 +16,18 @@
 namespace trdk {
 namespace TradingLib {
 
-class StopOrder : public trdk::TradingLib::Algo {
+class StopOrder : public Algo {
  public:
-  explicit StopOrder(trdk::Position &, trdk::TradingLib::PositionController &);
-  virtual ~StopOrder() override = default;
+  explicit StopOrder(Position &, PositionController &);
+  ~StopOrder() override = default;
 
  protected:
   virtual const char *GetName() const = 0;
 
-  virtual void OnHit(const trdk::CloseReason &);
+  virtual void OnHit(const CloseReason &);
 
  private:
-  trdk::TradingLib::PositionController &m_controller;
+  PositionController &m_controller;
 };
-}
-}
+}  // namespace TradingLib
+}  // namespace trdk
