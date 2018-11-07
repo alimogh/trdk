@@ -255,8 +255,6 @@ aa::Strategy &StrategyWindow::GenerateNewStrategyInstance(
   const auto &strategyId = generateStrategyId();
   auto isLowestSpreadEnabled = false;
   Double lowestSpreadPercentage = 0;
-  auto isStopLossEnabled = false;
-  size_t stopLossDelaySec = 0;
   {
     const auto &conf =
         m_engine.GetContext().GetSettings().GetConfig().get_child("general");
@@ -268,20 +266,12 @@ aa::Strategy &StrategyWindow::GenerateNewStrategyInstance(
       const auto &key = conf.get_optional<bool>("lowestSpreadPercentage");
       lowestSpreadPercentage = key && *key;
     }
-    {
-      const auto &key = conf.get_optional<bool>("isStopLossEnabled");
-      isStopLossEnabled = key && *key;
-    }
-    {
-      const auto &key = conf.get_optional<bool>("stopLossDelaySec");
-      stopLossDelaySec = key && *key;
-    }
   }
   return CreateStrategyInstance(
       strategyId,
       m_engine.GenerateNewStrategyInstanceName("Arbitrage " + m_symbol),
       CreateConfig(strategyId, .6, false, .6, 100000000, isLowestSpreadEnabled,
-                   lowestSpreadPercentage, isStopLossEnabled, stopLossDelaySec),
+                   lowestSpreadPercentage),
       transaction);
 }
 
@@ -486,9 +476,7 @@ ptr::ptree StrategyWindow::CreateConfig(
     const Double &minPriceDifferenceToTradePercentage,
     const Qty &maxQty,
     const bool isLowestSpreadEnabled,
-    const Double &lowestSpreadPercentage,
-    const bool isStopLossEnabled,
-    const size_t stopLossDelaySec) const {
+    const Double &lowestSpreadPercentage) const {
   ptr::ptree result;
   result.add("module", "ArbitrationAdvisor");
   result.add("id", strategyId);
@@ -508,8 +496,6 @@ ptr::ptree StrategyWindow::CreateConfig(
   result.add("config.maxQty", maxQty);
   result.add("config.isLowestSpreadEnabled", isLowestSpreadEnabled);
   result.add("config.lowestSpreadPercentage", lowestSpreadPercentage);
-  result.add("config.isStopLossEnabled", isStopLossEnabled);
-  result.add("config.stopLossDelaySec", stopLossDelaySec);
   return result;
 }
 
@@ -522,8 +508,7 @@ ptr::ptree StrategyWindow::DumpConfig() const {
       isShouldBeEnabledImmediatelyAfterRestoration,
       tradingSettings.minPriceDifferenceRatio * 100, tradingSettings.maxQty,
       m_strategy.IsLowestSpreadEnabled(),
-      m_strategy.GetLowestSpreadRatio() * 100, m_strategy.IsStopLossEnabled(),
-      m_strategy.GetStopLossDelay().total_seconds());
+      m_strategy.GetLowestSpreadRatio() * 100);
 }
 
 void StrategyWindow::StoreConfig(const bool isActive) {

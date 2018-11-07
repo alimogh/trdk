@@ -195,7 +195,9 @@ Position *CheckAbsolutePosition(Position &signalPosition) {
     return nullptr;
   }
 
+  // ReSharper disable CppImplicitDefaultConstructorNotAvailable
   struct Positions {
+    // ReSharper restore CppImplicitDefaultConstructorNotAvailable
     Position &active;
     Position &completed;
   } positions = absolutePositionSize < 0

@@ -15,19 +15,18 @@
 namespace trdk {
 namespace TradingLib {
 
-class TakeProfitStopLimit : public trdk::TradingLib::StopOrder {
+class TakeProfitStopLimit : public StopOrder {
  public:
   class Params {
    public:
-    explicit Params(const trdk::Volume &maxPriceOffsetPerLotToClose,
+    explicit Params(const Volume &maxPriceOffsetPerLotToClose,
                     const boost::posix_time::time_duration
                         &timeOffsetBeforeForcedActivation)
         : m_maxPriceOffsetPerLotToClose(maxPriceOffsetPerLotToClose),
           m_timeOffsetBeforeForcedActivation(timeOffsetBeforeForcedActivation) {
     }
 
-   public:
-    const trdk::Volume &GetMaxPriceOffsetPerLotToClose() const {
+    const Volume &GetMaxPriceOffsetPerLotToClose() const {
       return m_maxPriceOffsetPerLotToClose;
     }
     const boost::posix_time::time_duration &
@@ -36,30 +35,27 @@ class TakeProfitStopLimit : public trdk::TradingLib::StopOrder {
     }
 
    private:
-    trdk::Volume m_maxPriceOffsetPerLotToClose;
+    Volume m_maxPriceOffsetPerLotToClose;
     boost::posix_time::time_duration m_timeOffsetBeforeForcedActivation;
   };
 
- public:
   explicit TakeProfitStopLimit(const boost::shared_ptr<const Params> &,
-                               trdk::Position &,
-                               trdk::TradingLib::PositionController &);
-  virtual ~TakeProfitStopLimit() override = default;
+                               Position &,
+                               PositionController &);
+  ~TakeProfitStopLimit() override = default;
 
- public:
-  virtual void Run() override;
+  void Run() override;
 
-  virtual void Report(const char *action) const override;
+  void Report(const char *action) const override;
 
  protected:
-  virtual const char *GetName() const override;
+  const char *GetName() const override;
 
  private:
   bool CheckSignal();
 
- private:
   const boost::shared_ptr<const Params> m_params;
   bool m_isActivated;
 };
-}
-}
+}  // namespace TradingLib
+}  // namespace trdk
