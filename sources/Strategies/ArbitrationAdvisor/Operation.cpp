@@ -40,7 +40,7 @@ bool aa::Operation::IsSame(const Security &sellTarget,
 void aa::Operation::Setup(Position &position,
                           PositionController &controller) const {
   Base::Setup(position, controller);
-
+#if 0
   if (!m_stopLossDelay) {
     return;
   }
@@ -158,4 +158,5 @@ void aa::Operation::Setup(Position &position,
   position.AddAlgo(boost::make_unique<StopLoss>(
       m_openOrderPolicy.GetOpenOrderPrice(position), position, controller,
       *m_stopLossDelay));
+#endif
 }
