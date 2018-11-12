@@ -15,7 +15,6 @@
 #include "TradingLib/Util.hpp"
 #include "Core/Bar.hpp"
 #include "Core/MarketDataSource.hpp"
-#include "Core/Security.hpp"
 #include "Core/Settings.hpp"
 #include "Core/Timer.hpp"
 #include "Core/Trade.hpp"

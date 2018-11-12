@@ -9,12 +9,6 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "FloodControl.hpp"
-#include "PollingTask.hpp"
-#include "Request.hpp"
-#include "Security.hpp"
-#include "Settings.hpp"
-#include "Util.hpp"
 
 using namespace trdk;
 using namespace Lib;
@@ -220,11 +214,11 @@ std::string RestoreSymbol(const std::string& source) {
 
 namespace {
 
-class CoinbaseExchange : public TradingSystem, public MarketDataSource {
+class Exchange : public TradingSystem, public MarketDataSource {
   typedef boost::mutex SecuritiesMutex;
   typedef SecuritiesMutex::scoped_lock SecuritiesLock;
 
-  struct SecuritySubscribtion {
+  struct SecuritySubscription {
     std::string productId;
     boost::shared_ptr<Rest::Security> security;
     boost::shared_ptr<Request> pricesRequest;
@@ -232,12 +226,12 @@ class CoinbaseExchange : public TradingSystem, public MarketDataSource {
   };
 
  public:
-  explicit CoinbaseExchange(const App&,
-                            const TradingMode& mode,
-                            Context& context,
-                            std::string instanceName,
-                            std::string title,
-                            const ptr::ptree& conf)
+  explicit Exchange(const App&,
+                    const TradingMode& mode,
+                    Context& context,
+                    std::string instanceName,
+                    std::string title,
+                    const ptr::ptree& conf)
       : TradingSystem(mode, context, instanceName, title),
         MarketDataSource(context, std::move(instanceName), std::move(title)),
         m_settings(conf, GetTsLog()),
@@ -252,12 +246,12 @@ class CoinbaseExchange : public TradingSystem, public MarketDataSource {
         m_pollingTask(boost::make_unique<PollingTask>(
             m_settings.pollingSetttings, GetMdsLog())) {}
 
-  CoinbaseExchange(CoinbaseExchange&&) = default;
-  CoinbaseExchange(const CoinbaseExchange&) = delete;
-  CoinbaseExchange& operator=(CoinbaseExchange&&) = delete;
-  CoinbaseExchange& operator=(const CoinbaseExchange&) = delete;
+  Exchange(Exchange&&) = default;
+  Exchange(const Exchange&) = delete;
+  Exchange& operator=(Exchange&&) = delete;
+  Exchange& operator=(const Exchange&) = delete;
 
-  ~CoinbaseExchange() override {
+  ~Exchange() override {
     try {
       m_pollingTask.reset();
       // Each object, that implements CreateNewSecurityObject should wait for
@@ -425,7 +419,7 @@ class CoinbaseExchange : public TradingSystem, public MarketDataSource {
           GetTsLog());
       const SecuritiesLock lock(m_securitiesMutex);
       Verify(m_securities
-                 .emplace(symbol, SecuritySubscribtion{product->second.id,
+                 .emplace(symbol, SecuritySubscription{product->second.id,
                                                        result, request})
                  .second);
     }
@@ -767,7 +761,7 @@ class CoinbaseExchange : public TradingSystem, public MarketDataSource {
   std::unique_ptr<net::HTTPSClientSession> m_tradingSession;
 
   SecuritiesMutex m_securitiesMutex;
-  boost::unordered_map<Symbol, SecuritySubscribtion> m_securities;
+  boost::unordered_map<Symbol, SecuritySubscription> m_securities;
 
   BalancesContainer m_balances;
 
@@ -780,28 +774,42 @@ class CoinbaseExchange : public TradingSystem, public MarketDataSource {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TradingSystemAndMarketDataSourceFactoryResult CreateCoinbase(
+TradingSystemAndMarketDataSourceFactoryResult CreateTradingSystem(
     const TradingMode& mode,
     Context& context,
     std::string instanceName,
     std::string title,
     const ptr::ptree& configuration) {
 #pragma comment(linker, "/EXPORT:" __FUNCTION__ "=" __FUNCDNAME__)
-  const auto& result = boost::make_shared<CoinbaseExchange>(
+  const auto& result = boost::make_shared<Exchange>(
       App::GetInstance(), mode, context, std::move(instanceName),
       std::move(title), configuration);
   return {result, result};
 }
 
-boost::shared_ptr<MarketDataSource> CreateCoinbaseMarketDataSource(
+boost::shared_ptr<MarketDataSource> CreateMarketDataSource(
     Context& context,
     std::string instanceName,
     std::string title,
     const ptr::ptree& configuration) {
 #pragma comment(linker, "/EXPORT:" __FUNCTION__ "=" __FUNCDNAME__)
-  return boost::make_shared<CoinbaseExchange>(
-      App::GetInstance(), TRADING_MODE_LIVE, context, std::move(instanceName),
-      std::move(title), configuration);
+  return boost::make_shared<Exchange>(App::GetInstance(), TRADING_MODE_LIVE,
+                                      context, std::move(instanceName),
+                                      std::move(title), configuration);
+}
+
+TradingSystemAndMarketDataSourceFactoryResult
+CreateTradingSystemAndMarketDataSource(
+    const TradingMode& mode,
+    Context& context,
+    std::string instanceName,
+    std::string title,
+    const boost::property_tree::ptree& config) {
+#pragma comment(linker, "/EXPORT:" __FUNCTION__ "=" __FUNCDNAME__)
+  const auto result = boost::make_shared<Exchange>(
+      App::GetInstance(), mode, context, std::move(instanceName),
+      std::move(title), config);
+  return {result, result};
 }
 
 ////////////////////////////////////////////////////////////////////////////////

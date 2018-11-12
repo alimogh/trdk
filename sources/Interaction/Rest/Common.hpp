@@ -13,6 +13,7 @@
 #include "Common/Common.hpp"
 #include "Core/Context.hpp"
 #include "Core/EventsLog.hpp"
+#include "Core/Security.hpp"
 #include "Api.h"
 #include "App.hpp"
 #include "Fwd.hpp"

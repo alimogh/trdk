@@ -18,7 +18,6 @@
 #include "Core/Context.hpp"
 #include "Core/EventsLog.hpp"
 #include "Core/MarketDataSource.hpp"
-#include "Core/Security.hpp"
 #include "Core/Settings.hpp"
 #include "Core/Timer.hpp"
 #include "Core/Trade.hpp"
