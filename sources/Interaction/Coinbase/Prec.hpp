@@ -17,6 +17,7 @@
 #include "Core/Bar.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/Settings.hpp"
+#include "Core/Timer.hpp"
 #include "Core/TradingLog.hpp"
 #include "Core/TradingSystem.hpp"
 #include "Core/TransactionContext.hpp"
@@ -27,6 +28,7 @@
 #include "Interaction/Rest/Settings.hpp"
 #include "Interaction/Rest/Util.hpp"
 #include "Common/Crypto.hpp"
+#include "Common/WebSocketConnection.hpp"
 #include <boost/algorithm/string.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/range/adaptor/reversed.hpp>

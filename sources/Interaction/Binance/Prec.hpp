@@ -10,8 +10,6 @@
 
 #pragma once
 
-#define BOOST_COROUTINES_NO_DEPRECATION_WARNING
-
 #include "Common/Common.hpp"
 #include "Interaction/Rest/Common.hpp"
 #include "TradingLib/BalancesContainer.hpp"
@@ -33,22 +31,7 @@
 #include "Interaction/Rest/Util.hpp"
 #include "Fwd.hpp"
 #include "Common/Crypto.hpp"
-#include <boost/algorithm/string.hpp>
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/asio/connect.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/spawn.hpp>
-#include <boost/asio/ssl.hpp>
-#include <boost/asio/streambuf.hpp>
-#include <boost/beast/websocket/ssl.hpp>
-#include <boost/iostreams/stream.hpp>
-#include <boost/property_tree/json_parser.hpp>
+#include "Common/WebSocketConnection.hpp"
 #include <boost/property_tree/ptree.hpp>
 #include <Poco/Net/HTTPRequest.h>
 #include <Poco/URI.h>
-
-#pragma warning(push)
-#pragma warning(disable : 4702)  // Warning	C4702	unreachable code
-#include <boost/beast/core.hpp>
-#include <boost/beast/websocket.hpp>
-#pragma warning(pop)

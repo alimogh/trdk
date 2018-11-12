@@ -328,7 +328,6 @@
     <ClCompile Include="TradingSystemAndMarketDataSource.cpp" />
     <ClCompile Include="TradingSystemConnection.cpp" />
     <ClCompile Include="Version.cpp" />
-    <ClCompile Include="WebSocketConnection.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AuthSettings.hpp" />
@@ -342,7 +341,6 @@
     <ClInclude Include="Session.hpp" />
     <ClInclude Include="TradingSystem.hpp" />
     <ClInclude Include="TradingSystemConnection.hpp" />
-    <ClInclude Include="WebSocketConnection.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Common\Common.vcxproj">

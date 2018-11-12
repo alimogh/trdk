@@ -10,17 +10,23 @@
 
 #pragma once
 
+#include "TimeMeasurement.hpp"
+#include <boost/property_tree/ptree.hpp>
+
 namespace trdk {
-namespace Interaction {
-namespace Binance {
+namespace Lib {
 
 class WebSocketConnection
     : public boost::enable_shared_from_this<WebSocketConnection> {
  public:
+  struct EventInfo {
+    boost::posix_time::ptime readTime;
+    TimeMeasurement::Milestones delayMeasurement;
+  };
+
   struct Events {
-    const boost::function<void(const boost::posix_time::ptime&,
-                               const boost::property_tree::ptree&,
-                               const Lib::TimeMeasurement::Milestones&)>
+    const boost::function<EventInfo()> read;
+    const boost::function<void(EventInfo, const boost::property_tree::ptree&)>
         message;
     boost::function<void()> disconnect;
 
@@ -30,9 +36,9 @@ class WebSocketConnection
     boost::function<void(const std::string&)> error;
 
     explicit Events(
-        boost::function<void(const boost::posix_time::ptime&,
-                             const boost::property_tree::ptree&,
-                             const Lib::TimeMeasurement::Milestones&)> message,
+        boost::function<EventInfo()> read,
+        boost::function<void(EventInfo, const boost::property_tree::ptree&)>
+            message,
         boost::function<void()> disconnect,
         boost::function<void(const std::string&)> debug,
         boost::function<void(const std::string&)> info,
@@ -57,13 +63,14 @@ class WebSocketConnection
  protected:
   void Handshake(const std::string& target);
 
-  void Start(const Events&, Context&);
+  void Start(const Events&);
   void Stop();
+
+  void Write(const boost::property_tree::ptree&);
 
  private:
   class Implementation;
   std::unique_ptr<Implementation> m_pimpl;
 };
-}  // namespace Binance
-}  // namespace Interaction
+}  // namespace Lib
 }  // namespace trdk

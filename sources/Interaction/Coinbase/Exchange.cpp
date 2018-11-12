@@ -9,6 +9,8 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
+#include "MarketDataConnection.hpp"
+#include "Product.hpp"
 
 using namespace trdk;
 using namespace Lib;
@@ -17,6 +19,7 @@ using namespace Crypto;
 using namespace TradingLib;
 using namespace Interaction;
 using namespace Rest;
+using namespace Coinbase;
 
 namespace pc = Poco;
 namespace net = pc::Net;
@@ -46,40 +49,29 @@ struct Settings : Rest::Settings {
   }
 };
 
-#pragma warning(push)
-#pragma warning(disable : 4702)  // Warning	C4702	unreachable code
 template <Level1TickType priceType, Level1TickType qtyType>
-std::pair<Level1TickValue, Level1TickValue> ReadTopOfBook(
+std::map<Price, std::pair<Level1TickValue, Level1TickValue>> ReadBook(
     const ptr::ptree& source) {
+  std::map<Price, std::pair<Level1TickValue, Level1TickValue>> result;
   for (const auto& lines : source) {
-    double price;
-    size_t i = 0;
+    boost::optional<double> price;
     for (const auto& val : lines.second) {
-      if (i == 0) {
-        price = val.second.get_value<double>();
-        ++i;
+      if (!price) {
+        price.emplace(val.second.get_value<double>());
       } else {
-        AssertEq(1, i);
-        return {
-            Level1TickValue::Create<priceType>(price),
-            Level1TickValue::Create<qtyType>(val.second.get_value<double>())};
+        const auto& qty = val.second.get_value<double>();
+        auto it = result.emplace(
+            *price, std::make_pair(Level1TickValue::Create<priceType>(*price),
+                                   Level1TickValue::Create<qtyType>(qty)));
+        if (!it.second) {
+          it.first->second.second = Level1TickValue::Create<qtyType>(
+              it.first->second.second.GetValue() + qty);
+        }
       }
     }
-    break;
   }
-  return {Level1TickValue::Create<priceType>(
-              std::numeric_limits<double>::quiet_NaN()),
-          Level1TickValue::Create<qtyType>(
-              std::numeric_limits<double>::quiet_NaN())};
+  return result;
 }
-#pragma warning(pop)
-
-struct Product {
-  std::string id;
-  Qty minQty;
-  Qty maxQty;
-  uintmax_t precisionPower;
-};
 
 Volume ParseFee(const ptr::ptree& order) {
   return order.get<Volume>("fill_fees");
@@ -218,13 +210,6 @@ class Exchange : public TradingSystem, public MarketDataSource {
   typedef boost::mutex SecuritiesMutex;
   typedef SecuritiesMutex::scoped_lock SecuritiesLock;
 
-  struct SecuritySubscription {
-    std::string productId;
-    boost::shared_ptr<Rest::Security> security;
-    boost::shared_ptr<Request> pricesRequest;
-    bool isSubscribed;
-  };
-
  public:
   explicit Exchange(const App&,
                     const TradingMode& mode,
@@ -238,8 +223,6 @@ class Exchange : public TradingSystem, public MarketDataSource {
         m_serverTimeDiff(
             GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),
         m_isConnected(false),
-        m_marketDataSession(
-            CreateSession("api.pro.coinbase.com", m_settings, false)),
         m_tradingSession(
             CreateSession("api.pro.coinbase.com", m_settings, true)),
         m_balances(*this, GetTsLog(), GetTsTradingLog()),
@@ -252,6 +235,11 @@ class Exchange : public TradingSystem, public MarketDataSource {
   Exchange& operator=(const Exchange&) = delete;
 
   ~Exchange() override {
+    {
+      boost::mutex::scoped_lock lock(m_marketDataConnectionMutex);
+      auto connection = std::move(m_marketDataConnection);
+      lock.unlock();
+    }
     try {
       m_pollingTask.reset();
       // Each object, that implements CreateNewSecurityObject should wait for
@@ -281,6 +269,7 @@ class Exchange : public TradingSystem, public MarketDataSource {
 
   //! Makes connection with Market Data Source.
   void Connect() override {
+    Assert(!m_marketDataConnection);
     // Implementation for trdk::MarketDataSource.
     if (IsConnected()) {
       return;
@@ -290,27 +279,18 @@ class Exchange : public TradingSystem, public MarketDataSource {
   }
 
   void SubscribeToSecurities() override {
-    {
-      const SecuritiesLock lock(m_securitiesMutex);
-      for (auto& subscribtion : m_securities) {
-        if (subscribtion.second.isSubscribed) {
-          continue;
-        }
-        GetMdsLog().Debug(R"(Starting Market Data subscribtion for "%1%"...)",
-                          *subscribtion.second.security);
-        subscribtion.second.isSubscribed = true;
-      }
+    boost::mutex::scoped_lock lock(m_marketDataConnectionMutex);
+    if (!m_marketDataConnection) {
+      return;
     }
-
-    m_pollingTask->AddTask(
-        "Prices", 1,
-        [this]() {
-          UpdatePrices();
-          return true;
-        },
-        m_settings.pollingSetttings.GetPricesRequestFrequency(), false);
-
-    m_pollingTask->AccelerateNextPolling();
+    if (!m_isMarketDataStarted) {
+      StartConnection(*m_marketDataConnection);
+      m_isMarketDataStarted = true;
+    } else {
+      const auto connection = std::move(m_marketDataConnection);
+      ScheduleMarketDataReconnect();
+      lock.unlock();
+    }
   }
 
   Balances& GetBalancesStorage() override { return m_balances; }
@@ -370,7 +350,13 @@ class Exchange : public TradingSystem, public MarketDataSource {
 
  protected:
   void CreateConnection() override {
+    Assert(!m_marketDataConnection);
+
+    const boost::mutex::scoped_lock lock(m_marketDataConnectionMutex);
+    auto marketDataConnection = boost::make_shared<MarketDataConnection>();
+
     try {
+      marketDataConnection->Connect();
       UpdateBalances();
       RequestProducts();
     } catch (const std::exception& ex) {
@@ -391,6 +377,8 @@ class Exchange : public TradingSystem, public MarketDataSource {
           return true;
         },
         m_settings.pollingSetttings.GetBalancesRequestFrequency(), true);
+
+    m_marketDataConnection = std::move(marketDataConnection);
 
     m_isConnected = true;
   }
@@ -414,14 +402,10 @@ class Exchange : public TradingSystem, public MarketDataSource {
     result->SetTradingSessionState(pt::not_a_date_time, true);
 
     {
-      const auto request = boost::make_shared<PublicRequest>(
-          "products/" + product->second.id + "/book/", "", GetContext(),
-          GetTsLog());
       const SecuritiesLock lock(m_securitiesMutex);
-      Verify(m_securities
-                 .emplace(symbol, SecuritySubscription{product->second.id,
-                                                       result, request})
-                 .second);
+      Verify(
+          m_securities.emplace(product->second.id, SecuritySubscription{result})
+              .second);
     }
 
     return *result;
@@ -503,8 +487,11 @@ class Exchange : public TradingSystem, public MarketDataSource {
  private:
   void RequestProducts() {
     boost::unordered_map<std::string, Product> products;
+    auto marketDataSession =
+        CreateSession("api.pro.coinbase.com", m_settings, false);
     PublicRequest request("products", "", GetContext(), GetTsLog());
-    const auto response = boost::get<1>(request.Send(m_marketDataSession));
+    const auto response = boost::get<1>(request.Send(marketDataSession));
+    marketDataSession.reset();
     for (const auto& node : response) {
       const auto& productNode = node.second;
       Product product = {productNode.get<std::string>("id"),
@@ -518,7 +505,6 @@ class Exchange : public TradingSystem, public MarketDataSource {
       if (!productIt.second) {
         GetTsLog().Error("Product duplicate: \"%1%\"", productIt.first->first);
         Assert(productIt.second);
-        continue;
       }
     }
 
@@ -535,7 +521,7 @@ class Exchange : public TradingSystem, public MarketDataSource {
     PrivateRequest request("accounts", net::HTTPRequest::HTTP_GET, m_settings,
                            false, std::string(), GetContext(), GetTsLog());
     try {
-      const auto response = boost::get<1>(request.Send(m_marketDataSession));
+      const auto response = boost::get<1>(request.Send(m_tradingSession));
       for (const auto& node : response) {
         const auto& account = node.second;
         m_balances.Set(account.get<std::string>("currency"),
@@ -592,7 +578,7 @@ class Exchange : public TradingSystem, public MarketDataSource {
                  log,
                  &tradingLog) {}
 
-      OrderStatusRequest(OrderStatusRequest&&) = default;
+      OrderStatusRequest(OrderStatusRequest&&) = delete;
       OrderStatusRequest(const OrderStatusRequest&) = delete;
       OrderStatusRequest& operator=(OrderStatusRequest&&) = delete;
       OrderStatusRequest& operator=(const OrderStatusRequest&) = delete;
@@ -623,7 +609,7 @@ class Exchange : public TradingSystem, public MarketDataSource {
       OrderStatusRequest request(orderId, m_settings, GetContext(), GetTsLog(),
                                  GetTsTradingLog());
       try {
-        UpdateOrder(boost::get<1>(request.Send(m_marketDataSession)));
+        UpdateOrder(boost::get<1>(request.Send(m_tradingSession)));
       } catch (const OrderIsUnknownException&) {
         OnOrderCanceled(GetContext().GetCurrentTime(), orderId, boost::none,
                         boost::none);
@@ -653,47 +639,98 @@ class Exchange : public TradingSystem, public MarketDataSource {
     }
   }
 
-  void UpdatePrices() {
-    const SecuritiesLock lock(m_securitiesMutex);
-    for (const auto& subscribtion : m_securities) {
-      if (!subscribtion.second.isSubscribed) {
-        continue;
-      }
-      auto& security = *subscribtion.second.security;
-      try {
-        UpdatePrices(security, *subscribtion.second.pricesRequest);
-        UpdateBars(subscribtion.second.productId, security);
-      } catch (const std::exception& ex) {
-        try {
-          security.SetOnline(pt::not_a_date_time, false);
-        } catch (...) {
-          AssertFailNoException();
-          throw;
-        }
-        boost::format error(R"(Failed to read order book for "%1%": "%2%")");
-        error % security  // 1
-            % ex.what();  // 2
-        throw Exception(error.str().c_str());
-      }
-      security.SetOnline(pt::not_a_date_time, true);
+  void UpdatePrices(const pt::ptime& time,
+                    const ptr::ptree& message,
+                    const Milestones& delayMeasurement) {
+    const auto& productId = message.get<std::string>("product_id");
+    const auto& securityIt = m_securities.find(productId);
+    if (securityIt == m_securities.cend()) {
+      boost::format error("Received depth-update for unknown product \"%1%\"");
+      error % productId;  // 1
+      throw Exception(error.str().c_str());
+    }
+    auto& security = securityIt->second;
+
+    const auto& type = message.get<std::string>("type");
+    if (type == "snapshot") {
+      UpdatePricesBySnapshot(time, security, message, delayMeasurement);
+    } else if (type == "l2update") {
+      UpdatePricesIncrementally(time, security, message, delayMeasurement);
+    } else {
+      boost::format error("Received depth-update with unknown type \"%1%\"");
+      error % type;  // 1
+      throw Exception(error.str().c_str());
     }
   }
 
-  void UpdatePrices(Rest::Security& security, Request& request) {
-    const auto& response = request.Send(m_marketDataSession);
-    const auto& time = boost::get<0>(response);
-    const auto& update = boost::get<1>(response);
-    const auto& delayMeasurement = boost::get<2>(response);
-    const auto& bestBid =
-        ReadTopOfBook<LEVEL1_TICK_BID_PRICE, LEVEL1_TICK_BID_QTY>(
-            update.get_child("bids"));
-    const auto& bestAsk =
-        ReadTopOfBook<LEVEL1_TICK_ASK_PRICE, LEVEL1_TICK_ASK_QTY>(
-            update.get_child("asks"));
-    security.SetLevel1(time, bestBid.first, bestBid.second, bestAsk.first,
-                       bestAsk.second, delayMeasurement);
+  void UpdatePricesBySnapshot(const pt::ptime& time,
+                              SecuritySubscription& security,
+                              const ptr::ptree& message,
+                              const Milestones& delayMeasurement) {
+    auto bids = ReadBook<LEVEL1_TICK_BID_PRICE, LEVEL1_TICK_BID_QTY>(
+        message.get_child("bids"));
+    security.asks = ReadBook<LEVEL1_TICK_ASK_PRICE, LEVEL1_TICK_ASK_QTY>(
+        message.get_child("asks"));
+    security.bids = std::move(bids);
+    FlushPrices(time, security, delayMeasurement);
   }
 
+  void UpdatePricesIncrementally(const pt::ptime& time,
+                                 SecuritySubscription& security,
+                                 const ptr::ptree& message,
+                                 const Milestones& delayMeasurement) {
+    for (const auto& line : message.get_child("changes")) {
+      boost::optional<bool> isBid;
+      boost::optional<Price> price;
+      for (const auto& item : line.second) {
+        if (!isBid) {
+          const auto& type = item.second.get_value<std::string>();
+          if (type == "buy") {
+            isBid = true;
+          } else if (type == "sell") {
+            isBid = false;
+          } else {
+            boost::format error(
+                "Received depth-update with unknown side \"%1%\"");
+            error % type;  // 1
+            throw Exception(error.str().c_str());
+          }
+        } else if (!price) {
+          price.emplace(item.second.get_value<Price>());
+        } else {
+          const auto& qty = item.second.get_value<Qty>();
+          auto& storage = isBid ? security.bids : security.asks;
+          auto it = storage.find(*price);
+          Assert(it != storage.cend());
+          if (it == storage.cend()) {
+            continue;
+          }
+          if (qty == 0) {
+            storage.erase(it);
+          } else {
+            it->second.second =
+                *isBid ? Level1TickValue::Create<LEVEL1_TICK_BID_QTY>(qty)
+                       : Level1TickValue::Create<LEVEL1_TICK_ASK_QTY>(qty);
+          }
+        }
+      }
+    }
+    FlushPrices(time, security, delayMeasurement);
+  }
+
+  void FlushPrices(const pt::ptime& time,
+                   SecuritySubscription& security,
+                   const Milestones& delayMeasurement) {
+    if (!security.bids.empty() && !security.asks.empty()) {
+      const auto& bestBid = security.bids.crbegin()->second;
+      const auto& bestAsk = security.asks.cbegin()->second;
+      security.security->SetLevel1(time, bestBid.first, bestBid.second,
+                                   bestAsk.first, bestAsk.second,
+                                   delayMeasurement);
+    }
+  }
+
+#if 0
   void UpdateBars(const std::string& productId, Rest::Security& security) {
     for (const auto& startedBar : security.GetStartedBars()) {
       const auto& startTime = startedBar.second;
@@ -752,16 +789,75 @@ class Exchange : public TradingSystem, public MarketDataSource {
       }
     }
   }
+#endif
+
+  void StartConnection(MarketDataConnection& connection) {
+    connection.Start(
+        m_securities,
+        MarketDataConnection::Events{
+            [this]() -> MarketDataConnection::EventInfo {
+              const auto& context = GetContext();
+              return {context.GetCurrentTime(),
+                      context.StartStrategyTimeMeasurement()};
+            },
+            [this](const MarketDataConnection::EventInfo& info,
+                   const ptr::ptree& message) {
+              UpdatePrices(info.readTime, message, info.delayMeasurement);
+            },
+            [this]() {
+              const boost::mutex::scoped_lock lock(m_marketDataConnectionMutex);
+              if (!m_marketDataConnection) {
+                GetMdsLog().Debug("Disconnected.");
+                return;
+              }
+              const auto connection = std::move(m_marketDataConnection);
+              GetMdsLog().Warn("Connection lost.");
+              GetContext().GetTimer().Schedule(
+                  [this, connection]() { ScheduleMarketDataReconnect(); },
+                  m_timerScope);
+            },
+            [this](const std::string& event) {
+              GetMdsLog().Debug(event.c_str());
+            },
+            [this](const std::string& event) {
+              GetMdsLog().Info(event.c_str());
+            },
+            [this](const std::string& event) {
+              GetMdsLog().Warn(event.c_str());
+            },
+            [this](const std::string& event) {
+              GetMdsLog().Error(event.c_str());
+            }});
+  }
+
+  void ScheduleMarketDataReconnect() {
+    GetContext().GetTimer().Schedule(
+        [this]() {
+          const boost::mutex::scoped_lock lock(m_marketDataConnectionMutex);
+          GetMdsLog().Info("Reconnecting...");
+          Assert(!m_marketDataConnection);
+          auto connection = boost::make_shared<MarketDataConnection>();
+          try {
+            connection->Connect();
+          } catch (const std::exception& ex) {
+            GetMdsLog().Error("Failed to connect: \"%1%\".", ex.what());
+            ScheduleMarketDataReconnect();
+            return;
+          }
+          StartConnection(*connection);
+          m_marketDataConnection = std::move(connection);
+        },
+        m_timerScope);
+  }
 
   Settings m_settings;
   const boost::posix_time::time_duration m_serverTimeDiff;
 
   bool m_isConnected;
-  std::unique_ptr<net::HTTPSClientSession> m_marketDataSession;
   std::unique_ptr<net::HTTPSClientSession> m_tradingSession;
 
   SecuritiesMutex m_securitiesMutex;
-  boost::unordered_map<Symbol, SecuritySubscription> m_securities;
+  boost::unordered_map<ProductId, SecuritySubscription> m_securities;
 
   BalancesContainer m_balances;
 
@@ -769,6 +865,13 @@ class Exchange : public TradingSystem, public MarketDataSource {
 
   boost::unordered_map<std::string, Product> m_products;
   boost::unordered_set<std::string> m_symbolListHint;
+
+  boost::mutex m_marketDataConnectionMutex;
+  bool m_isMarketDataStarted = false;
+  boost::shared_ptr<MarketDataConnection> m_marketDataConnection;
+
+  trdk::Timer::Scope m_timerScope;
+
 };  // namespace
 }  // namespace
 

@@ -11,20 +11,18 @@
 #pragma once
 
 #include "Product.hpp"
-#include "WebSocketConnection.hpp"
 
 namespace trdk {
 namespace Interaction {
 namespace Binance {
 
-class MarketDataConnection : public WebSocketConnection {
+class MarketDataConnection : public Lib::WebSocketConnection {
  public:
   MarketDataConnection();
   void Connect();
   void Start(const boost::unordered_map<ProductId,
                                         boost::shared_ptr<Rest::Security>> &,
-             const Events &,
-             Context &);
+             const Events &);
 };
 }  // namespace Binance
 }  // namespace Interaction
