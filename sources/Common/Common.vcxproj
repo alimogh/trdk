@@ -319,6 +319,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="VerifyModules.cpp" />
+    <ClCompile Include="WebSocketConnection.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Accumulators.hpp" />
@@ -352,6 +353,7 @@
     <ClInclude Include="Util.hpp" />
     <ClInclude Include="VerifyModules.hpp" />
     <ClInclude Include="VersionInfo.hpp" />
+    <ClInclude Include="WebSocketConnection.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Version\Version.vcxproj">

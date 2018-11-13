@@ -69,9 +69,7 @@ class TradingSystem : public trdk::TradingSystem {
   boost::shared_ptr<TradingSystemConnection> CreateListeningConnection();
   void ScheduleListeningConnectionReconnect();
 
-  void HandleMessage(const boost::posix_time::ptime &,
-                     const boost::property_tree::ptree &,
-                     const Lib::TimeMeasurement::Milestones &);
+  void HandleMessage(const boost::property_tree::ptree &);
 
   void UpdateBalances(const boost::property_tree::ptree &);
   void UpdateOrder(const boost::property_tree::ptree &);

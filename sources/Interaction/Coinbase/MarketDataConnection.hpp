@@ -1,5 +1,5 @@
 ﻿//
-//    Created: 2018/10/27 12:41 AM
+//    Created: 2018/04/07 3:47 PM
 //     Author: Eugene V. Palchukovsky
 //     E-mail: eugene@palchukovsky.com
 // ------------------------------------------
@@ -10,16 +10,19 @@
 
 #pragma once
 
+#include "Product.hpp"
+
 namespace trdk {
 namespace Interaction {
-namespace Binance {
+namespace Coinbase {
 
-class TradingSystemConnection : public Lib::WebSocketConnection {
+class MarketDataConnection : public Lib::WebSocketConnection {
  public:
-  TradingSystemConnection();
+  MarketDataConnection();
   void Connect();
-  void Start(const std::string &key, const Events &);
+  void Start(const boost::unordered_map<ProductId, SecuritySubscription> &,
+             const Events &);
 };
-}  // namespace Binance
+}  // namespace Coinbase
 }  // namespace Interaction
 }  // namespace trdk

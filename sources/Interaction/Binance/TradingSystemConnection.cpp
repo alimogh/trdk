@@ -19,10 +19,9 @@ TradingSystemConnection::TradingSystemConnection()
     : WebSocketConnection("stream.binance.com") {}
 
 void TradingSystemConnection::Start(const std::string &key,
-                                    const Events &events,
-                                    Context &context) {
+                                    const Events &events) {
   Handshake("/ws/" + key);
-  WebSocketConnection::Start(events, context);
+  WebSocketConnection::Start(events);
 }
 
 void TradingSystemConnection ::Connect() {

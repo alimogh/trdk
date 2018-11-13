@@ -89,9 +89,6 @@
       <UniqueIdentifier>{095e0295-c145-4730-9490-dde29d90c828}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="Coinbase">
-      <UniqueIdentifier>{510c3443-c472-4d68-a48a-4d244724fd12}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Prec.cpp">
@@ -219,9 +216,6 @@
     </ClCompile>
     <ClCompile Include="Crex24TradingSystemAndMarketDataSource.cpp">
       <Filter>CREX24\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CoinbaseExchange.cpp">
-      <Filter>Coinbase</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

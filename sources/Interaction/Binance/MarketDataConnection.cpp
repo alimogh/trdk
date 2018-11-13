@@ -21,8 +21,7 @@ MarketDataConnection::MarketDataConnection()
 void MarketDataConnection::Start(
     const boost::unordered_map<ProductId, boost::shared_ptr<Rest::Security>>
         &list,
-    const Events &events,
-    Context &context) {
+    const Events &events) {
   if (list.empty()) {
     return;
   }
@@ -34,7 +33,7 @@ void MarketDataConnection::Start(
     request += boost::to_lower_copy(security.first) + "@depth5";
   }
   Handshake("/stream?streams=" + request);
-  WebSocketConnection::Start(events, context);
+  WebSocketConnection::Start(events);
 }
 
 void MarketDataConnection::Connect() { WebSocketConnection::Connect("9443"); }
