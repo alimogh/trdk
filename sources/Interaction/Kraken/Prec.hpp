@@ -14,7 +14,6 @@
 #include "TradingLib/BalancesContainer.hpp"
 #include "TradingLib/Util.hpp"
 #include "Core/MarketDataSource.hpp"
-#include "Core/Security.hpp"
 #include "Core/Settings.hpp"
 #include "Core/Trade.hpp"
 #include "Core/TradingLog.hpp"

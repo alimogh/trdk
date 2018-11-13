@@ -10,11 +10,12 @@
 
 #include "Prec.hpp"
 #include "WebSocketConnection.hpp"
+#include "Constants.h"
+#include "Exception.hpp"
 
 using namespace trdk;
 using namespace Lib;
 using namespace TimeMeasurement;
-using namespace Interaction::Binance;
 namespace io = boost::asio;
 using tcp = io::ip::tcp;
 namespace ssl = io::ssl;
@@ -25,15 +26,16 @@ namespace pt = boost::posix_time;
 namespace ios = boost::iostreams;
 
 WebSocketConnection::Events::Events(
-    boost::function<void(const pt::ptime &,
-                         const boost::property_tree::ptree &,
-                         const Milestones &)> message,
+    boost::function<EventInfo()> read,
+    boost::function<void(EventInfo, const boost::property_tree::ptree &)>
+        message,
     boost::function<void()> disconnect,
     boost::function<void(const std::string &)> debug,
     boost::function<void(const std::string &)> info,
     boost::function<void(const std::string &)> warn,
     boost::function<void(const std::string &)> error)
-    : message(std::move(message)),
+    : read(std::move(read)),
+      message(std::move(message)),
       disconnect(std::move(disconnect)),
       debug(std::move(debug)),
       info(std::move(info)),
@@ -66,15 +68,13 @@ class WebSocketConnection::Implementation {
     }
   }
 
-  void Run(const Events &events, Context &context) {
-    io::spawn(m_ioContext, [this, &events,
-                            &context](const io::yield_context &yield) {
+  void Run(const Events &events) {
+    io::spawn(m_ioContext, [this, &events](const io::yield_context &yield) {
       for (io::streambuf buffer;;) {
         boost::system::error_code error;
         m_stream.async_read(buffer, yield[error]);
 
-        const auto &delayMeasurement = context.StartStrategyTimeMeasurement();
-        const auto &time = pt::microsec_clock::local_time();
+        auto info = events.read();
 
         if (error) {
           boost::format errorMessage("Failed to read: \"%1%\" (code: %2%).");
@@ -99,7 +99,7 @@ class WebSocketConnection::Implementation {
         }
 
         try {
-          events.message(time, message, delayMeasurement);
+          events.message(std::move(info), message);
         } catch (const Exception &ex) {
           boost::format errorMessage(
               "Application error occurred while reading server message: "
@@ -147,15 +147,15 @@ void WebSocketConnection::Handshake(const std::string &target) {
   });
 }
 
-void WebSocketConnection::Start(const Events &events, Context &context) {
+void WebSocketConnection::Start(const Events &events) {
   Assert(!m_pimpl->m_thread);
   if (m_pimpl->m_thread) {
     throw std::runtime_error("Connection is already started");
   }
-  m_pimpl->m_thread.emplace([this, events, &context]() {
+  m_pimpl->m_thread.emplace([this, events]() {
     try {
       events.debug("Starting WebSocket service task...");
-      m_pimpl->Run(events, context);
+      m_pimpl->Run(events);
       events.debug("WebSocket service task is completed.");
     } catch (...) {
       AssertFailNoException();
@@ -171,4 +171,10 @@ void WebSocketConnection::Stop() {
   m_pimpl->m_ioContext.stop();
   m_pimpl->m_thread->join();
   m_pimpl->m_thread = boost::none;
+}
+
+void WebSocketConnection::Write(const ptr::ptree &message) {
+  std::ostringstream oss;
+  ptr::write_json(oss, message, false);
+  m_pimpl->m_stream.write(io::buffer(oss.str()));
 }

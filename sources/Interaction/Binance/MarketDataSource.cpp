@@ -200,9 +200,14 @@ void b::MarketDataSource::StartConnection(MarketDataConnection &connection) {
   connection.Start(
       m_securities,
       MarketDataConnection::Events{
-          [this](const pt::ptime &time, const ptr::ptree &message,
-                 const Milestones &delayMeasurement) {
-            UpdatePrices(time, message, delayMeasurement);
+          [this]() -> MarketDataConnection::EventInfo {
+            const auto &context = GetContext();
+            return {context.GetCurrentTime(),
+                    context.StartStrategyTimeMeasurement()};
+          },
+          [this](const MarketDataConnection::EventInfo &info,
+                 const ptr::ptree &message) {
+            UpdatePrices(info.readTime, message, info.delayMeasurement);
           },
           [this]() {
             const boost::mutex::scoped_lock lock(m_connectionMutex);
@@ -218,8 +223,7 @@ void b::MarketDataSource::StartConnection(MarketDataConnection &connection) {
           [this](const std::string &event) { GetLog().Debug(event.c_str()); },
           [this](const std::string &event) { GetLog().Info(event.c_str()); },
           [this](const std::string &event) { GetLog().Warn(event.c_str()); },
-          [this](const std::string &event) { GetLog().Error(event.c_str()); }},
-      GetContext());
+          [this](const std::string &event) { GetLog().Error(event.c_str()); }});
 }
 
 void b::MarketDataSource::ScheduleReconnect() {

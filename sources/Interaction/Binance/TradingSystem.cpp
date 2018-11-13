@@ -210,10 +210,9 @@ b::TradingSystem::CreateListeningConnection() {
   result->Start(
       m_key,
       TradingSystemConnection::Events{
-          [this](const pt::ptime &time, const ptr::ptree &message,
-                 const Milestones &delayMeasurement) {
-            HandleMessage(time, message, delayMeasurement);
-          },
+          []() -> const TradingSystemConnection::EventInfo { return {}; },
+          [this](const TradingSystemConnection::EventInfo &,
+                 const ptr::ptree &message) { HandleMessage(message); },
           [this]() {
             const boost::mutex::scoped_lock lock(m_listeningConnectionMutex);
             if (!m_listeningConnection) {
@@ -231,8 +230,7 @@ b::TradingSystem::CreateListeningConnection() {
           [this](const std::string &event) { GetLog().Debug(event.c_str()); },
           [this](const std::string &event) { GetLog().Info(event.c_str()); },
           [this](const std::string &event) { GetLog().Warn(event.c_str()); },
-          [this](const std::string &event) { GetLog().Error(event.c_str()); }},
-      GetContext());
+          [this](const std::string &event) { GetLog().Error(event.c_str()); }});
   return result;
 }
 
@@ -253,9 +251,7 @@ void b::TradingSystem::ScheduleListeningConnectionReconnect() {
       m_timerScope);
 }
 
-void b::TradingSystem::HandleMessage(const pt::ptime &,
-                                     const ptr::ptree &message,
-                                     const Milestones &) {
+void b::TradingSystem::HandleMessage(const ptr::ptree &message) {
   const auto &type = message.get<std::string>("e");
   if (type == "outboundAccountInfo") {
     UpdateBalances(message);
