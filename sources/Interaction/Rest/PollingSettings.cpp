@@ -19,18 +19,18 @@ namespace ptr = boost::property_tree;
 
 namespace {
 const pt::time_duration &minInterval = pt::microseconds(1);
-const pt::time_duration &defailtInterval = pt::seconds(15);
+const pt::time_duration &defaultInterval = pt::seconds(15);
 const size_t defaultPriceRequestFrequency = 1;
 const size_t defaultActualOrdersRequestFrequency = 1;
-const size_t defaultAllOrdersRequestFrequency = 60;
-const size_t defaultBalancesRequestFrequency = 120;
+const size_t defaultAllOrdersRequestFrequency = 4;
+const size_t defaultBalancesRequestFrequency = 4;
 }  // namespace
 
 PollingSettings::PollingSettings(const ptr::ptree &conf)
     : m_interval(std::max<pt::time_duration>(
           pt::seconds(conf.get<long>(
               "config.polling.intervalSeconds",
-              static_cast<long>(defailtInterval.total_seconds()))),
+              static_cast<long>(defaultInterval.total_seconds()))),
           minInterval)),
       m_actualOrdersRequestFrequency(
           conf.get<size_t>("config.polling.frequency.actualOrders",
@@ -47,7 +47,7 @@ PollingSettings::PollingSettings(const ptr::ptree &conf)
                            defaultBalancesRequestFrequency)) {}
 
 void PollingSettings::Log(ModuleEventsLog &log) const {
-  if (GetInterval() == defailtInterval &&
+  if (GetInterval() == defaultInterval &&
       GetPricesRequestFrequency() == defaultPriceRequestFrequency &&
       GetActualOrdersRequestFrequency() ==
           defaultActualOrdersRequestFrequency &&
