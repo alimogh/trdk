@@ -92,9 +92,6 @@ class BalancesContainer::Implementation : private boost::noncopyable {
 
     const Double availableDelta = available - storage.second.available;
     const Double lockedDelta = locked - storage.second.locked;
-    if (availableDelta == 0 && lockedDelta == 0) {
-      return;
-    }
 
     m_tradingLog.Write(
         "{'balance': {'symbol': '%1%', 'available': {'prev': %2%, 'new': "
@@ -109,6 +106,11 @@ class BalancesContainer::Implementation : private boost::noncopyable {
               % locked                    // 6
               % lockedDelta;              // 7
         });
+
+    if (availableDelta == 0 && lockedDelta == 0) {
+      return;
+    }
+
     storage.second.available = std::move(available);
     storage.second.locked = std::move(locked);
 
@@ -168,6 +170,9 @@ void BalancesContainer::ReduceAvailableToTradeByOrder(
   }
 
   switch (side) {
+    default:
+      AssertEq(ORDER_SIDE_SELL, side);
+      return;
     case ORDER_SIDE_SELL: {
       const auto &symbol = security.GetSymbol().GetBaseSymbol();
       auto delta = qty;
@@ -273,8 +278,8 @@ void BalancesContainer::ReduceAvailableToTradeByOrder(
 
 void BalancesContainer::ForEach(
     const boost::function<void(const std::string &symbol,
-                               const trdk::Volume &available,
-                               const trdk::Volume &locked)> &callback) const {
+                               const Volume &available,
+                               const Volume &locked)> &callback) const {
   const ReadLock lock(m_pimpl->m_mutex);
   for (const auto &balance : m_pimpl->m_storage) {
     callback(balance.first, balance.second.available, balance.second.locked);
