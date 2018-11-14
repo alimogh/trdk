@@ -1,12 +1,12 @@
-﻿/*******************************************************************************
- *   Created: 2018/04/07 13:51:51
- *    Author: Eugene V. Palchukovsky
- *    E-mail: eugene@palchukovsky.com
- * -------------------------------------------------------------------
- *   Project: Trading Robot Development Kit
- *       URL: http://robotdk.com
- * Copyright: Eugene V. Palchukovsky
- ******************************************************************************/
+﻿//
+//    Created: 2018/11/14 15:41
+//     Author: Eugene V. Palchukovsky
+//     E-mail: eugene@palchukovsky.com
+// ------------------------------------------
+//    Project: Trading Robot Development Kit
+//        URL: http://robotdk.com
+//  Copyright: Eugene V. Palchukovsky
+//
 
 #pragma once
 
@@ -14,7 +14,7 @@
 
 namespace trdk {
 namespace Interaction {
-namespace Binance {
+namespace Poloniex {
 
 class MarketDataSource : public trdk::MarketDataSource {
  public:
@@ -40,13 +40,6 @@ class MarketDataSource : public trdk::MarketDataSource {
  protected:
   trdk::Security &CreateNewSecurityObject(const Lib::Symbol &) override;
 
- private:
-  void UpdatePrices(const boost::posix_time::ptime &,
-                    const boost::property_tree::ptree &,
-                    const Lib::TimeMeasurement::Milestones &);
-  void StartConnection(MarketDataConnection &);
-  void ScheduleReconnect();
-
   const Rest::Settings m_settings;
 
   boost::unordered_map<std::string, Product> m_products;
@@ -56,11 +49,10 @@ class MarketDataSource : public trdk::MarketDataSource {
 
   boost::mutex m_connectionMutex;
   bool m_isStarted = false;
-  boost::shared_ptr<MarketDataConnection> m_connection;
 
   Timer::Scope m_timerScope;
 };
 
-}  // namespace Binance
+}  // namespace Poloniex
 }  // namespace Interaction
 }  // namespace trdk
