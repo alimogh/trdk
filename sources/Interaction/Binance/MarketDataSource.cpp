@@ -45,18 +45,18 @@ b::MarketDataSource::~MarketDataSource() {
 void b::MarketDataSource::Connect() {
   Assert(!m_connection);
 
-  boost::unordered_map<std::string, Product> products;
+  const boost::unordered_map<std::string, Product> *products;
   {
     auto session = CreateSession(m_settings, false);
     try {
-      products = GetProductList(session, GetContext(), GetLog());
+      products = &GetProductList(session, GetContext(), GetLog());
     } catch (const std::exception &ex) {
       throw ConnectError(ex.what());
     }
   }
 
   boost::unordered_set<std::string> symbolListHint;
-  for (const auto &product : products) {
+  for (const auto &product : *products) {
     symbolListHint.insert(product.first);
   }
 
@@ -69,7 +69,7 @@ void b::MarketDataSource::Connect() {
     throw ConnectError(ex.what());
   }
 
-  m_products = std::move(products);
+  m_products = products;
   m_symbolListHint = std::move(symbolListHint);
   m_connection = std::move(connection);
 }
@@ -94,8 +94,8 @@ void b::MarketDataSource::SubscribeToSecurities() {
 
 trdk::Security &b::MarketDataSource::CreateNewSecurityObject(
     const Symbol &symbol) {
-  const auto &product = m_products.find(symbol.GetSymbol());
-  if (product == m_products.cend()) {
+  const auto &product = m_products->find(symbol.GetSymbol());
+  if (product == m_products->cend()) {
     boost::format message("Symbol \"%1%\" is not in the exchange product list");
     message % symbol.GetSymbol();
     throw SymbolIsNotSupportedException(message.str().c_str());

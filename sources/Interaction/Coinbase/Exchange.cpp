@@ -57,9 +57,9 @@ std::map<Price, std::pair<Level1TickValue, Level1TickValue>> ReadBook(
     boost::optional<double> price;
     for (const auto& val : lines.second) {
       if (!price) {
-        price.emplace(val.second.get_value<double>());
+        price.emplace(val.second.get_value<Price>());
       } else {
-        const auto& qty = val.second.get_value<double>();
+        const auto& qty = val.second.get_value<Qty>();
         auto it = result.emplace(
             *price, std::make_pair(Level1TickValue::Create<priceType>(*price),
                                    Level1TickValue::Create<qtyType>(qty)));

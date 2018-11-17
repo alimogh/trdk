@@ -1,5 +1,5 @@
 ﻿//
-//    Created: 2018/11/14 15:36
+//    Created: 2018/11/14 16:42
 //     Author: Eugene V. Palchukovsky
 //     E-mail: eugene@palchukovsky.com
 // ------------------------------------------
@@ -14,14 +14,8 @@ namespace trdk {
 namespace Interaction {
 namespace Poloniex {
 
-typedef uintmax_t ProductId;
-
-struct Product {
-  ProductId id;
-};
-
-const boost::unordered_map<std::string, Product> &GetProductList();
-
-}  // namespace Poloniex
+std::unique_ptr<Poco::Net::HTTPSClientSession> CreateSession(
+    const Rest::Settings &, bool isTrading);
+}
 }  // namespace Interaction
 }  // namespace trdk

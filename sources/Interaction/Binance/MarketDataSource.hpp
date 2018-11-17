@@ -49,7 +49,7 @@ class MarketDataSource : public trdk::MarketDataSource {
 
   const Rest::Settings m_settings;
 
-  boost::unordered_map<std::string, Product> m_products;
+  const boost::unordered_map<std::string, Product> *m_products = nullptr;
   boost::unordered_set<std::string> m_symbolListHint;
   boost::unordered_map<ProductId, boost::shared_ptr<Rest::Security>>
       m_securities;

@@ -78,7 +78,7 @@ class TradingSystem : public trdk::TradingSystem {
   const boost::posix_time::time_duration m_serverTimeDiff;
 
   std::string m_key;
-  boost::unordered_map<std::string, Product> m_products;
+  const boost::unordered_map<std::string, Product> *m_products = nullptr;
 
   TradingLib::BalancesContainer m_balances;
 

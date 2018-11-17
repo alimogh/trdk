@@ -303,6 +303,7 @@
     <TargetName>Poloniex_test</TargetName>
   </PropertyGroup>
   <ItemGroup>
+    <ClCompile Include="MarketDataConnection.cpp" />
     <ClCompile Include="MarketDataSource.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Create</PrecompiledHeader>
@@ -318,14 +319,19 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Product.cpp" />
+    <ClCompile Include="Session.cpp" />
     <ClCompile Include="TradingSystem.cpp" />
     <ClCompile Include="TradingSystemAndMarketDataSource.cpp" />
     <ClCompile Include="Version.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="MarketDataConnection.hpp" />
     <ClInclude Include="MarketDataSource.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="Product.hpp" />
+    <ClInclude Include="Request.hpp" />
+    <ClInclude Include="Session.hpp" />
     <ClInclude Include="TradingSystem.hpp" />
   </ItemGroup>
   <ItemGroup>

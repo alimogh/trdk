@@ -83,7 +83,7 @@ void b::TradingSystem::CreateConnection() {
   GetLog().Debug("Creating connection...");
 
   Assert(m_key.empty());
-  Assert(m_products.empty());
+  Assert(!m_products);
   try {
     GetLog().Debug(
         "Server time: %1%.",
@@ -94,7 +94,7 @@ void b::TradingSystem::CreateConnection() {
             1000) -
             m_serverTimeDiff);
 
-    auto products = GetProductList(m_session, GetContext(), GetLog());
+    const auto &products = GetProductList(m_session, GetContext(), GetLog());
 
     const auto keyRequestResponse =
         PrivateRequest("v1/userDataStream", net::HTTPRequest::HTTP_POST,
@@ -120,7 +120,7 @@ void b::TradingSystem::CreateConnection() {
     const boost::mutex::scoped_lock lock(m_listeningConnectionMutex);
     auto listeningConnection = CreateListeningConnection();
 
-    m_products = std::move(products);
+    m_products = &products;
     m_key = std::move(key);
     m_listeningConnection = std::move(listeningConnection);
 
@@ -155,8 +155,8 @@ std::unique_ptr<OrderTransactionContext> b::TradingSystem::SendOrderTransaction(
   }
 
   const auto &symbol = security.GetSymbol().GetSymbol();
-  const auto &productIt = m_products.find(symbol);
-  if (productIt == m_products.cend()) {
+  const auto &productIt = m_products->find(symbol);
+  if (productIt == m_products->cend()) {
     throw Exception("Product is unknown");
   }
   const auto &product = productIt->second;
@@ -319,8 +319,8 @@ boost::optional<OrderCheckError> b::TradingSystem::CheckOrder(
     const OrderSide &side) const {
   auto result = Base::CheckOrder(security, currency, qty, price, side);
 
-  const auto &productIt = m_products.find(security.GetSymbol().GetSymbol());
-  if (productIt == m_products.cend()) {
+  const auto &productIt = m_products->find(security.GetSymbol().GetSymbol());
+  if (productIt == m_products->cend()) {
     GetLog().Error(R"(Failed find product for "%1%" to check order.)",
                    security);
     throw Exception("Symbol is not supported by exchange");
@@ -371,5 +371,5 @@ boost::optional<OrderCheckError> b::TradingSystem::CheckOrder(
 }
 
 bool b::TradingSystem::CheckSymbol(const std::string &symbol) const {
-  return Base::CheckSymbol(symbol) && m_products.count(symbol) > 0;
+  return Base::CheckSymbol(symbol) && m_products->count(symbol) > 0;
 }

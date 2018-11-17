@@ -78,7 +78,7 @@ boost::unordered_map<std::string, Product> RequestProductList(
 }
 }  // namespace
 
-boost::unordered_map<std::string, Product> Binance::GetProductList(
+const boost::unordered_map<std::string, Product> &Binance::GetProductList(
     std::unique_ptr<Poco::Net::HTTPSClientSession> &session,
     const Context &context,
     ModuleEventsLog &log) {
