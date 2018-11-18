@@ -124,5 +124,11 @@ ExcelTextFieldFormatter<T> ExcelTextField(const T &value) {
 std::uintmax_t ConvertTickSizeToPrecisionPower(std::string);
 
 ////////////////////////////////////////////////////////////////////////////////
+
+boost::property_tree::ptree ReadJson(const std::string &);
+std::string ConvertToString(const boost::property_tree::ptree &,
+                            bool multiline);
+
+////////////////////////////////////////////////////////////////////////////////
 }  // namespace Lib
 }  // namespace trdk

@@ -67,8 +67,8 @@ boost::unordered_map<std::string, Product> RequestProductList(
   } catch (const std::exception &ex) {
     log.Error(
         R"(Failed to read supported product list: "%1%". Message: "%2%".)",
-        ex.what(),                                // 1
-        Rest::ConvertToString(response, false));  // 2
+        ex.what(),                               // 1
+        Lib::ConvertToString(response, false));  // 2
     throw Exception(ex.what());
   }
   if (result.empty()) {

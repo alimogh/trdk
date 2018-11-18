@@ -30,6 +30,5 @@
 #include "Common/Crypto.hpp"
 #include "Common/WebSocketConnection.hpp"
 #include <boost/algorithm/string.hpp>
-#include <boost/property_tree/ptree.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 #include <Poco/Net/HTTPRequest.h>

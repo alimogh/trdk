@@ -61,7 +61,7 @@ void p::MarketDataSource::Connect() {
   }
 
   const boost::mutex::scoped_lock lock(m_connectionMutex);
-  auto connection = boost::make_shared<MarketDataConnection>();
+  auto connection = boost::make_unique<MarketDataConnection>();
   try {
     connection->Connect();
   } catch (const std::exception &ex) {
@@ -139,10 +139,15 @@ void p::MarketDataSource::StartConnection(MarketDataConnection &connection) {
               GetLog().Debug("Disconnected.");
               return;
             }
-            const auto connection = std::move(m_connection);
+            const boost::shared_ptr<MarketDataConnection> connection(
+                std::move(m_connection));
             GetLog().Warn("Connection lost.");
             GetContext().GetTimer().Schedule(
-                [this, connection]() { ScheduleReconnect(); }, m_timerScope);
+                [this, connection]() {
+                  { const boost::mutex::scoped_lock lock(m_connectionMutex); }
+                  ScheduleReconnect();
+                },
+                m_timerScope);
           },
           [this](const std::string &event) { GetLog().Debug(event.c_str()); },
           [this](const std::string &event) { GetLog().Info(event.c_str()); },
@@ -156,7 +161,7 @@ void p::MarketDataSource::ScheduleReconnect() {
         const boost::mutex::scoped_lock lock(m_connectionMutex);
         GetLog().Info("Reconnecting...");
         Assert(!m_connection);
-        auto connection = boost::make_shared<MarketDataConnection>();
+        auto connection = boost::make_unique<MarketDataConnection>();
         try {
           connection->Connect();
         } catch (const std::exception &ex) {

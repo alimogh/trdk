@@ -56,7 +56,7 @@ class MarketDataSource : public trdk::MarketDataSource {
 
   boost::mutex m_connectionMutex;
   bool m_isStarted = false;
-  boost::shared_ptr<MarketDataConnection> m_connection;
+  std::unique_ptr<MarketDataConnection> m_connection;
 
   Timer::Scope m_timerScope;
 };

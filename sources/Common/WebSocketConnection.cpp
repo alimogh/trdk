@@ -24,6 +24,7 @@ namespace ws = beast::websocket;
 namespace ptr = boost::property_tree;
 namespace pt = boost::posix_time;
 namespace ios = boost::iostreams;
+namespace is = boost::iostreams;
 
 WebSocketConnection::Events::Events(
     boost::function<EventInfo()> read,
@@ -84,25 +85,28 @@ class WebSocketConnection::Implementation {
           return;
         }
 
-        const auto size = buffer.size();
-        if (size == 0) {
+        if (buffer.size() == 0) {
           events.debug("Connection closed.");
           return;
         }
 
+        std::string messageContent;
+        std::istream(&buffer) >> messageContent;
+
         ptr::ptree message;
         {
-          std::istream is(&buffer);
+          is::stream_buffer<is::array_source> messageBuffer(
+              messageContent.c_str(),
+              messageContent.c_str() + messageContent.size());
+          std::istream messageStream(&messageBuffer);
           try {
-            ptr::read_json(is, message);
+            ptr::read_json(messageStream, message);
             AssertEq(0, buffer.size());
           } catch (const ptr::json_parser_error &ex) {
-            buffer.commit(size);
             boost::format errorMessage(
                 R"(Failed to parse server response: "%1%". Message: %2%)");
             errorMessage % ex.what()  // 1
-                % std::string(io::buffers_begin(buffer.data()),
-                              io::buffers_end(buffer.data()));  // 2
+                % messageContent;     // 2
             events.debug(errorMessage.str());
             return;
           }
@@ -111,22 +115,18 @@ class WebSocketConnection::Implementation {
         try {
           events.message(std::move(info), message);
         } catch (const Exception &ex) {
-          buffer.commit(size);
           boost::format errorMessage(
               "Application error occurred while reading server message: "
               "\"%1%\". Message: %2%");
           errorMessage % ex.what()  // 1
-              % std::string(io::buffers_begin(buffer.data()),
-                            io::buffers_end(buffer.data()));  // 2
+              % messageContent;     // 2
           events.error(errorMessage.str());
         } catch (const std::exception &ex) {
-          buffer.commit(size);
           boost::format errorMessage(
               "System error occurred while reading server message: \"%1%\". "
               "Message: %2%");
           errorMessage % ex.what()  // 1
-              % std::string(io::buffers_begin(buffer.data()),
-                            io::buffers_end(buffer.data()));  // 2
+              % messageContent;     // 2
           events.error(errorMessage.str());
           return;
         }

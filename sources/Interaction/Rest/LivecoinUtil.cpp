@@ -11,12 +11,11 @@
 #include "Prec.hpp"
 #include "LivecoinUtil.hpp"
 #include "LivecoinRequest.hpp"
-#include "Util.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Interaction;
-using namespace trdk::Interaction::Rest;
+using namespace Lib;
+using namespace Interaction;
+using namespace Rest;
 
 namespace net = Poco::Net;
 namespace ptr = boost::property_tree;
@@ -52,8 +51,8 @@ Rest::RequestLivecoinProductList(
   } catch (const std::exception &ex) {
     log.Error(
         "Failed to read supported product list: \"%1%\". Message: \"%2%\".",
-        ex.what(),                          // 1
-        ConvertToString(response, false));  // 2
+        ex.what(),                               // 1
+        Lib::ConvertToString(response, false));  // 2
 
     throw Exception(ex.what());
   }

@@ -271,7 +271,7 @@ void b::TradingSystem::UpdateBalances(const ptr::ptree &message) {
 void b::TradingSystem::UpdateOrder(const ptr::ptree &message) {
   GetTradingLog().Write("response-dump executionReport\t%1%",
                         [&message](TradingRecord &record) {
-                          record % Rest::ConvertToString(message, false);  // 1
+                          record % Lib::ConvertToString(message, false);  // 1
                         });
 
   const auto &id = message.get<OrderId>("i");

@@ -212,8 +212,8 @@ void Kraken::MarketDataSource::UpdatePrices(
     }
   } catch (const std::exception &ex) {
     boost::format error(R"(Failed to read order book: "%1%" ("%2%").)");
-    error % ex.what()                            // 1
-        % Rest::ConvertToString(source, false);  // 2
+    error % ex.what()                           // 1
+        % Lib::ConvertToString(source, false);  // 2
     throw Exception(error.str().c_str());
   }
 }

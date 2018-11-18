@@ -198,7 +198,7 @@ boost::optional<std::pair<Level1TickValue, Level1TickValue>> ReadTopPrice(
   return std::make_pair(std::move(*price), std::move(*qty));
 }
 #pragma warning(pop)
-}
+}  // namespace
 
 void CexioMarketDataSource::UpdatePrices(const ptr::ptree &source,
                                          Subscribtion &subscribtion,
@@ -237,8 +237,8 @@ void CexioMarketDataSource::UpdatePrices(const ptr::ptree &source,
 
   } catch (const std::exception &ex) {
     boost::format error("Failed to read order book: \"%1%\" (\"%2%\").");
-    error % ex.what()                      // 1
-        % ConvertToString(source, false);  // 2
+    error % ex.what()                           // 1
+        % Lib::ConvertToString(source, false);  // 2
     throw Exception(error.str().c_str());
   }
 }
