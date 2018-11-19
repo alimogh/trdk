@@ -30,7 +30,6 @@
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index_container.hpp>
 #include <boost/property_tree/json_parser.hpp>
-#include <boost/property_tree/ptree.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 #include <Poco/Net/AcceptCertificateHandler.h>
 #include <Poco/Net/HTTPRequest.h>

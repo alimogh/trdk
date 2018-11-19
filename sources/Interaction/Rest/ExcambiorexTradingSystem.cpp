@@ -401,8 +401,8 @@ void ExcambiorexTradingSystem::SetBalances(const ptr::ptree &source) {
     }
   } catch (const std::exception &ex) {
     boost::format error("Failed to read balance: \"%1%\" (%2%)");
-    error % ex.what()                      // 1
-        % ConvertToString(source, false);  // 2
+    error % ex.what()                           // 1
+        % Lib::ConvertToString(source, false);  // 2
     throw CommunicationError(error.str().c_str());
   }
 }

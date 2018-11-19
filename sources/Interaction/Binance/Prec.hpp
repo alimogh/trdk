@@ -32,6 +32,5 @@
 #include "Fwd.hpp"
 #include "Common/Crypto.hpp"
 #include "Common/WebSocketConnection.hpp"
-#include <boost/property_tree/ptree.hpp>
 #include <Poco/Net/HTTPRequest.h>
 #include <Poco/URI.h>

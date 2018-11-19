@@ -14,11 +14,6 @@ namespace trdk {
 namespace Interaction {
 namespace Rest {
 
-TRDK_INTERACTION_REST_API std::string ConvertToString(
-    const boost::property_tree::ptree &, bool multiline);
-TRDK_INTERACTION_REST_API boost::property_tree::ptree ReadJson(
-    const std::string &);
-
 TRDK_INTERACTION_REST_API std::unique_ptr<Poco::Net::HTTPSClientSession>
 CreateSession(const std::string &host, const Settings &, bool isTrading);
 }  // namespace Rest

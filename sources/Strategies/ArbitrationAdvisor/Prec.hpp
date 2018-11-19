@@ -49,6 +49,5 @@
 #include <boost/multi_index/mem_fun.hpp>
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index_container.hpp>
-#include <boost/property_tree/ptree.hpp>
 #include <boost/thread/future.hpp>
 #include <boost/uuid/uuid_generators.hpp>

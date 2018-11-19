@@ -11,13 +11,11 @@
 #pragma once
 
 #include "TimeMeasurement.hpp"
-#include <boost/property_tree/ptree.hpp>
 
 namespace trdk {
 namespace Lib {
 
-class WebSocketConnection
-    : public boost::enable_shared_from_this<WebSocketConnection> {
+class WebSocketConnection {
  public:
   struct EventInfo {
     boost::posix_time::ptime readTime;
