@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "AuthSettings.hpp"
 #include "Product.hpp"
 
 namespace trdk {
@@ -30,7 +31,7 @@ class TradingSystem : public trdk::TradingSystem {
   TradingSystem(const TradingSystem &) = delete;
   TradingSystem &operator=(TradingSystem &&) = delete;
   TradingSystem &operator=(const TradingSystem &) = delete;
-  ~TradingSystem() override = default;
+  ~TradingSystem() override;
 
   bool IsConnected() const override;
 
@@ -65,8 +66,26 @@ class TradingSystem : public trdk::TradingSystem {
   bool CheckSymbol(const std::string &) const override;
 
  private:
+  boost::shared_ptr<TradingSystemConnection> CreateListeningConnection();
+  void ScheduleListeningConnectionReconnect();
+
+  void HandleMessage(const boost::property_tree::ptree &);
+  void UpdateBalance(const boost::property_tree::ptree &);
+
+  AuthSettings m_settings;
+
+  const boost::unordered_map<std::string, Product> &m_products;
+
   TradingLib::BalancesContainer m_balances;
-  boost::unordered_map<std::string, Product> m_products;
+
+  std::unique_ptr<Poco::Net::HTTPSClientSession> m_session;
+
+  bool m_isConnected = false;
+
+  boost::mutex m_listeningConnectionMutex;
+  boost::shared_ptr<TradingSystemConnection> m_listeningConnection;
+
+  Timer::Scope m_timerScope;
 };
 
 }  // namespace Poloniex

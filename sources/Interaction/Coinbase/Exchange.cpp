@@ -235,12 +235,12 @@ class Exchange : public TradingSystem, public MarketDataSource {
   Exchange& operator=(const Exchange&) = delete;
 
   ~Exchange() override {
-    {
-      boost::mutex::scoped_lock lock(m_marketDataConnectionMutex);
-      auto connection = std::move(m_marketDataConnection);
-      lock.unlock();
-    }
     try {
+      {
+        boost::mutex::scoped_lock lock(m_marketDataConnectionMutex);
+        auto connection = std::move(m_marketDataConnection);
+        lock.unlock();
+      }
       m_pollingTask.reset();
       // Each object, that implements CreateNewSecurityObject should wait for
       // log flushing before destroying objects:

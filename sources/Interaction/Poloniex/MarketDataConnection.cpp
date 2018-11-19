@@ -17,9 +17,6 @@ using namespace Poloniex;
 
 namespace ptr = boost::property_tree;
 
-MarketDataConnection::MarketDataConnection()
-    : WebSocketConnection("api2.poloniex.com") {}
-
 void MarketDataConnection::Start(
     const boost::unordered_map<ProductId, SecuritySubscription> &list,
     const Events &events) {
@@ -35,5 +32,3 @@ void MarketDataConnection::Start(
     Write(request);
   }
 }
-
-void MarketDataConnection::Connect() { WebSocketConnection::Connect("https"); }

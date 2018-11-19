@@ -10,7 +10,6 @@
 
 #pragma once
 
-#include "MarketDataConnection.hpp"
 #include "Product.hpp"
 
 namespace trdk {
@@ -55,7 +54,7 @@ class MarketDataSource : public trdk::MarketDataSource {
 
   const Rest::Settings m_settings;
 
-  const boost::unordered_map<std::string, Product> *m_products = nullptr;
+  const boost::unordered_map<std::string, Product> &m_products;
   boost::unordered_set<std::string> m_symbolListHint;
   boost::unordered_map<ProductId, SecuritySubscription> m_securities;
 

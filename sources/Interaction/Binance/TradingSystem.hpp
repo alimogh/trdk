@@ -31,7 +31,7 @@ class TradingSystem : public trdk::TradingSystem {
   TradingSystem(const TradingSystem &) = delete;
   TradingSystem &operator=(TradingSystem &&) = delete;
   TradingSystem &operator=(const TradingSystem &) = delete;
-  ~TradingSystem() override = default;
+  ~TradingSystem() override;
 
   bool IsConnected() const override;
 

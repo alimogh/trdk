@@ -70,6 +70,17 @@ b::TradingSystem::TradingSystem(const App &,
       m_balances(*this, GetLog(), GetTradingLog()),
       m_session(CreateSession(m_settings, true)) {}
 
+b::TradingSystem::~TradingSystem() {
+  try {
+    boost::mutex::scoped_lock lock(m_listeningConnectionMutex);
+    auto connection = std::move(m_listeningConnection);
+    lock.unlock();
+  } catch (...) {
+    AssertFailNoException();
+    terminate();
+  }
+}
+
 bool b::TradingSystem::IsConnected() const { return !m_key.empty(); }
 
 Volume b::TradingSystem::CalcCommission(const Qty &qty,
@@ -223,6 +234,10 @@ b::TradingSystem::CreateListeningConnection() {
             GetLog().Warn("Connection lost.");
             GetContext().GetTimer().Schedule(
                 [this, connection]() {
+                  {
+                    const boost::mutex::scoped_lock lock(
+                        m_listeningConnectionMutex);
+                  }
                   ScheduleListeningConnectionReconnect();
                 },
                 m_timerScope);

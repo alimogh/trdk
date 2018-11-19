@@ -28,6 +28,8 @@ struct SecuritySubscription {
 
 const boost::unordered_map<std::string, Product> &GetProductList();
 
+const std::string &ResolveCurrency(uintmax_t);
+
 }  // namespace Poloniex
 }  // namespace Interaction
 }  // namespace trdk

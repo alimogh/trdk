@@ -1,5 +1,5 @@
 ﻿//
-//    Created: 2018/11/14 16:25
+//    Created: 2018/11/19 14:50
 //     Author: Eugene V. Palchukovsky
 //     E-mail: eugene@palchukovsky.com
 // ------------------------------------------
@@ -10,17 +10,15 @@
 
 #pragma once
 
-#include "Product.hpp"
 #include "WebSocketConnection.hpp"
 
 namespace trdk {
 namespace Interaction {
 namespace Poloniex {
 
-class MarketDataConnection : public WebSocketConnection {
+class TradingSystemConnection : public WebSocketConnection {
  public:
-  void Start(const boost::unordered_map<ProductId, SecuritySubscription> &,
-             const Events &);
+  void Start(const AuthSettings &, const Events &);
 };
 }  // namespace Poloniex
 }  // namespace Interaction

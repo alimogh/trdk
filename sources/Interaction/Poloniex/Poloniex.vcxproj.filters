@@ -35,6 +35,15 @@
     <ClCompile Include="Product.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="TradingSystemConnection.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="WebSocketConnection.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AuthSettings.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp">
@@ -56,6 +65,18 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Request.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TradingSystemConnection.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WebSocketConnection.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AuthSettings.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Fwd.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

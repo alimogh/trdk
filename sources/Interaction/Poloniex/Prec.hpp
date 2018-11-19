@@ -28,6 +28,7 @@
 #include "Interaction/Rest/Security.hpp"
 #include "Interaction/Rest/Settings.hpp"
 #include "Interaction/Rest/Util.hpp"
+#include "Fwd.hpp"
 #include "Common/Crypto.hpp"
 #include "Common/WebSocketConnection.hpp"
 #include <Poco/Net/HTTPRequest.h>

@@ -303,6 +303,7 @@
     <TargetName>Poloniex_test</TargetName>
   </PropertyGroup>
   <ItemGroup>
+    <ClCompile Include="AuthSettings.cpp" />
     <ClCompile Include="MarketDataConnection.cpp" />
     <ClCompile Include="MarketDataSource.cpp" />
     <ClCompile Include="Prec.cpp">
@@ -323,9 +324,13 @@
     <ClCompile Include="Session.cpp" />
     <ClCompile Include="TradingSystem.cpp" />
     <ClCompile Include="TradingSystemAndMarketDataSource.cpp" />
+    <ClCompile Include="TradingSystemConnection.cpp" />
     <ClCompile Include="Version.cpp" />
+    <ClCompile Include="WebSocketConnection.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AuthSettings.hpp" />
+    <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="MarketDataConnection.hpp" />
     <ClInclude Include="MarketDataSource.hpp" />
     <ClInclude Include="Prec.hpp" />
@@ -333,6 +338,8 @@
     <ClInclude Include="Request.hpp" />
     <ClInclude Include="Session.hpp" />
     <ClInclude Include="TradingSystem.hpp" />
+    <ClInclude Include="TradingSystemConnection.hpp" />
+    <ClInclude Include="WebSocketConnection.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Common\Common.vcxproj">

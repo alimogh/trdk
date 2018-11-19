@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "MarketDataSource.hpp"
+#include "MarketDataConnection.hpp"
 #include "Session.hpp"
 
 using namespace trdk;
@@ -28,7 +29,8 @@ p::MarketDataSource::MarketDataSource(const App &,
                                       std::string title,
                                       const ptr::ptree &conf)
     : Base(context, std::move(instanceName), std::move(title)),
-      m_settings(conf, GetLog()) {}
+      m_settings(conf, GetLog()),
+      m_products(GetProductList()) {}
 
 p::MarketDataSource::~MarketDataSource() {
   {
@@ -43,7 +45,6 @@ p::MarketDataSource::~MarketDataSource() {
 
 void p::MarketDataSource::Connect() {
   Assert(!m_connection);
-  Assert(!m_products);
 
   const boost::unordered_map<std::string, Product> *products;
   {
@@ -69,7 +70,6 @@ void p::MarketDataSource::Connect() {
     throw ConnectError(ex.what());
   }
 
-  m_products = products;
   m_symbolListHint = std::move(symbolListHint);
   m_connection = std::move(connection);
 }
@@ -94,8 +94,8 @@ void p::MarketDataSource::SubscribeToSecurities() {
 
 trdk::Security &p::MarketDataSource::CreateNewSecurityObject(
     const Symbol &symbol) {
-  const auto &product = m_products->find(symbol.GetSymbol());
-  if (product == m_products->cend()) {
+  const auto &product = m_products.find(symbol.GetSymbol());
+  if (product == m_products.cend()) {
     boost::format message("Symbol \"%1%\" is not in the exchange product list");
     message % symbol.GetSymbol();
     throw SymbolIsNotSupportedException(message.str().c_str());
