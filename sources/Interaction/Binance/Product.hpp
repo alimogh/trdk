@@ -31,7 +31,7 @@ struct Product {
 
 std::string ResolveSymbol(const std::string &);
 
-boost::unordered_map<std::string, Product> GetProductList(
+const boost::unordered_map<std::string, Product> &GetProductList(
     std::unique_ptr<Poco::Net::HTTPSClientSession> &,
     const Context &,
     ModuleEventsLog &);

@@ -12,6 +12,7 @@
 #include "WebSocketConnection.hpp"
 #include "Constants.h"
 #include "Exception.hpp"
+#include "Util.hpp"
 
 using namespace trdk;
 using namespace Lib;
@@ -22,8 +23,6 @@ namespace ssl = io::ssl;
 namespace beast = boost::beast;
 namespace ws = beast::websocket;
 namespace ptr = boost::property_tree;
-namespace pt = boost::posix_time;
-namespace ios = boost::iostreams;
 
 WebSocketConnection::Events::Events(
     boost::function<EventInfo()> read,
@@ -84,15 +83,25 @@ class WebSocketConnection::Implementation {
           return;
         }
 
+        const auto size = buffer.size();
+        if (size == 0) {
+          events.debug("Connection closed.");
+          return;
+        }
+        const auto data = buffer.data();
+
         ptr::ptree message;
         {
           std::istream is(&buffer);
           try {
             ptr::read_json(is, message);
+            AssertEq(0, buffer.size());
           } catch (const ptr::json_parser_error &ex) {
             boost::format errorMessage(
-                R"(Failed to parse server response: "%1%".)");
-            errorMessage % ex.what();  // 1
+                R"(Failed to parse server response: "%1%". Message: %2%)");
+            errorMessage % ex.what()  // 1
+                % std::string(io::buffers_begin(data),
+                              io::buffers_end(data));  // 2
             events.debug(errorMessage.str());
             return;
           }
@@ -103,14 +112,28 @@ class WebSocketConnection::Implementation {
         } catch (const Exception &ex) {
           boost::format errorMessage(
               "Application error occurred while reading server message: "
-              "\"%1%\".");
-          errorMessage % ex.what();  // 1
+              "\"%1%\". Message: %2%");
+          errorMessage % ex.what()  // 1
+              % std::string(io::buffers_begin(data),
+                            io::buffers_end(data));  // 2
           events.error(errorMessage.str());
         } catch (const std::exception &ex) {
           boost::format errorMessage(
-              "System error occurred while reading server message: \"%1%\".");
-          errorMessage % ex.what();  // 1
+              "System error occurred while reading server message: \"%1%\". "
+              "Message: %2%");
+          errorMessage % ex.what()  // 1
+              % std::string(io::buffers_begin(data),
+                            io::buffers_end(data));  // 2
           events.error(errorMessage.str());
+          return;
+        } catch (...) {
+          boost::format errorMessage(
+              "Unknown error occurred while reading server message. "
+              "Message: %1%");
+          errorMessage % std::string(io::buffers_begin(data),
+                                     io::buffers_end(data));  // 1
+          events.error(errorMessage.str());
+          AssertFailNoException();
           return;
         }
       }
@@ -174,7 +197,5 @@ void WebSocketConnection::Stop() {
 }
 
 void WebSocketConnection::Write(const ptr::ptree &message) {
-  std::ostringstream oss;
-  ptr::write_json(oss, message, false);
-  m_pimpl->m_stream.write(io::buffer(oss.str()));
+  m_pimpl->m_stream.write(io::buffer(ConvertToString(message, false)));
 }

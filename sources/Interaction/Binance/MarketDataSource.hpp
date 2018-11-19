@@ -25,7 +25,7 @@ class MarketDataSource : public trdk::MarketDataSource {
                             std::string instanceName,
                             std::string title,
                             const boost::property_tree::ptree &conf);
-  MarketDataSource(MarketDataSource &&) = default;
+  MarketDataSource(MarketDataSource &&) = delete;
   MarketDataSource(const MarketDataSource &) = delete;
   MarketDataSource &operator=(MarketDataSource &&) = delete;
   MarketDataSource &operator=(const MarketDataSource &) = delete;
@@ -49,14 +49,14 @@ class MarketDataSource : public trdk::MarketDataSource {
 
   const Rest::Settings m_settings;
 
-  boost::unordered_map<std::string, Product> m_products;
+  const boost::unordered_map<std::string, Product> *m_products = nullptr;
   boost::unordered_set<std::string> m_symbolListHint;
   boost::unordered_map<ProductId, boost::shared_ptr<Rest::Security>>
       m_securities;
 
   boost::mutex m_connectionMutex;
   bool m_isStarted = false;
-  boost::shared_ptr<MarketDataConnection> m_connection;
+  std::unique_ptr<MarketDataConnection> m_connection;
 
   Timer::Scope m_timerScope;
 };

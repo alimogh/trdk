@@ -463,6 +463,10 @@ Engine::Context::StartAdding() {
           source.GetLog().Error(
               R"(Failed to make market data subscription: "%1%".)", ex);
           throw Exception("Failed to make market data subscription");
+        } catch (const std::exception &ex) {
+          source.GetLog().Error(
+              R"(Failed to make market data subscription: "%1%".)", ex.what());
+          throw;
         }
       });
 
@@ -478,7 +482,9 @@ Engine::Context::StartAdding() {
       m_context.GetLog().Debug(
           "New entities were not added to engine context.");
       try {
-        m_context.m_pimpl->m_state->m_subscriptionsManager.Activate();
+        if (!m_context.m_pimpl->m_state->m_subscriptionsManager.IsActive()) {
+          m_context.m_pimpl->m_state->m_subscriptionsManager.Activate();
+        }
       } catch (...) {
         AssertFailNoException();
         terminate();

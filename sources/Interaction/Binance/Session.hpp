@@ -7,6 +7,7 @@
 //        URL: http://robotdk.com
 //  Copyright: Eugene V. Palchukovsky
 //
+
 #pragma once
 
 namespace trdk {

@@ -73,8 +73,8 @@ Rest::RequestExcambiorexProductAndCurrencyList(
   } catch (const std::exception &ex) {
     log.Error(
         "Failed to read supported product list: \"%1%\". Message: \"%2%\".",
-        ex.what(),                          // 1
-        ConvertToString(response, false));  // 2
+        ex.what(),                               // 1
+        Lib::ConvertToString(response, false));  // 2
     throw Exception(ex.what());
   }
   if (result.first.empty() || result.second.empty()) {
