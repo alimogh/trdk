@@ -225,7 +225,13 @@ void p::MarketDataSource::UpdatePrices(const pt::ptime &time,
                                        const Milestones &delayMeasurement) {
   for (const auto &node : message) {
     boost::optional<char> type;
+    boost::optional<bool> isBid;
+    boost::optional<Price> price;
+    auto hasQty = false;
     for (const auto &line : node.second) {
+      if (hasQty) {
+        throw Exception("Book line has wrong format");
+      }
       if (!type) {
         type.emplace(line.second.get_value<char>());
       } else {
@@ -246,6 +252,50 @@ void p::MarketDataSource::UpdatePrices(const pt::ptime &time,
             }
           } break;
           case 'o':
+            if (!isBid) {
+              switch (line.second.get_value<int>()) {
+                case 0:
+                  isBid.emplace(false);
+                  break;
+                case 1:
+                  isBid.emplace(true);
+                  break;
+                default:
+                  throw Exception("Unknown book line side");
+              }
+            } else if (!price) {
+              price.emplace(line.second.get_value<Price>());
+            } else {
+              hasQty = true;
+              const auto &qty = line.second.get_value<Qty>();
+              auto &storage = *isBid ? security.bids : security.asks;
+              auto it = storage.find(*price);
+              if (it == storage.cend()) {
+                if (qty == 0) {
+                  break;
+                }
+                storage.emplace(
+                    *price,
+                    *isBid
+                        ? std::make_pair(
+                              Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
+                                  *price),
+                              Level1TickValue::Create<LEVEL1_TICK_BID_QTY>(qty))
+                        : std::make_pair(
+                              Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
+                                  *price),
+                              Level1TickValue::Create<LEVEL1_TICK_ASK_QTY>(
+                                  qty)));
+                break;
+              }
+              if (qty == 0) {
+                storage.erase(it);
+              } else {
+                it->second.second =
+                    *isBid ? Level1TickValue::Create<LEVEL1_TICK_BID_QTY>(qty)
+                           : Level1TickValue::Create<LEVEL1_TICK_ASK_QTY>(qty);
+              }
+            }
             break;
           default:
             break;
