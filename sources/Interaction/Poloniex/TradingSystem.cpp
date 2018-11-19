@@ -111,12 +111,12 @@ std::unique_ptr<OrderTransactionContext> p::TradingSystem::SendOrderTransaction(
     throw Exception("Market order is not supported");
   }
 
-  throw MethodIsNotImplementedException("Not supported");
+  throw MethodIsNotImplementedException("");
 }
 
 void p::TradingSystem::SendCancelOrderTransaction(
     const OrderTransactionContext &) {
-  throw MethodIsNotImplementedException("Not supported");
+  throw MethodIsNotImplementedException("");
 }
 
 Balances &p::TradingSystem::GetBalancesStorage() { return m_balances; }
@@ -128,7 +128,10 @@ boost::optional<OrderCheckError> p::TradingSystem::CheckOrder(
     const boost::optional<Price> &price,
     const OrderSide &side) const {
   auto result = Base::CheckOrder(security, currency, qty, price, side);
-  throw MethodIsNotImplementedException("Not supported");
+  if (result) {
+    return result;
+  }
+  return OrderCheckError{0, 0, 0};
 }
 
 bool p::TradingSystem::CheckSymbol(const std::string &symbol) const {
