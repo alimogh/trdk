@@ -295,7 +295,7 @@ fs::path Lib::Normalize(const fs::path &path, const fs::path &workingDir) {
   return result;
 }
 
-//////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////
 
 #ifdef BOOST_WINDOWS
 
@@ -387,14 +387,9 @@ ptr::ptree Lib::ReadJson(const std::string &source) {
 
 std::string Lib::ConvertToString(const ptr::ptree &source,
                                  const bool multiline) {
-  std::stringstream ss;
-  ptr::json_parser::write_json(ss, source, multiline);
-  auto result = ss.str();
-  if (!multiline) {
-    boost::replace_all(result, "\n", " ");
-  }
-  boost::trim(result);
-  return result;
+  std::stringstream result;
+  ptr::write_json(result, source, multiline);
+  return result.str();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

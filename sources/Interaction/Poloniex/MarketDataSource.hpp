@@ -18,12 +18,6 @@ namespace Interaction {
 namespace Poloniex {
 
 class MarketDataSource : public trdk::MarketDataSource {
-  struct SecuritySubscription {
-    boost::shared_ptr<Rest::Security> security;
-    std::map<Price, std::pair<Level1TickValue, Level1TickValue>> bids;
-    std::map<Price, std::pair<Level1TickValue, Level1TickValue>> asks;
-  };
-
  public:
   typedef trdk::MarketDataSource Base;
 

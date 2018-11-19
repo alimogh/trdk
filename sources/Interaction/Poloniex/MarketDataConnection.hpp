@@ -20,7 +20,7 @@ class MarketDataConnection : public Lib::WebSocketConnection {
  public:
   MarketDataConnection();
   void Connect();
-  void Start(const boost::unordered_map<std::string, Product> &,
+  void Start(const boost::unordered_map<ProductId, SecuritySubscription> &,
              const Events &);
 };
 }  // namespace Poloniex

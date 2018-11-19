@@ -54,7 +54,7 @@ std::map<Price, std::pair<Level1TickValue, Level1TickValue>> ReadBook(
     const ptr::ptree& source) {
   std::map<Price, std::pair<Level1TickValue, Level1TickValue>> result;
   for (const auto& lines : source) {
-    boost::optional<double> price;
+    boost::optional<Price> price;
     for (const auto& val : lines.second) {
       if (!price) {
         price.emplace(val.second.get_value<Price>());

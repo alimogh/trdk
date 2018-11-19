@@ -12,6 +12,7 @@
 #include "WebSocketConnection.hpp"
 #include "Constants.h"
 #include "Exception.hpp"
+#include "Util.hpp"
 
 using namespace trdk;
 using namespace Lib;
@@ -125,6 +126,15 @@ class WebSocketConnection::Implementation {
                             io::buffers_end(data));  // 2
           events.error(errorMessage.str());
           return;
+        } catch (...) {
+          boost::format errorMessage(
+              "Unknown error occurred while reading server message. "
+              "Message: %1%");
+          errorMessage % std::string(io::buffers_begin(data),
+                                     io::buffers_end(data));  // 1
+          events.error(errorMessage.str());
+          AssertFailNoException();
+          return;
         }
       }
     });
@@ -187,7 +197,5 @@ void WebSocketConnection::Stop() {
 }
 
 void WebSocketConnection::Write(const ptr::ptree &message) {
-  std::ostringstream oss;
-  ptr::write_json(oss, message, false);
-  m_pimpl->m_stream.write(io::buffer(oss.str()));
+  m_pimpl->m_stream.write(io::buffer(ConvertToString(message, false)));
 }

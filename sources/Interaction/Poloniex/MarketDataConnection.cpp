@@ -21,23 +21,19 @@ MarketDataConnection::MarketDataConnection()
     : WebSocketConnection("api2.poloniex.com") {}
 
 void MarketDataConnection::Start(
-    const boost::unordered_map<std::string, Product> &list,
+    const boost::unordered_map<ProductId, SecuritySubscription> &list,
     const Events &events) {
   if (list.empty()) {
     return;
   }
-  ptr::ptree request;
-  {
-    ptr::ptree products;
-    for (const auto &security : list) {
-      products.add("command", "subscribe");
-      products.add("channel", security.second.id);
-    }
-    request.add_child("channel", products);
-  }
   Handshake("/");
   WebSocketConnection::Start(events);
-  Write(request);
+  for (const auto &security : list) {
+    ptr::ptree request;
+    request.add("command", "subscribe");
+    request.add("channel", security.first);
+    Write(request);
+  }
 }
 
 void MarketDataConnection::Connect() { WebSocketConnection::Connect("https"); }

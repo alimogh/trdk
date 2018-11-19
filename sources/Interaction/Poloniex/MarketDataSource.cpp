@@ -122,7 +122,7 @@ const boost::unordered_set<std::string>
 
 void p::MarketDataSource::StartConnection(MarketDataConnection &connection) {
   connection.Start(
-      *m_products,
+      m_securities,
       MarketDataConnection::Events{
           [this]() -> MarketDataConnection::EventInfo {
             const auto &context = GetContext();
@@ -205,20 +205,14 @@ std::map<Price, std::pair<Level1TickValue, Level1TickValue>> ReadBook(
     const ptr::ptree &source) {
   std::map<Price, std::pair<Level1TickValue, Level1TickValue>> result;
   for (const auto &line : source) {
-    boost::optional<double> price;
-    for (const auto &val : line.second) {
-      if (!price) {
-        price.emplace(val.second.get_value<Price>());
-      } else {
-        const auto &qty = val.second.get_value<Qty>();
-        auto it = result.emplace(
-            *price, std::make_pair(Level1TickValue::Create<priceType>(*price),
-                                   Level1TickValue::Create<qtyType>(qty)));
-        if (!it.second) {
-          it.first->second.second = Level1TickValue::Create<qtyType>(
-              it.first->second.second.GetValue() + qty);
-        }
-      }
+    const auto &price = boost::lexical_cast<Price>(line.first);
+    const auto &qty = line.second.get_value<Qty>();
+    auto it = result.emplace(
+        price, std::make_pair(Level1TickValue::Create<priceType>(price),
+                              Level1TickValue::Create<qtyType>(qty)));
+    if (!it.second) {
+      it.first->second.second = Level1TickValue::Create<qtyType>(
+          it.first->second.second.GetValue() + qty);
     }
   }
   return result;
@@ -236,25 +230,21 @@ void p::MarketDataSource::UpdatePrices(const pt::ptime &time,
         type.emplace(line.second.get_value<char>());
       } else {
         switch (*type) {
-          case 'i':
-            AssertEq(security.security->GetSymbol().GetSymbol(),
-                     line.second.get<std::string>("currencyPair"));
-            {
-              auto hasAsks = false;
-              for (const auto &side : line.second.get_child("orderBook")) {
-                if (!hasAsks) {
-                  security.asks =
-                      ReadBook<LEVEL1_TICK_ASK_PRICE, LEVEL1_TICK_ASK_QTY>(
-                          side.second);
-                  hasAsks = true;
-                } else {
-                  security.bids =
-                      ReadBook<LEVEL1_TICK_BID_PRICE, LEVEL1_TICK_BID_QTY>(
-                          side.second);
-                }
+          case 'i': {
+            auto hasAsks = false;
+            for (const auto &side : line.second.get_child("orderBook")) {
+              if (!hasAsks) {
+                security.asks =
+                    ReadBook<LEVEL1_TICK_ASK_PRICE, LEVEL1_TICK_ASK_QTY>(
+                        side.second);
+                hasAsks = true;
+              } else {
+                security.bids =
+                    ReadBook<LEVEL1_TICK_BID_PRICE, LEVEL1_TICK_BID_QTY>(
+                        side.second);
               }
             }
-            break;
+          } break;
           case 'o':
             break;
           default:
