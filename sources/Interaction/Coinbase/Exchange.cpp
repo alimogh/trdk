@@ -54,12 +54,12 @@ std::map<Price, std::pair<Level1TickValue, Level1TickValue>> ReadBook(
     const ptr::ptree& source) {
   std::map<Price, std::pair<Level1TickValue, Level1TickValue>> result;
   for (const auto& lines : source) {
-    boost::optional<double> price;
+    boost::optional<Price> price;
     for (const auto& val : lines.second) {
       if (!price) {
-        price.emplace(val.second.get_value<double>());
+        price.emplace(val.second.get_value<Price>());
       } else {
-        const auto& qty = val.second.get_value<double>();
+        const auto& qty = val.second.get_value<Qty>();
         auto it = result.emplace(
             *price, std::make_pair(Level1TickValue::Create<priceType>(*price),
                                    Level1TickValue::Create<qtyType>(qty)));
@@ -235,12 +235,12 @@ class Exchange : public TradingSystem, public MarketDataSource {
   Exchange& operator=(const Exchange&) = delete;
 
   ~Exchange() override {
-    {
-      boost::mutex::scoped_lock lock(m_marketDataConnectionMutex);
-      auto connection = std::move(m_marketDataConnection);
-      lock.unlock();
-    }
     try {
+      {
+        boost::mutex::scoped_lock lock(m_marketDataConnectionMutex);
+        auto connection = std::move(m_marketDataConnection);
+        lock.unlock();
+      }
       m_pollingTask.reset();
       // Each object, that implements CreateNewSecurityObject should wait for
       // log flushing before destroying objects:
@@ -353,7 +353,7 @@ class Exchange : public TradingSystem, public MarketDataSource {
     Assert(!m_marketDataConnection);
 
     const boost::mutex::scoped_lock lock(m_marketDataConnectionMutex);
-    auto marketDataConnection = boost::make_shared<MarketDataConnection>();
+    auto marketDataConnection = boost::make_unique<MarketDataConnection>();
 
     try {
       marketDataConnection->Connect();
@@ -642,24 +642,23 @@ class Exchange : public TradingSystem, public MarketDataSource {
   void UpdatePrices(const pt::ptime& time,
                     const ptr::ptree& message,
                     const Milestones& delayMeasurement) {
-    const auto& productId = message.get<std::string>("product_id");
-    const auto& securityIt = m_securities.find(productId);
-    if (securityIt == m_securities.cend()) {
-      boost::format error("Received depth-update for unknown product \"%1%\"");
-      error % productId;  // 1
-      throw Exception(error.str().c_str());
-    }
-    auto& security = securityIt->second;
+    const auto& getSecurity = [this, &message]() -> SecuritySubscription& {
+      const auto& productId = message.get<std::string>("product_id");
+      const auto& securityIt = m_securities.find(productId);
+      if (securityIt == m_securities.cend()) {
+        boost::format error(
+            "Received depth-update for unknown product \"%1%\"");
+        error % productId;  // 1
+        throw Exception(error.str().c_str());
+      }
+      return securityIt->second;
+    };
 
     const auto& type = message.get<std::string>("type");
     if (type == "snapshot") {
-      UpdatePricesBySnapshot(time, security, message, delayMeasurement);
+      UpdatePricesBySnapshot(time, getSecurity(), message, delayMeasurement);
     } else if (type == "l2update") {
-      UpdatePricesIncrementally(time, security, message, delayMeasurement);
-    } else {
-      boost::format error("Received depth-update with unknown type \"%1%\"");
-      error % type;  // 1
-      throw Exception(error.str().c_str());
+      UpdatePricesIncrementally(time, getSecurity(), message, delayMeasurement);
     }
   }
 
@@ -699,10 +698,22 @@ class Exchange : public TradingSystem, public MarketDataSource {
           price.emplace(item.second.get_value<Price>());
         } else {
           const auto& qty = item.second.get_value<Qty>();
-          auto& storage = isBid ? security.bids : security.asks;
+          auto& storage = *isBid ? security.bids : security.asks;
           auto it = storage.find(*price);
-          Assert(it != storage.cend());
           if (it == storage.cend()) {
+            if (qty != 0) {
+              storage.emplace(
+                  *price,
+                  *isBid
+                      ? std::make_pair(
+                            Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
+                                *price),
+                            Level1TickValue::Create<LEVEL1_TICK_BID_QTY>(qty))
+                      : std::make_pair(
+                            Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
+                                *price),
+                            Level1TickValue::Create<LEVEL1_TICK_ASK_QTY>(qty)));
+            }
             continue;
           }
           if (qty == 0) {
@@ -810,10 +821,17 @@ class Exchange : public TradingSystem, public MarketDataSource {
                 GetMdsLog().Debug("Disconnected.");
                 return;
               }
-              const auto connection = std::move(m_marketDataConnection);
+              const boost::shared_ptr<MarketDataConnection> connection(
+                  std::move(m_marketDataConnection));
               GetMdsLog().Warn("Connection lost.");
               GetContext().GetTimer().Schedule(
-                  [this, connection]() { ScheduleMarketDataReconnect(); },
+                  [this, connection]() {
+                    {
+                      const boost::mutex::scoped_lock lock(
+                          m_marketDataConnectionMutex);
+                    }
+                    ScheduleMarketDataReconnect();
+                  },
                   m_timerScope);
             },
             [this](const std::string& event) {
@@ -836,7 +854,7 @@ class Exchange : public TradingSystem, public MarketDataSource {
           const boost::mutex::scoped_lock lock(m_marketDataConnectionMutex);
           GetMdsLog().Info("Reconnecting...");
           Assert(!m_marketDataConnection);
-          auto connection = boost::make_shared<MarketDataConnection>();
+          auto connection = boost::make_unique<MarketDataConnection>();
           try {
             connection->Connect();
           } catch (const std::exception& ex) {
@@ -868,7 +886,7 @@ class Exchange : public TradingSystem, public MarketDataSource {
 
   boost::mutex m_marketDataConnectionMutex;
   bool m_isMarketDataStarted = false;
-  boost::shared_ptr<MarketDataConnection> m_marketDataConnection;
+  std::unique_ptr<MarketDataConnection> m_marketDataConnection;
 
   trdk::Timer::Scope m_timerScope;
 

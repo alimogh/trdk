@@ -67,8 +67,8 @@ boost::unordered_map<std::string, Product> RequestProductList(
   } catch (const std::exception &ex) {
     log.Error(
         R"(Failed to read supported product list: "%1%". Message: "%2%".)",
-        ex.what(),                                // 1
-        Rest::ConvertToString(response, false));  // 2
+        ex.what(),                               // 1
+        Lib::ConvertToString(response, false));  // 2
     throw Exception(ex.what());
   }
   if (result.empty()) {
@@ -78,7 +78,7 @@ boost::unordered_map<std::string, Product> RequestProductList(
 }
 }  // namespace
 
-boost::unordered_map<std::string, Product> Binance::GetProductList(
+const boost::unordered_map<std::string, Product> &Binance::GetProductList(
     std::unique_ptr<Poco::Net::HTTPSClientSession> &session,
     const Context &context,
     ModuleEventsLog &log) {

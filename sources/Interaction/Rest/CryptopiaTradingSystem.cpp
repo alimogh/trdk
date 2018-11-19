@@ -474,8 +474,8 @@ bool CryptopiaTradingSystem::UpdateOrders() {
                                      order.get<Qty>("Remaining"));
         } catch (const std::exception &ex) {
           boost::format error(R"(Failed to read order: "%1%". Message: "%2%")");
-          error % ex.what()                     // 1
-              % ConvertToString(order, false);  // 2
+          error % ex.what()                          // 1
+              % Lib::ConvertToString(order, false);  // 2
           throw Exception(error.str().c_str());
         }
       }

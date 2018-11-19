@@ -27,4 +27,3 @@
 #include "Fwd.hpp"
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/property_tree/json_parser.hpp>
-#include <boost/property_tree/ptree.hpp>

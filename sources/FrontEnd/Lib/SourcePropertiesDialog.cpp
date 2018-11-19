@@ -19,7 +19,7 @@ namespace ptr = boost::property_tree;
 class SourcePropertiesDialog::Implementation {
  public:
   SourcePropertiesDialog &m_self;
-  Ui::SourcePropertiesDialog m_ui;
+  Ui::SourcePropertiesDialog m_ui{};
 
   explicit Implementation(
       const boost::optional<ptr::ptree> &config,
@@ -48,6 +48,7 @@ class SourcePropertiesDialog::Implementation {
       addExchange("Bittrex", "Bittrex");
       addExchange("EXMO", "Exmo");
       addExchange("Huobi", "Huobi");
+      addExchange("Poloniex", "Poloniex");
       addExchange("Livecoin", "Livecoin");
       addExchange("Cryptopia", "Cryptopia");
       addExchange("YoBit.Net", "Yobitnet");
@@ -105,7 +106,7 @@ class SourcePropertiesDialog::Implementation {
     result.add("tradingMode", "live");
     result.add("title", m_ui.exchange->currentText().toStdString());
     if (impl != "Exmo" && impl != "Huobi" && impl != "Kraken" &&
-        impl != "Binance" && impl != "Coinbase") {
+        impl != "Binance" && impl != "Coinbase" && impl != "Poloniex") {
       result.add("module", "Rest");
       result.add("factory", "Create" + impl);
     } else {

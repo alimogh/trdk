@@ -24,5 +24,4 @@
 #include "Common/NetworkStreamClient.hpp"
 #include "Common/NetworkStreamClientService.hpp"
 #include <boost/algorithm/string.hpp>
-#include <boost/property_tree/ptree.hpp>
 #include <boost/thread/recursive_mutex.hpp>

@@ -25,6 +25,7 @@
     "Kraken",
     "Binance",
     "Coinbase",
+	"Poloniex",
     "TestStrategy",
     "ArbitrationAdvisor",
     "MarketMaker",

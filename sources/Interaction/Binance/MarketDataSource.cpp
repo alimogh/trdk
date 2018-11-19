@@ -45,23 +45,23 @@ b::MarketDataSource::~MarketDataSource() {
 void b::MarketDataSource::Connect() {
   Assert(!m_connection);
 
-  boost::unordered_map<std::string, Product> products;
+  const boost::unordered_map<std::string, Product> *products;
   {
     auto session = CreateSession(m_settings, false);
     try {
-      products = GetProductList(session, GetContext(), GetLog());
+      products = &GetProductList(session, GetContext(), GetLog());
     } catch (const std::exception &ex) {
       throw ConnectError(ex.what());
     }
   }
 
   boost::unordered_set<std::string> symbolListHint;
-  for (const auto &product : products) {
+  for (const auto &product : *products) {
     symbolListHint.insert(product.first);
   }
 
   const boost::mutex::scoped_lock lock(m_connectionMutex);
-  auto connection = boost::make_shared<MarketDataConnection>();
+  auto connection = boost::make_unique<MarketDataConnection>();
   try {
     connection->Connect();
   } catch (const std::exception &ex) {
@@ -69,7 +69,7 @@ void b::MarketDataSource::Connect() {
     throw ConnectError(ex.what());
   }
 
-  m_products = std::move(products);
+  m_products = products;
   m_symbolListHint = std::move(symbolListHint);
   m_connection = std::move(connection);
 }
@@ -94,8 +94,8 @@ void b::MarketDataSource::SubscribeToSecurities() {
 
 trdk::Security &b::MarketDataSource::CreateNewSecurityObject(
     const Symbol &symbol) {
-  const auto &product = m_products.find(symbol.GetSymbol());
-  if (product == m_products.cend()) {
+  const auto &product = m_products->find(symbol.GetSymbol());
+  if (product == m_products->cend()) {
     boost::format message("Symbol \"%1%\" is not in the exchange product list");
     message % symbol.GetSymbol();
     throw SymbolIsNotSupportedException(message.str().c_str());
@@ -190,8 +190,8 @@ void b::MarketDataSource::UpdatePrices(const pt::ptime &time,
 
   } catch (const std::exception &ex) {
     boost::format error(R"(Failed to read order book: "%1%" ("%2%").)");
-    error % ex.what()                             // 1
-        % Rest::ConvertToString(message, false);  // 2
+    error % ex.what()                            // 1
+        % Lib::ConvertToString(message, false);  // 2
     throw Exception(error.str().c_str());
   }
 }
@@ -215,10 +215,15 @@ void b::MarketDataSource::StartConnection(MarketDataConnection &connection) {
               GetLog().Debug("Disconnected.");
               return;
             }
-            const auto connection = std::move(m_connection);
+            const boost::shared_ptr<MarketDataConnection> connection(
+                std::move(m_connection));
             GetLog().Warn("Connection lost.");
             GetContext().GetTimer().Schedule(
-                [this, connection]() { ScheduleReconnect(); }, m_timerScope);
+                [this, connection]() {
+                  { const boost::mutex::scoped_lock lock(m_connectionMutex); }
+                  ScheduleReconnect();
+                },
+                m_timerScope);
           },
           [this](const std::string &event) { GetLog().Debug(event.c_str()); },
           [this](const std::string &event) { GetLog().Info(event.c_str()); },
@@ -232,7 +237,7 @@ void b::MarketDataSource::ScheduleReconnect() {
         const boost::mutex::scoped_lock lock(m_connectionMutex);
         GetLog().Info("Reconnecting...");
         Assert(!m_connection);
-        auto connection = boost::make_shared<MarketDataConnection>();
+        auto connection = boost::make_unique<MarketDataConnection>();
         try {
           connection->Connect();
         } catch (const std::exception &ex) {

@@ -13,6 +13,5 @@
 #include "Common/Common.hpp"
 #include "Api.h"
 #include <boost/algorithm/string.hpp>
-#include <boost/property_tree/ptree.hpp>
 #include <boost/random.hpp>
 #include <boost/thread.hpp>

@@ -14,30 +14,7 @@
 using namespace trdk;
 using namespace Lib;
 using namespace Interaction;
-
-namespace is = boost::iostreams;
-namespace ptr = boost::property_tree;
 namespace net = Poco::Net;
-
-ptr::ptree Rest::ReadJson(const std::string &source) {
-  is::stream_buffer<is::array_source> buffer(source.c_str(),
-                                             source.c_str() + source.size());
-  std::istream stream(&buffer);
-  ptr::ptree result;
-  ptr::read_json(stream, result);
-  return result;
-}
-
-std::string Rest::ConvertToString(const ptr::ptree &source, bool multiline) {
-  std::stringstream ss;
-  ptr::json_parser::write_json(ss, source, multiline);
-  auto result = ss.str();
-  if (!multiline) {
-    boost::replace_all(result, "\n", " ");
-  }
-  boost::trim(result);
-  return result;
-}
 
 std::unique_ptr<net::HTTPSClientSession> Rest::CreateSession(
     const std::string &host, const Settings &, const bool isTrading) {

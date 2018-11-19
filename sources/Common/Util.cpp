@@ -14,15 +14,16 @@
 #include "SysError.hpp"
 
 namespace pt = boost::posix_time;
+namespace ptr = boost::property_tree;
+namespace is = boost::iostreams;
 namespace gr = boost::gregorian;
 namespace fs = boost::filesystem;
 namespace lt = boost::local_time;
-
 using namespace trdk;
-using namespace trdk::Lib;
+using namespace Lib;
 
 std::string Lib::SymbolToFileName(const std::string &symbol) {
-  std::string clearSymbol = boost::replace_all_copy(symbol, ":", "_");
+  auto clearSymbol = boost::replace_all_copy(symbol, ":", "_");
   boost::replace_all(clearSymbol, "*", "xx");
   boost::replace_all(clearSymbol, "/", "_");
   boost::replace_all(clearSymbol, " ", "_");
@@ -175,7 +176,7 @@ pt::ptime Lib::GetTimeByTimeOfDayAndDate(
 
 gr::date Lib::ConvertToDate(unsigned int dateAsInt) {
   if (!dateAsInt) {
-    return gr::date(0, 0, 0);
+    return {0, 0, 0};
   }
   const gr::date::day_type day = dateAsInt % 100;
   dateAsInt /= 100;
@@ -192,10 +193,11 @@ pt::time_duration Lib::ConvertToTimeDuration(unsigned int timeAsInt) {
   timeAsInt /= 100;
   const auto minute = timeAsInt % 100;
   timeAsInt /= 100;
-  return pt::time_duration(timeAsInt, minute, sec);
+  return {timeAsInt, minute, sec};
 }
 
-pt::ptime Lib::ConvertToTime(unsigned int dateAsInt, unsigned int timeAsInt) {
+pt::ptime Lib::ConvertToTime(const unsigned int dateAsInt,
+                             const unsigned int timeAsInt) {
   return pt::ptime(ConvertToDate(dateAsInt), ConvertToTimeDuration(timeAsInt));
 }
 
@@ -245,7 +247,7 @@ fs::path GetModuleFilePath(void *) {
 #endif
 }  // namespace
 
-fs::path Lib::GetExeFilePath() { return GetModuleFilePath(NULL); }
+fs::path Lib::GetExeFilePath() { return GetModuleFilePath(nullptr); }
 
 fs::path Lib::GetExeWorkingDir() { return GetExeFilePath().parent_path(); }
 
@@ -293,7 +295,7 @@ fs::path Lib::Normalize(const fs::path &path, const fs::path &workingDir) {
   return result;
 }
 
-//////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////
 
 #ifdef BOOST_WINDOWS
 
@@ -304,8 +306,9 @@ std::string WideCharToMultiByte(const unsigned int codePage,
                                 const size_t sourceLen) {
   Assert(source);
   AssertLt(0, sourceLen);
-  const int resultLen = ::WideCharToMultiByte(
-      codePage, 0, source, unsigned int(sourceLen), NULL, 0, 0, 0);
+  const int resultLen =
+      ::WideCharToMultiByte(codePage, 0, source, unsigned int(sourceLen),
+                            nullptr, 0, nullptr, nullptr);
   if (resultLen == 0) {
     const SysError error(GetLastError());
     boost::format message(
@@ -316,7 +319,7 @@ std::string WideCharToMultiByte(const unsigned int codePage,
   std::string result(resultLen, 0);
   ::WideCharToMultiByte(codePage, 0, source, unsigned int(sourceLen),
                         reinterpret_cast<char *>(&result[0]),
-                        int(result.size()), 0, 0);
+                        int(result.size()), nullptr, nullptr);
   return result;
 }
 
@@ -328,7 +331,7 @@ std::wstring MultiByteToWideChar(const unsigned int codePage,
   AssertLt(0, sourceLen);
   const auto resultLen =
       ::MultiByteToWideChar(codePage, 0, reinterpret_cast<const char *>(source),
-                            int(sourceLen), NULL, 0);
+                            int(sourceLen), nullptr, 0);
   if (resultLen == 0) {
     const SysError error(GetLastError());
     boost::format message("Failed to convert string to wide-char string (%1%)");
@@ -370,3 +373,23 @@ std::uintmax_t Lib::ConvertTickSizeToPrecisionPower(std::string source) {
   }
   return static_cast<std::uintmax_t>(std::pow(10, source.size() - dotPos - 1));
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+ptr::ptree Lib::ReadJson(const std::string &source) {
+  is::stream_buffer<is::array_source> buffer(source.c_str(),
+                                             source.c_str() + source.size());
+  std::istream stream(&buffer);
+  ptr::ptree result;
+  ptr::read_json(stream, result);
+  return result;
+}
+
+std::string Lib::ConvertToString(const ptr::ptree &source,
+                                 const bool multiline) {
+  std::stringstream result;
+  ptr::write_json(result, source, multiline);
+  return result.str();
+}
+
+////////////////////////////////////////////////////////////////////////////////
