@@ -315,6 +315,7 @@ class ta::Strategy::Implementation : private boost::noncopyable {
         }
       } else {
         if (!m_isConfigError) {
+#if 0
           ReportSignal("config. error", opportunity, false);
           {
             std::vector<std::string> points;
@@ -329,6 +330,7 @@ class ta::Strategy::Implementation : private boost::noncopyable {
             m_self.GetLog().Error("Configuration error. Points: %1%.",
                                   boost::join(points, ", "));
           }
+#endif
           if (!opportunity.checkError) {
             Assert(!opportunity.errorTradingSystem);
             static const std::string error("config. error");

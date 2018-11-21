@@ -93,6 +93,10 @@ class BalancesContainer::Implementation : private boost::noncopyable {
     const Double availableDelta = available - storage.second.available;
     const Double lockedDelta = locked - storage.second.locked;
 
+    if (availableDelta == 0 && lockedDelta == 0) {
+      return;
+    }
+
     m_tradingLog.Write(
         "{'balance': {'symbol': '%1%', 'available': {'prev': %2%, 'new': "
         "%3%, 'delta': %4%}, 'locked': {'prev': %5%, 'new': %6%, 'delta': "
@@ -106,10 +110,6 @@ class BalancesContainer::Implementation : private boost::noncopyable {
               % locked                    // 6
               % lockedDelta;              // 7
         });
-
-    if (availableDelta == 0 && lockedDelta == 0) {
-      return;
-    }
 
     storage.second.available = std::move(available);
     storage.second.locked = std::move(locked);
