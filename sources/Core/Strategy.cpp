@@ -344,9 +344,8 @@ class Strategy::Implementation : private boost::noncopyable {
 
   boost::atomic_bool m_isEnabled;
 
-  // Custom branch logic. No one event can block strategy instance:
-  const boost::atomic_bool m_isBlocked;
-  const pt::ptime m_blockEndTime;
+  boost::atomic_bool m_isBlocked;
+  pt::ptime m_blockEndTime;
   BlockMutex m_blockMutex;
   StopCondition m_stopCondition;
   StopMode m_stopMode;
@@ -398,33 +397,39 @@ class Strategy::Implementation : private boost::noncopyable {
     m_strategy.Block(message.str());
   }
 
-  void Block(const std::string* reason = nullptr) noexcept {
+  void BlockByRealRequirement(const std::string& reason) noexcept {
     try {
-      // Custom branch logic. No one event can block strategy instance:
-      // const BlockLock lock(m_blockMutex);
-      // m_isBlocked = true;
-      // m_blockEndTime = pt::not_a_date_time;
-      reason ? m_strategy.GetLog().Error("Strategy critical error: \"%s\".",
-                                         *reason)
-             : m_strategy.GetLog().Error("Strategy critical error.");
-      // Custom branch logic. No one event can block strategy instance:
-      // m_stopCondition.notify_all();
+      const BlockLock lock(m_blockMutex);
+      m_isBlocked = true;
+      m_blockEndTime = pt::not_a_date_time;
+      m_strategy.GetLog().Error("Blocked by reason: \"%s\".", reason);
+      m_stopCondition.notify_all();
     } catch (...) {
       AssertFailNoException();
       raise(SIGTERM);  // is it can mutex or notify_all, also see "include"
     }
-    // Custom branch logic. No one event can block strategy instance:
-    // if (!m_strategy.OnBlocked(reason)) {
-    //   return;
-    // }
-    // try {
-    //   reason ? m_strategy.GetContext().RaiseStateUpdate(
-    //                Context::STATE_STRATEGY_BLOCKED, *reason)
-    //          : m_strategy.GetContext().RaiseStateUpdate(
-    //                Context::STATE_STRATEGY_BLOCKED);
-    // } catch (...) {
-    //   AssertFailNoException();
-    // }
+    if (!m_strategy.OnBlocked(&reason)) {
+      return;
+    }
+    try {
+      m_strategy.GetContext().RaiseStateUpdate(Context::STATE_STRATEGY_BLOCKED,
+                                               reason);
+    } catch (...) {
+      AssertFailNoException();
+    }
+  }
+
+  // Custom branch logic. No one event can block strategy instance, only if
+  // special.
+  void Block(const std::string* reason = nullptr) noexcept {
+    try {
+      reason ? m_strategy.GetLog().Error("Strategy critical error: \"%s\".",
+                                         *reason)
+             : m_strategy.GetLog().Error("Strategy critical error.");
+    } catch (...) {
+      AssertFailNoException();
+      raise(SIGTERM);  // is it can mutex or notify_all, also see "include"
+    }
   }
 
   void RunAllAlgos() {
@@ -459,6 +464,9 @@ class Strategy::Implementation : private boost::noncopyable {
       }
     } catch (const RiskControlException& ex) {
       BlockByRiskControlEvent(ex, "position update");
+      return;
+    } catch (const StrategyCriticalException& ex) {
+      m_strategy.m_pimpl->BlockByRealRequirement(ex.what());
       return;
     } catch (const Exception& ex) {
       m_strategy.Block(ex.what());
@@ -504,6 +512,9 @@ class Strategy::Implementation : private boost::noncopyable {
       callback();
     } catch (const RiskControlException& ex) {
       BlockByRiskControlEvent(ex, "scheduled event");
+      return;
+    } catch (const StrategyCriticalException& ex) {
+      m_strategy.m_pimpl->BlockByRealRequirement(ex.what());
       return;
     } catch (const Exception& ex) {
       m_strategy.Block(ex.what());
@@ -633,6 +644,9 @@ void Strategy::RaiseLevel1UpdateEvent(
   } catch (const RiskControlException& ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "level 1 update");
     return;
+  } catch (const StrategyCriticalException& ex) {
+    m_pimpl->BlockByRealRequirement(ex.what());
+    return;
   } catch (const Exception& ex) {
     Block(ex.what());
     return;
@@ -658,6 +672,9 @@ void Strategy::RaiseLevel1TickEvent(
   } catch (const RiskControlException& ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "level 1 tick");
     return;
+  } catch (const StrategyCriticalException& ex) {
+    m_pimpl->BlockByRealRequirement(ex.what());
+    return;
   } catch (const Exception& ex) {
     Block(ex.what());
     return;
@@ -679,6 +696,9 @@ void Strategy::RaiseNewTradeEvent(Security& service,
     OnNewTrade(service, time, price, qty);
   } catch (const RiskControlException& ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "new trade");
+    return;
+  } catch (const StrategyCriticalException& ex) {
+    m_pimpl->BlockByRealRequirement(ex.what());
     return;
   } catch (const Exception& ex) {
     Block(ex.what());
@@ -726,6 +746,9 @@ void Strategy::RaiseSecurityContractSwitchedEvent(const pt::ptime& time,
   } catch (const RiskControlException& ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "security contract switched");
     return;
+  } catch (const StrategyCriticalException& ex) {
+    m_pimpl->BlockByRealRequirement(ex.what());
+    return;
   } catch (const Exception& ex) {
     Block(ex.what());
     return;
@@ -749,6 +772,9 @@ void Strategy::RaiseBrokerPositionUpdateEvent(Security& security,
   } catch (const RiskControlException& ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "broker position update");
     return;
+  } catch (const StrategyCriticalException& ex) {
+    m_pimpl->BlockByRealRequirement(ex.what());
+    return;
   } catch (const Exception& ex) {
     Block(ex.what());
     return;
@@ -767,6 +793,9 @@ void Strategy::RaiseNewBarEvent(Security& security, const Bar& bar) {
     OnBarUpdate(security, bar);
   } catch (const RiskControlException& ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "new bar");
+    return;
+  } catch (const StrategyCriticalException& ex) {
+    m_pimpl->BlockByRealRequirement(ex.what());
     return;
   } catch (const Exception& ex) {
     Block(ex.what());
@@ -791,6 +820,9 @@ void Strategy::RaiseBookUpdateTickEvent(
   } catch (const RiskControlException& ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "book update tick");
     return;
+  } catch (const StrategyCriticalException& ex) {
+    m_pimpl->BlockByRealRequirement(ex.what());
+    return;
   } catch (const Exception& ex) {
     Block(ex.what());
     return;
@@ -811,6 +843,9 @@ void Strategy::RaiseSecurityServiceEvent(const pt::ptime& time,
     OnSecurityServiceEvent(time, security, event);
   } catch (const RiskControlException& ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "security service event");
+    return;
+  } catch (const StrategyCriticalException& ex) {
+    m_pimpl->BlockByRealRequirement(ex.what());
     return;
   } catch (const Exception& ex) {
     Block(ex.what());
@@ -838,9 +873,8 @@ bool Strategy::IsBlocked(bool isForever) const {
     return false;
   }
 
-  // Custom branch logic. No one event can block strategy instance:
-  // m_pimpl->m_blockEndTime = pt::not_a_date_time;
-  // m_pimpl->m_isBlocked = false;
+  m_pimpl->m_blockEndTime = pt::not_a_date_time;
+  m_pimpl->m_isBlocked = false;
 
   GetLog().Info("Unblocked.");
 
@@ -853,19 +887,16 @@ void Strategy::Block(const std::string& reason) noexcept {
   m_pimpl->Block(&reason);
 }
 
-void Strategy::Block(const pt::time_duration&) {
-  // Custom branch logic. No one event can block strategy instance:
-  // const Implementation::BlockLock lock(m_pimpl->m_blockMutex);
-  // const pt::ptime& blockEndTime = GetContext().GetCurrentTime() +
-  // blockDuration; if (m_pimpl->m_isBlocked && m_pimpl->m_blockEndTime != 
-  // pt::not_a_date_time &&
-  //     blockEndTime <= m_pimpl->m_blockEndTime) {
-  //   return;
-  // }
-  // m_pimpl->m_isBlocked = true;
-  // m_pimpl->m_blockEndTime = blockEndTime;
+void Strategy::Block(const pt::time_duration& blockDuration) {
+  const Implementation::BlockLock lock(m_pimpl->m_blockMutex);
+  const pt::ptime& blockEndTime = GetContext().GetCurrentTime() + blockDuration;
+  if (m_pimpl->m_isBlocked && m_pimpl->m_blockEndTime != pt::not_a_date_time &&
+      blockEndTime <= m_pimpl->m_blockEndTime) {
+    return;
+  }
+  m_pimpl->m_isBlocked = true;
+  m_pimpl->m_blockEndTime = blockEndTime;
   GetLog().Warn("Blocked until %1%.", m_pimpl->m_blockEndTime);
-  AssertFail("Not implemented for this branch");
 }
 
 void Strategy::Stop(const StopMode& stopMode) {
@@ -908,9 +939,8 @@ void Strategy::ReportStop() {
       break;
   }
 
-  // Custom branch logic. No one event can block strategy instance:
-  const_cast<boost::atomic_bool &>(m_pimpl->m_isBlocked) = true;
-  // m_pimpl->m_blockEndTime = pt::not_a_date_time;
+  m_pimpl->m_isBlocked = true;
+  m_pimpl->m_blockEndTime = pt::not_a_date_time;
 
   GetLog().Info("Stopped.");
   m_pimpl->m_stopCondition.notify_all();
