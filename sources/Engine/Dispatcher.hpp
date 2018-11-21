@@ -50,7 +50,7 @@ typedef DispatcherConcurrencyPolicyT<TRDK_CONCURRENCY_PROFILE>
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class Dispatcher : private boost::noncopyable {
+class Dispatcher {
  public:
   typedef Details::DispatcherConcurrencyPolicy::UniqueSyncLock UniqueSyncLock;
 
@@ -76,7 +76,7 @@ class Dispatcher : private boost::noncopyable {
   };
 
   template <typename ListT>
-  class EventQueue : private boost::noncopyable {
+  class EventQueue {
    public:
     typedef ListT List;
 
@@ -98,9 +98,13 @@ class Dispatcher : private boost::noncopyable {
           m_current(&m_lists.first),
           m_taksState(TASK_STATE_INACTIVE),
           m_queueSizeConstrolLevel(
-              !m_context.GetSettings().IsReplayMode() ? 50 : 10000) {}
+              !m_context.GetSettings().IsReplayMode() ? 200 : 10000) {}
+    EventQueue(EventQueue &&) = default;
+    EventQueue(const EventQueue &) = delete;
+    EventQueue &operator=(EventQueue &&) = delete;
+    EventQueue &operator=(const EventQueue &) = delete;
+    ~EventQueue() = default;
 
-   public:
     void AssignSyncObjects(boost::shared_ptr<EventListsSyncObjects> &sync) {
       Assert(!m_sync);
       m_sync = sync;
@@ -286,7 +290,11 @@ class Dispatcher : private boost::noncopyable {
       QueueList;
 
  public:
-  explicit Dispatcher(Engine::Context &);
+  explicit Dispatcher(Context &);
+  Dispatcher(Dispatcher &&) = default;
+  Dispatcher(const Dispatcher &) = delete;
+  Dispatcher &operator=(Dispatcher &&) = delete;
+  Dispatcher &operator=(const Dispatcher &) = delete;
   ~Dispatcher();
 
   bool IsActive() const;

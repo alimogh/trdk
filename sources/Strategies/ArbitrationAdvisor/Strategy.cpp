@@ -568,10 +568,12 @@ class aa::Strategy::Implementation : boost::noncopyable {
       return;
     }
     m_lastTradingSignalCheckErrors = std::move(report);
+#if 0
     m_self.GetTradingLog().Write(
         "signal check errors: {%1%}", [this](TradingRecord &record) {
           record % boost::join(m_lastTradingSignalCheckErrors, "}, {");
         });
+#endif
     m_tradingSignalCheckErrorsSignal(m_lastTradingSignalCheckErrors);
   }
 
