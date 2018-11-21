@@ -236,7 +236,7 @@ class ta::Strategy::Implementation : private boost::noncopyable {
     }
 
     if (opportunities.empty() && !hasSkippedSecurities) {
-      throw Exception("One or more legs don't have securities");
+      throw StrategyCriticalException("One or more legs don't have securities");
     }
 
     std::sort(opportunities.begin(), opportunities.end(),

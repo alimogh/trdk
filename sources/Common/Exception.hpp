@@ -86,5 +86,13 @@ class SymbolIsNotSupportedException : public Exception {
       : Exception(what) {}
 };
 
+//! Custom branch exception - only by this exception strategy instance will be
+//! blocked.
+class StrategyCriticalException : public Exception {
+ public:
+  explicit StrategyCriticalException(const char *what) noexcept
+      : Exception(what) {}
+};
+
 }  // namespace Lib
 }  // namespace trdk
