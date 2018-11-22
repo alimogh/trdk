@@ -14,6 +14,7 @@
 #include "Charts/ChartToolbarWidget.hpp"
 #include "Lib/BalanceListModel.hpp"
 #include "Lib/BalanceListView.hpp"
+#include "Lib/DefaultSymbolListWidget.hpp"
 #include "Lib/DropCopy.hpp"
 #include "Lib/Engine.hpp"
 #include "Lib/MarketScannerModel.hpp"
@@ -76,8 +77,8 @@ MainWindow::~MainWindow() = default;
 void MainWindow::ConnectSignals() {
   Verify(connect(m_ui.editExchangeList, &QAction::triggered, this,
                  &MainWindow::EditExchangeList));
-  Verify(connect(m_ui.addDefaultSymbol, &QAction::triggered, this,
-                 &MainWindow::AddDefaultSymbol));
+  Verify(connect(m_ui.editDefaultSymbolList, &QAction::triggered, this,
+                 &MainWindow::EditDefaultSymbolList));
 
   Verify(connect(
       m_ui.centalTabs, &QTabWidget::tabCloseRequested, [this](const int index) {
@@ -593,37 +594,83 @@ void MainWindow::EditExchangeList() {
       QMessageBox::Ok);
 }
 
-void MainWindow::AddDefaultSymbol() {
-  SymbolDialog dialog(this);
-  if (dialog.exec() != QDialog::Accepted) {
-    return;
-  }
-  auto symbol = dialog.GetSymbol().toStdString();
-  if (symbol.empty() || symbol[0] == '_') {
-    return;
-  }
-
-  boost::to_upper(symbol);
+void MainWindow::EditDefaultSymbolList() {
+  QDialog listDialog(this);
 
   try {
-    auto config = m_engine.LoadConfig();
-    auto symbolsConfig = config.get_child("defaults.symbols");
-    for (const auto &node : symbolsConfig) {
-      if (node.second.get_value<std::string>() == symbol) {
-        return;
+    auto &listWidget = *new DefaultSymbolListWidget(
+        m_engine.LoadConfig().get_child("defaults.symbols", {}), &listDialog);
+
+    {
+      listDialog.setWindowTitle(QObject::tr("Default Symbol List"));
+      auto &vLayout = *new QVBoxLayout(&listDialog);
+      listDialog.setLayout(&vLayout);
+      vLayout.addWidget(&listWidget);
+      {
+        auto &buttonsLayout = *new QHBoxLayout(&listDialog);
+        auto &addButton =
+            *new QPushButton(QObject::tr("Add New..."), &listDialog);
+        buttonsLayout.addWidget(&addButton);
+        Verify(QObject::connect(&addButton, &QPushButton::clicked, &listDialog,
+                                [&listWidget, &listDialog]() {
+                                  SymbolDialog dialog(&listDialog);
+                                  if (dialog.exec() != QDialog::Accepted) {
+                                    return;
+                                  }
+                                  auto symbol =
+                                      dialog.GetSymbol().toStdString();
+                                  if (symbol.empty() || symbol[0] == '_') {
+                                    return;
+                                  }
+                                  boost::to_upper(symbol);
+                                  listWidget.Add(std::move(symbol));
+                                }));
+        auto &removeButton =
+            *new QPushButton(QObject::tr("Remove Selected"), &listDialog);
+        buttonsLayout.addWidget(&removeButton);
+        Verify(QObject::connect(&removeButton, &QPushButton::clicked,
+                                &listWidget,
+                                &DefaultSymbolListWidget::RemoveSelected));
+        vLayout.addLayout(&buttonsLayout);
+      }
+      {
+        auto &okButton = *new QPushButton(QObject::tr("Save"), &listDialog);
+        auto &cancelButton =
+            *new QPushButton(QObject::tr("Cancel"), &listDialog);
+        Verify(QObject::connect(&okButton, &QPushButton::clicked, &listDialog,
+                                &QDialog::accept));
+        Verify(QObject::connect(&cancelButton, &QPushButton::clicked,
+                                &listDialog, &QDialog::reject));
+        auto &hLayout = *new QHBoxLayout(&listDialog);
+        hLayout.addItem(new QSpacerItem(1, 1, QSizePolicy::Expanding,
+                                        QSizePolicy::Minimum));
+        hLayout.addWidget(&okButton);
+        hLayout.addWidget(&cancelButton);
+        vLayout.addLayout(&hLayout);
       }
     }
-    symbolsConfig.push_back({"", ptr::ptree().put("", symbol)});
-    config.put_child("defaults.symbols", symbolsConfig);
-    m_engine.StoreConfig(config);
+
+    if (listDialog.exec() != QDialog::Accepted) {
+      return;
+    }
+
+    {
+      auto config = m_engine.LoadConfig();
+      config.put_child("defaults.symbols", listWidget.Dump());
+      m_engine.StoreConfig(config);
+    }
+
   } catch (const std::exception &ex) {
     const auto &error =
-        QString(tr(R"(Failed to edit source list: "%1".)")).arg(ex.what());
-    QMessageBox::critical(this, tr("Source list"), error, QMessageBox::Ignore);
+        QString(tr(R"(Failed to edit default symbol list: "%1".)"))
+            .arg(ex.what());
+    QMessageBox::critical(this, tr("Default symbol list"), error,
+                          QMessageBox::Ignore);
     return;
   }
+
   QMessageBox::information(
-      this, tr("Symbol list"),
+      this, tr("Default symbol list"),
       tr("Changes will take effect after the application restart."),
       QMessageBox::Ok);
 }
