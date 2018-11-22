@@ -43,7 +43,7 @@ Kraken::TradingSystem::TradingSystem(const App &,
       m_settings(conf, GetLog()),
       m_serverTimeDiff(
           GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),
-      m_nonces(std::make_unique<NonceStorage::UnsignedInt64TimedGenerator>()),
+      m_nonces(std::make_unique<NonceStorage::UnsignedInt64SecondsGenerator>()),
       m_balancesRequest(
           "Balance", "", GetContext(), m_settings, m_nonces, false, GetLog()),
       m_balances(*this, GetLog(), GetTradingLog()),
@@ -91,9 +91,6 @@ Volume Kraken::TradingSystem::CalcCommission(
 Balances &Kraken::TradingSystem::GetBalancesStorage() { return m_balances; }
 
 void Kraken::TradingSystem::UpdateBalances() {
-  boost::unordered_map<
-      std::string, std::pair<boost::optional<Volume>, boost::optional<Volume>>>
-      balances;
   const auto response = boost::get<1>(m_balancesRequest.Send(m_pollingSession));
   for (const auto &node : response) {
     m_balances.Set(ResolveSymbol(node.first), node.second.get_value<Volume>(),

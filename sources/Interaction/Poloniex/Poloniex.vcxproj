@@ -321,6 +321,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Product.cpp" />
+    <ClCompile Include="Request.cpp" />
     <ClCompile Include="Session.cpp" />
     <ClCompile Include="TradingSystem.cpp" />
     <ClCompile Include="TradingSystemAndMarketDataSource.cpp" />

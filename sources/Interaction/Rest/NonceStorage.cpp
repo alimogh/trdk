@@ -12,20 +12,25 @@
 #include "NonceStorage.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Interaction::Rest;
-
+using namespace Lib;
+using namespace Interaction::Rest;
 namespace pt = boost::posix_time;
 namespace gr = boost::gregorian;
 
-NonceStorage::Int32TimedGenerator::Int32TimedGenerator()
+NonceStorage::Int32SecondsGenerator::Int32SecondsGenerator()
     : m_nextValue(static_cast<int32_t>((pt::second_clock::universal_time() -
                                         pt::ptime(gr::date(2018, 2, 18)))
                                            .total_seconds())) {}
 
-NonceStorage::UnsignedInt64TimedGenerator::UnsignedInt64TimedGenerator()
+NonceStorage::UnsignedInt64SecondsGenerator::UnsignedInt64SecondsGenerator()
     : m_nextValue((pt::microsec_clock::universal_time() -
                    pt::ptime(gr::date(2018, 2, 18)))
+                      .total_microseconds()) {}
+
+NonceStorage::UnsignedInt64MicrosecondsGenerator::
+    UnsignedInt64MicrosecondsGenerator()
+    : m_nextValue((pt::microsec_clock::universal_time() -
+                   pt::ptime(gr::date(1970, 1, 1)))
                       .total_microseconds()) {}
 
 NonceStorage::NonceStorage(std::unique_ptr<Generator>&& generator)

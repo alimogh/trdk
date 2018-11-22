@@ -62,7 +62,7 @@ Exmo::TradingSystem::TradingSystem(const App &,
       m_settings(conf, GetLog()),
       m_serverTimeDiff(
           GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),
-      m_nonces(boost::make_unique<NonceStorage::UnsignedInt64TimedGenerator>()),
+      m_nonces(boost::make_unique<NonceStorage::UnsignedInt64SecondsGenerator>()),
       m_balancesRequest(
           "user_info", "", GetContext(), m_settings, m_nonces, false, GetLog()),
       m_balances(*this, GetLog(), GetTradingLog()),

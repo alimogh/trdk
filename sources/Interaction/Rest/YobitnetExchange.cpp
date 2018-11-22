@@ -340,11 +340,11 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         m_serverTimeDiff(
             GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),
         m_generalNonces(
-            boost::make_unique<NonceStorage::Int32TimedGenerator>()),
+            boost::make_unique<NonceStorage::Int32SecondsGenerator>()),
         m_tradingNonces(
             m_settings.tradingAuth
                 ? boost::make_unique<NonceStorage>(
-                      boost::make_unique<NonceStorage::Int32TimedGenerator>())
+                      boost::make_unique<NonceStorage::Int32SecondsGenerator>())
                 : nullptr),
         m_generalAuth({m_settings.generalAuth, m_generalNonces}),
         m_tradingAuth(m_settings.tradingAuth
