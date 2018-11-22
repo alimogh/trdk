@@ -145,7 +145,7 @@ Crex24TradingSystem::Crex24TradingSystem(const App &,
       m_settings(conf, GetLog()),
       m_serverTimeDiff(
           GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),
-      m_nonces(boost::make_unique<NonceStorage::UnsignedInt64TimedGenerator>()),
+      m_nonces(boost::make_unique<NonceStorage::UnsignedInt64SecondsGenerator>()),
       m_balances(*this, GetLog(), GetTradingLog()),
       m_balancesRequest("ReturnBalances",
                         R"("NeedNull":"false")",

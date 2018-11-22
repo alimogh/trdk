@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "TradingSystem.hpp"
+#include "Request.hpp"
 #include "Session.hpp"
 #include "TradingSystemConnection.hpp"
 
@@ -44,6 +45,8 @@ p::TradingSystem::TradingSystem(const App &,
     : Base(mode, context, std::move(instanceName), std::move(title)),
       m_settings(conf, GetLog()),
       m_products(GetProductList()),
+      m_nonces(
+          std::make_unique<NonceStorage::UnsignedInt64MicrosecondsGenerator>()),
       m_balances(*this, GetLog(), GetTradingLog()),
       m_session(CreateSession(m_settings, true)) {}
 
@@ -74,6 +77,16 @@ void p::TradingSystem::CreateConnection() {
   Assert(!m_isConnected);
 
   try {
+    {
+      PrivateRequest balancesRequest("returnBalances", "", GetContext(),
+                                     m_settings, m_nonces, GetLog(),
+                                     GetTradingLog());
+      const auto response = boost::get<1>(balancesRequest.Send(m_session));
+      for (const auto &node : response) {
+        m_balances.Set(node.first, node.second.get_value<Volume>(), 0);
+      }
+    }
+
     const boost::mutex::scoped_lock lock(m_listeningConnectionMutex);
     auto listeningConnection = CreateListeningConnection();
 
@@ -143,7 +156,7 @@ p::TradingSystem::CreateListeningConnection() {
   auto result = boost::make_shared<TradingSystemConnection>();
   result->Connect();
   result->Start(
-      m_settings,
+      m_settings, m_nonces,
       TradingSystemConnection::Events{
           []() -> const TradingSystemConnection::EventInfo { return {}; },
           [this](const TradingSystemConnection::EventInfo &,
@@ -236,8 +249,16 @@ void p::TradingSystem::UpdateBalance(const ptr::ptree &message) {
       }
       hasUpdateType = true;
     } else {
-      m_balances.Set(ResolveCurrency(*currencyId), field.get_value<Volume>(),
-                     0);
+      m_balances.Modify(
+          ResolveCurrency(*currencyId),
+          [field](const bool isNew, const Volume &available, const Volume &)
+              -> boost::optional<std::pair<Volume, Volume>> {
+            Assert(isNew);
+            if (!isNew) {
+              return boost::none;
+            }
+            return std::make_pair(available + field.get_value<Volume>(), 0);
+          });
     }
   }
 }

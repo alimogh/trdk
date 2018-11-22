@@ -18,5 +18,5 @@ namespace net = Poco::Net;
 
 std::unique_ptr<net::HTTPSClientSession> Poloniex::CreateSession(
     const Rest::Settings &settings, const bool isTrading) {
-  return Rest::CreateSession("api.binance.com", settings, isTrading);
+  return Rest::CreateSession("poloniex.com", settings, isTrading);
 }

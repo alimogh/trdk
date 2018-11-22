@@ -107,7 +107,7 @@ PrivateRequest::Response PrivateRequest::Send(
   m_nonce.emplace(m_nonces.TakeNonce());
 
   // ReSharper disable CppImplicitDefaultConstructorNotAvailable
-  const struct NonceScope {
+  const struct NonceScope {  // NOLINT
     // ReSharper restore CppImplicitDefaultConstructorNotAvailable
     boost::optional<NonceStorage::TakenValue> &nonce;
 

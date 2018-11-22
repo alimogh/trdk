@@ -55,6 +55,31 @@ class BalancesContainer::Implementation : private boost::noncopyable {
         : Insert(resolvedSymbol, std::move(available), std::move(locked));
   }
 
+  void Modify(const std::string &symbol,
+              const boost::function<boost::optional<std::pair<Volume, Volume>>(
+                  bool isNew, const Volume &available, const Volume &locked)>
+                  &callback) {
+    const auto &resolvedSymbol =
+        m_tradingSystem.GetContext().GetSettings().ResolveSymbolAlias(symbol);
+    const WriteLock lock(m_mutex);
+    const auto &it = m_storage.find(resolvedSymbol);
+    if (it != m_storage.cend()) {
+      auto &balance = it->second;
+      auto result = callback(false, balance.available, balance.locked);
+      if (!result) {
+        return;
+      }
+      Update(*it, std::move(result->first), std::move(result->second));
+    } else {
+      auto result = callback(true, 0, 0);
+      if (!result) {
+        return;
+      }
+      Insert(resolvedSymbol, std::move(result->first),
+             std::move(result->second));
+    }
+  }
+
   void Insert(const std::string &symbol,
               boost::optional<Volume> availableSource,
               boost::optional<Volume> lockedSource) {
@@ -156,6 +181,13 @@ void BalancesContainer::SetAvailableToTrade(const std::string &symbol,
 void BalancesContainer::SetLocked(const std::string &symbol,
                                   const Volume &volume) {
   m_pimpl->Set(symbol, boost::none, volume);
+}
+
+void BalancesContainer::Modify(
+    const std::string &symbol,
+    const boost::function<boost::optional<std::pair<Volume, Volume>>(
+        bool isNew, const Volume &available, const Volume &locked)> &callback) {
+  m_pimpl->Modify(symbol, callback);
 }
 
 void BalancesContainer::ReduceAvailableToTradeByOrder(
