@@ -76,6 +76,8 @@ class TradingSystem : public trdk::TradingSystem {
 
   const boost::unordered_map<std::string, Product> &m_products;
 
+  Rest::NonceStorage m_nonces;
+
   TradingLib::BalancesContainer m_balances;
 
   std::unique_ptr<Poco::Net::HTTPSClientSession> m_session;

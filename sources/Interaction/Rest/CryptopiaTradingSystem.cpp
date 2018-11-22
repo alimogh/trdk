@@ -167,7 +167,7 @@ CryptopiaTradingSystem::CryptopiaTradingSystem(const App &,
       m_settings(conf, GetLog()),
       m_serverTimeDiff(
           GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),
-      m_nonces(boost::make_unique<NonceStorage::UnsignedInt64TimedGenerator>()),
+      m_nonces(boost::make_unique<NonceStorage::UnsignedInt64SecondsGenerator>()),
       m_balances(*this, GetLog(), GetTradingLog()),
       m_balancesRequest(m_nonces, m_settings, GetContext(), GetLog()),
       m_openOrdersRequestsVersion(0),

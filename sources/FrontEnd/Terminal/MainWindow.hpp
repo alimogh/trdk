@@ -74,7 +74,7 @@ class MainWindow : public QMainWindow {
   void CreateNewOrderWindows(Security &);
 
   void EditExchangeList();
-  void AddDefaultSymbol();
+  void EditDefaultSymbolList();
 
   void StoreWalletsConfig(const boost::property_tree::ptree &);
 

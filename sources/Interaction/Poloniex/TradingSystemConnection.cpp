@@ -14,13 +14,13 @@
 
 using namespace trdk;
 using namespace Interaction;
+using namespace Rest;
 using namespace Poloniex;
 using namespace Lib::Crypto;
 namespace ptr = boost::property_tree;
-namespace pt = boost::posix_time;
-namespace gr = boost::gregorian;
 
 void TradingSystemConnection::Start(const AuthSettings &settings,
+                                    NonceStorage &nonces,
                                     const Events &events) {
   Handshake("/");
   Base::Start(events);
@@ -29,13 +29,13 @@ void TradingSystemConnection::Start(const AuthSettings &settings,
     request.add("command", "subscribe");
     request.add("channel", "1000");
     request.add("key", settings.apiKey);
-    const auto &payload = "nonce=" + boost::lexical_cast<std::string>(
-                                         (pt::microsec_clock::universal_time() -
-                                          pt::ptime(gr::date(1970, 1, 1)))
-                                             .total_seconds());
+    auto nonce = nonces.TakeNonce();
+    const auto &payload =
+        "nonce=" + boost::lexical_cast<std::string>(nonce.Get());
     request.add("payload", payload);
     request.add("sign", EncodeToHex(Hmac::CalcSha512Digest(
                             payload, settings.apiSecret)));
     Write(request);
+    nonce.Use();
   }
 }

@@ -32,6 +32,9 @@ class BalancesContainer : public Balances {
            const Volume& locked);
   void SetAvailableToTrade(const std::string& symbol, const Volume&);
   void SetLocked(const std::string& symbol, const Volume&);
+  void Modify(const std::string& symbol,
+              const boost::function<boost::optional<std::pair<Volume, Volume>>(
+                  bool isNew, const Volume& available, const Volume& locked)>&);
 
   void ReduceAvailableToTradeByOrder(const Security&,
                                      const Qty&,
