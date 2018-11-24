@@ -11,8 +11,6 @@
 
 #pragma once
 
-#include "Core/Fwd.hpp"
-
 namespace trdk {
 namespace TradingLib {
 
@@ -39,5 +37,5 @@ class Algo : private boost::noncopyable {
  private:
   trdk::Position &m_position;
 };
-}
-}
+}  // namespace TradingLib
+}  // namespace trdk

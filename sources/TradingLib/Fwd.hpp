@@ -17,5 +17,6 @@ class Algo;
 class OrderPolicy;
 class Trend;
 class PositionController;
+class WebSocketConnection;
 }  // namespace TradingLib
 }  // namespace trdk
