@@ -97,6 +97,9 @@ WebSocketMarketDataSource::WebSocketMarketDataSource(Context &context,
     : MarketDataSource(context, std::move(instanceName), std::move(title)),
       m_pimpl(boost::make_unique<Implementation>(*this)) {}
 
+WebSocketMarketDataSource::WebSocketMarketDataSource(
+    WebSocketMarketDataSource &&) noexcept = default;
+
 WebSocketMarketDataSource::~WebSocketMarketDataSource() {
   {
     boost::mutex::scoped_lock lock(m_pimpl->m_connectionMutex);

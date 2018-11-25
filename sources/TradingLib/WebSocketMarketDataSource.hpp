@@ -24,7 +24,7 @@ class WebSocketMarketDataSource : public MarketDataSource {
   explicit WebSocketMarketDataSource(Context &,
                                      std::string instanceName,
                                      std::string title);
-  WebSocketMarketDataSource(WebSocketMarketDataSource &&) = delete;
+  WebSocketMarketDataSource(WebSocketMarketDataSource &&) noexcept;
   WebSocketMarketDataSource(const WebSocketMarketDataSource &) = delete;
   WebSocketMarketDataSource &operator=(WebSocketMarketDataSource &&) = delete;
   WebSocketMarketDataSource &operator=(const WebSocketMarketDataSource &) =

@@ -25,7 +25,7 @@ class MarketDataSource : public TradingLib::WebSocketMarketDataSource {
                             std::string instanceName,
                             std::string title,
                             const boost::property_tree::ptree &conf);
-  MarketDataSource(MarketDataSource &&) = delete;
+  MarketDataSource(MarketDataSource &&) = default;
   MarketDataSource(const MarketDataSource &) = delete;
   MarketDataSource &operator=(MarketDataSource &&) = delete;
   MarketDataSource &operator=(const MarketDataSource &) = delete;

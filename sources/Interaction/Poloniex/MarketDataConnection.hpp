@@ -21,6 +21,8 @@ class MarketDataConnection : public WebSocketConnection {
  public:
   explicit MarketDataConnection(
       const boost::unordered_map<ProductId, SecuritySubscription> &);
+  ~MarketDataConnection() override = default;
+
   void StartData(const Events &) override;
 
  private:
