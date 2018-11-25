@@ -10,7 +10,6 @@
 
 #include "Prec.hpp"
 #include "MarketDataSource.hpp"
-#include "Request.hpp"
 #include "Session.hpp"
 
 using namespace trdk;
@@ -28,22 +27,7 @@ Huobi::MarketDataSource::MarketDataSource(const App &,
                                           std::string title,
                                           const ptr::ptree &conf)
     : Base(context, std::move(instanceName), std::move(title)),
-      m_settings(conf, GetLog()),
-      m_session(CreateSession(m_settings, false)),
-      m_pollingTask(boost::make_unique<PollingTask>(m_settings.pollingSetttings,
-                                                    GetLog())) {}
-
-Huobi::MarketDataSource::~MarketDataSource() {
-  try {
-    m_pollingTask.reset();
-  } catch (...) {
-    AssertFailNoException();
-    terminate();
-  }
-  // Each object, that implements CreateNewSecurityObject should wait for log
-  // flushing before destroying objects:
-  GetTradingLog().WaitForFlush();
-}
+      m_settings(conf, GetLog()) {}
 
 boost::shared_ptr<trdk::MarketDataSource> CreateMarketDataSource(
     Context &context,
@@ -60,10 +44,13 @@ void Huobi::MarketDataSource::Connect() {
   GetLog().Debug("Creating connection...");
 
   boost::unordered_map<std::string, Product> products;
-  try {
-    products = RequestProductList(m_session, GetContext(), GetLog());
-  } catch (const std::exception &ex) {
-    throw ConnectError(ex.what());
+  {
+    auto session = CreateSession(m_settings, false);
+    try {
+      products = RequestProductList(session, GetContext(), GetLog());
+    } catch (const std::exception &ex) {
+      throw ConnectError(ex.what());
+    }
   }
 
   boost::unordered_set<std::string> symbolListHint;
@@ -71,31 +58,10 @@ void Huobi::MarketDataSource::Connect() {
     symbolListHint.insert(product.first);
   }
 
+  Base::Connect();
+
   m_products = std::move(products);
   m_symbolListHint = std::move(symbolListHint);
-}
-
-void Huobi::MarketDataSource::SubscribeToSecurities() {
-  std::vector<
-      std::pair<boost::shared_ptr<Rest::Security>, boost::shared_ptr<Request>>>
-      requests;
-  for (const auto &security : m_securities) {
-    requests.emplace_back(std::make_pair(
-        security.second,
-        boost::make_shared<PublicRequest>(
-            "market/depth", "symbol=" + security.first + "&type=step1",
-            GetContext(), GetLog())));
-  }
-  requests.shrink_to_fit();
-  m_pollingTask->ReplaceTask(
-      "Prices", 1,
-      [this, requests]() {
-        for (const auto &request : requests) {
-          UpdatePrices(*request.first, *request.second);
-        }
-        return true;
-      },
-      m_settings.pollingSetttings.GetPricesRequestFrequency(), false);
 }
 
 trdk::Security &Huobi::MarketDataSource::CreateNewSecurityObject(
@@ -119,29 +85,48 @@ trdk::Security &Huobi::MarketDataSource::CreateNewSecurityObject(
   return *result.first->second;
 }
 
-void Huobi::MarketDataSource::UpdatePrices(Rest::Security &security,
-                                           Request &request) {
-  try {
-    const auto &response = request.Send(m_session);
-    UpdatePrices(boost::get<1>(response), security, boost::get<2>(response));
-  } catch (const std::exception &ex) {
-    try {
-      security.SetOnline(pt::not_a_date_time, false);
-    } catch (...) {
-      AssertFailNoException();
-      throw;
+std::unique_ptr<Huobi::MarketDataSource::Connection>
+Huobi::MarketDataSource::CreateConnection() const {
+  class Connection : public TradingLib::WebSocketConnection {
+   public:
+    explicit Connection(
+        const boost::unordered_map<ProductId, boost::shared_ptr<Rest::Security>>
+            &subscription)
+        : WebSocketConnection("api.huobi.pro"), m_subscription(subscription) {}
+    Connection(Connection &&) = default;
+    Connection(const Connection &) = delete;
+    Connection &operator=(Connection &&) = delete;
+    Connection &operator=(const Connection &) = delete;
+    ~Connection() override = default;
+
+    void Connect() override { WebSocketConnection::Connect("https"); }
+
+    void StartData(const Events &events) override {
+      if (m_subscription.empty()) {
+        return;
+      }
+      Handshake("/ws/");
+      Start(events);
+      for (const auto &security : m_subscription) {
+        ptr::ptree request;
+        request.add("req", "market." + security.first + ".depth.step1");
+        request.add("id", security.first);
+        Write(request);
+      }
     }
-    boost::format error("Failed to read prices for %1%: \"%2%\"");
-    error % security  // 1
-        % ex.what();  // 2
-    try {
-      throw;
-    } catch (const CommunicationError &) {
-      throw CommunicationError(error.str().c_str());
-    } catch (...) {
-      throw Exception(error.str().c_str());
-    }
-  }
+
+   private:
+    const boost::unordered_map<ProductId, boost::shared_ptr<Rest::Security>>
+        &m_subscription;
+  };
+
+  return boost::make_unique<Connection>(m_securities);
+}
+
+void Huobi::MarketDataSource::HandleMessage(const pt::ptime &,
+                                            const ptr::ptree &message,
+                                            const Milestones &) {
+  GetLog().Debug("XXX: %1%", Lib::ConvertToString(message, false));
 }
 
 namespace {
@@ -174,10 +159,10 @@ boost::optional<std::pair<Level1TickValue, Level1TickValue>> ReadTopPrice(
     return boost::none;
   }
   Assert(price);
-  return std::make_pair(std::move(*price), std::move(*qty));
+  return std::make_pair(*price, *qty);
 }
 #pragma warning(pop)
-}
+}  // namespace
 
 void Huobi::MarketDataSource::UpdatePrices(const ptr::ptree &source,
                                            Rest::Security &security,
