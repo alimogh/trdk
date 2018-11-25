@@ -32,7 +32,7 @@ Crex24MarketDataSource::Crex24MarketDataSource(const App &,
     : Base(context, std::move(instanceName), std::move(title)),
       m_settings(conf, GetLog()),
       m_session(CreateCrex24Session(m_settings, false)),
-      m_pollingTask(boost::make_unique<PollingTask>(m_settings.pollingSetttings,
+      m_pollingTask(boost::make_unique<PollingTask>(m_settings.pollingSettings,
                                                     GetLog())) {}
 
 Crex24MarketDataSource::~Crex24MarketDataSource() {
@@ -94,7 +94,7 @@ void Crex24MarketDataSource::SubscribeToSecurities() {
         UpdatePrices(subscribtion);
         return true;
       },
-      m_settings.pollingSetttings.GetPricesRequestFrequency(), false);
+      m_settings.pollingSettings.GetPricesRequestFrequency(), false);
 }
 
 trdk::Security &Crex24MarketDataSource::CreateNewSecurityObject(

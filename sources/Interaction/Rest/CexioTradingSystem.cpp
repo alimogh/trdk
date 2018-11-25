@@ -114,11 +114,12 @@ CexioTradingSystem::CexioTradingSystem(const App &,
       m_settings(conf, GetLog()),
       m_serverTimeDiff(
           GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),
-      m_nonces(boost::make_unique<NonceStorage::UnsignedInt64SecondsGenerator>()),
+      m_nonces(
+          boost::make_unique<NonceStorage::UnsignedInt64SecondsGenerator>()),
       m_balances(*this, GetLog(), GetTradingLog()),
       m_tradingSession(CreateCexioSession(m_settings, true)),
       m_pollingSession(CreateCexioSession(m_settings, false)),
-      m_pollingTask(m_settings.pollingSetttings, GetLog()) {}
+      m_pollingTask(m_settings.pollingSettings, GetLog()) {}
 
 void CexioTradingSystem::CreateConnection() {
   Assert(m_products.empty());
@@ -137,14 +138,14 @@ void CexioTradingSystem::CreateConnection() {
         UpdateOrders();
         return true;
       },
-      m_settings.pollingSetttings.GetActualOrdersRequestFrequency(), true);
+      m_settings.pollingSettings.GetActualOrdersRequestFrequency(), true);
   m_pollingTask.AddTask(
       "Balances", 1,
       [this]() {
         UpdateBalances();
         return true;
       },
-      m_settings.pollingSetttings.GetBalancesRequestFrequency(), true);
+      m_settings.pollingSettings.GetBalancesRequestFrequency(), true);
 
   m_pollingTask.AccelerateNextPolling();
 }

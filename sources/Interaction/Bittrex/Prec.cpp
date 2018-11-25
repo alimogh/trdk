@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/10/10 15:13:22
+ *   Created: 2018/11/25 20:53
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,19 +8,4 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
-#pragma once
-
-namespace trdk {
-namespace Interaction {
-namespace Rest {
-class FloodControl;
-class Security;
-struct Settings;
-
-class PollingSettings;
-class PollingTask;
-
-class Request;
-}  // namespace Rest
-}  // namespace Interaction
-}  // namespace trdk
+#include "Prec.hpp"

@@ -354,7 +354,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         m_tradingSession(CreateSession("yobit.net", m_settings, true)),
         m_balances(*this, GetTsLog(), GetTsTradingLog()),
         m_pollingTask(boost::make_unique<PollingTask>(
-            m_settings.pollingSetttings, GetMdsLog())) {}
+            m_settings.pollingSettings, GetMdsLog())) {}
 
   ~YobitnetExchange() override {
     try {
@@ -412,7 +412,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
           UpdatePrices(*depthRequest);
           return true;
         },
-        m_settings.pollingSetttings.GetPricesRequestFrequency(), false);
+        m_settings.pollingSettings.GetPricesRequestFrequency(), false);
 
     m_pollingTask->AccelerateNextPolling();
   }
@@ -510,14 +510,14 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
           UpdateOrders();
           return true;
         },
-        m_settings.pollingSetttings.GetActualOrdersRequestFrequency(), true);
+        m_settings.pollingSettings.GetActualOrdersRequestFrequency(), true);
     m_pollingTask->AddTask(
         "Balances", 1,
         [this]() {
           UpdateBalances();
           return true;
         },
-        m_settings.pollingSetttings.GetBalancesRequestFrequency(), false);
+        m_settings.pollingSettings.GetBalancesRequestFrequency(), false);
 
     m_pollingTask->AccelerateNextPolling();
   }

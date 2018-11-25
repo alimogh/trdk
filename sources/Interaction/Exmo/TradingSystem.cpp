@@ -68,7 +68,7 @@ Exmo::TradingSystem::TradingSystem(const App &,
       m_balances(*this, GetLog(), GetTradingLog()),
       m_tradingSession(CreateSession(m_settings, true)),
       m_pollingSession(CreateSession(m_settings, false)),
-      m_pollingTask(m_settings.pollingSetttings, GetLog()) {}
+      m_pollingTask(m_settings.pollingSettings, GetLog()) {}
 
 bool Exmo::TradingSystem::IsConnected() const { return !m_products.empty(); }
 
@@ -88,14 +88,14 @@ void Exmo::TradingSystem::CreateConnection() {
   //   UpdateOrders();
   //   return true;
   // },
-  //   m_settings.pollingSetttings.GetActualOrdersRequestFrequency(), true);
+  //   m_settings.pollingSettings.GetActualOrdersRequestFrequency(), true);
   m_pollingTask.AddTask(
       "Balances", 1,
       [this]() {
         UpdateBalances();
         return true;
       },
-      m_settings.pollingSetttings.GetBalancesRequestFrequency(), true);
+      m_settings.pollingSettings.GetBalancesRequestFrequency(), true);
 
   m_pollingTask.AccelerateNextPolling();
 }
@@ -258,7 +258,7 @@ void Exmo::TradingSystem::OnTransactionSent(
 void Exmo::TradingSystem::SubscribeToOrderUpdates() {
   m_pollingTask.ReplaceTask(
       "Orders", 0, [this]() { return UpdateOrders(); },
-      m_settings.pollingSetttings.GetActualOrdersRequestFrequency(), true);
+      m_settings.pollingSettings.GetActualOrdersRequestFrequency(), true);
 }
 
 bool Exmo::TradingSystem::UpdateOrders() {

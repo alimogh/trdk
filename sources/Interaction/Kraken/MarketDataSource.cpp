@@ -30,7 +30,7 @@ Kraken::MarketDataSource::MarketDataSource(const App &,
     : Base(context, std::move(instanceName), std::move(title)),
       m_settings(conf, GetLog()),
       m_session(CreateSession(m_settings, false)),
-      m_pollingTask(boost::make_unique<PollingTask>(m_settings.pollingSetttings,
+      m_pollingTask(boost::make_unique<PollingTask>(m_settings.pollingSettings,
                                                     GetLog())) {}
 
 Kraken::MarketDataSource::~MarketDataSource() {
@@ -95,7 +95,7 @@ void Kraken::MarketDataSource::SubscribeToSecurities() {
         }
         return true;
       },
-      m_settings.pollingSetttings.GetPricesRequestFrequency(), false);
+      m_settings.pollingSettings.GetPricesRequestFrequency(), false);
 }
 
 trdk::Security &Kraken::MarketDataSource::CreateNewSecurityObject(

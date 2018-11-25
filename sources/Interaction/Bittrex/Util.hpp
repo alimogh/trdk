@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/10/10 15:13:22
+ *   Created: 2017/11/19 18:24:27
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -12,15 +12,17 @@
 
 namespace trdk {
 namespace Interaction {
-namespace Rest {
-class FloodControl;
-class Security;
-struct Settings;
+namespace Bittrex {
 
-class PollingSettings;
-class PollingTask;
+struct Product {
+  std::string id;
+  Qty minQty;
+};
 
-class Request;
-}  // namespace Rest
+boost::unordered_map<std::string, Product> RequestBittrexProductList(
+    std::unique_ptr<Poco::Net::HTTPSClientSession> &,
+    const Context &,
+    ModuleEventsLog &);
+}  // namespace Bittrex
 }  // namespace Interaction
 }  // namespace trdk

@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/11/19 18:24:27
+ *   Created: 2018/11/25 20:54
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,21 +8,12 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
-#pragma once
+#include "Prec.hpp"
+#include "Common/VersionInfo.hpp"
 
-namespace trdk {
-namespace Interaction {
-namespace Rest {
+using namespace trdk::Lib;
 
-struct BittrexProduct {
-  std::string id;
-  Qty minQty;
-};
-
-boost::unordered_map<std::string, BittrexProduct> RequestBittrexProductList(
-    std::unique_ptr<Poco::Net::HTTPSClientSession> &,
-    const Context &,
-    ModuleEventsLog &);
-}  // namespace Rest
-}  // namespace Interaction
-}  // namespace trdk
+extern "C" __declspec(dllexport) void GetTrdkModuleVersionInfoV1(
+    VersionInfoV1 *result) {
+  *result = VersionInfoV1(TRDK_INTERACTION_BITTREX_FILE_NAME);
+}

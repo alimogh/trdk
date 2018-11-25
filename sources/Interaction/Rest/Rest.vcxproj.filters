@@ -16,10 +16,6 @@
       <UniqueIdentifier>{0fc04119-889d-40b8-b97e-f60216dc8ae3}</UniqueIdentifier>
       <Extensions>Livecoin</Extensions>
     </Filter>
-    <Filter Include="Bittrex">
-      <UniqueIdentifier>{fdd3ef13-65d0-40f3-801e-b8bc4ca40542}</UniqueIdentifier>
-      <Extensions>Bittrex</Extensions>
-    </Filter>
     <Filter Include="Cryptopia">
       <UniqueIdentifier>{f11e9a2b-c979-44ef-81db-3c7c15635631}</UniqueIdentifier>
       <Extensions>Cryptopia</Extensions>
@@ -31,20 +27,12 @@
       <UniqueIdentifier>{a730d7d0-f4ca-40d5-bb69-76d5a5de1186}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
-    <Filter Include="Bittrex\Header Files">
-      <UniqueIdentifier>{f08586f2-8f24-4e32-9f10-3bf66018b6ca}</UniqueIdentifier>
-      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
-    </Filter>
     <Filter Include="Cryptopia\Header Files">
       <UniqueIdentifier>{b895bba0-556d-4795-bb78-7aabcb5cb61c}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
     <Filter Include="Livecoin\Source Files">
       <UniqueIdentifier>{c8c12307-ddf2-4af4-8b6e-7d2a60dde53d}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
-    <Filter Include="Bittrex\Source Files">
-      <UniqueIdentifier>{1e56968a-f9f5-4273-a2ce-d27856637be6}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
     <Filter Include="Cryptopia\Source Files">
@@ -139,21 +127,6 @@
     <ClCompile Include="YobitnetExchange.cpp">
       <Filter>Yobit.net</Filter>
     </ClCompile>
-    <ClCompile Include="BittrexUtil.cpp">
-      <Filter>Bittrex\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BittrexMarketDataSource.cpp">
-      <Filter>Bittrex\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BittrexRequest.cpp">
-      <Filter>Bittrex\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BittrexTradingSystem.cpp">
-      <Filter>Bittrex\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BittrexTradingSystemAndMarketDataSource.cpp">
-      <Filter>Bittrex\Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="CryptopiaMarketDataSource.cpp">
       <Filter>Cryptopia\Source Files</Filter>
     </ClCompile>
@@ -230,18 +203,6 @@
     </ClInclude>
     <ClInclude Include="CexioUtil.hpp">
       <Filter>CEX.IO\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BittrexMarketDataSource.hpp">
-      <Filter>Bittrex\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BittrexRequest.hpp">
-      <Filter>Bittrex\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BittrexTradingSystem.hpp">
-      <Filter>Bittrex\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BittrexUtil.hpp">
-      <Filter>Bittrex\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="CryptopiaMarketDataSource.hpp">
       <Filter>Cryptopia\Header Files</Filter>

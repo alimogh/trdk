@@ -26,6 +26,7 @@
     "Binance",
     "Coinbase",
 	"Poloniex",
+	"Bittrex",
     "TestStrategy",
     "ArbitrationAdvisor",
     "MarketMaker",

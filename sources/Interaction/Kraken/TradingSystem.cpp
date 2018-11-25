@@ -49,7 +49,7 @@ Kraken::TradingSystem::TradingSystem(const App &,
       m_balances(*this, GetLog(), GetTradingLog()),
       m_tradingSession(CreateSession(m_settings, true)),
       m_pollingSession(CreateSession(m_settings, false)),
-      m_pollingTask(m_settings.pollingSetttings, GetLog()) {}
+      m_pollingTask(m_settings.pollingSettings, GetLog()) {}
 
 bool Kraken::TradingSystem::IsConnected() const { return !m_products.empty(); }
 
@@ -69,7 +69,7 @@ void Kraken::TradingSystem::CreateConnection() {
         UpdateBalances();
         return true;
       },
-      m_settings.pollingSetttings.GetBalancesRequestFrequency(), true);
+      m_settings.pollingSettings.GetBalancesRequestFrequency(), true);
 
   m_pollingTask.AccelerateNextPolling();
 }
@@ -214,7 +214,7 @@ void Kraken::TradingSystem::OnTransactionSent(
 void Kraken::TradingSystem::SubscribeToOrderUpdates() {
   m_pollingTask.AddTask(
       "Orders", 0, [this]() { return UpdateOrders(); },
-      m_settings.pollingSetttings.GetActualOrdersRequestFrequency(), true);
+      m_settings.pollingSettings.GetActualOrdersRequestFrequency(), true);
 }
 
 bool Kraken::TradingSystem::UpdateOrders() {

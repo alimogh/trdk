@@ -31,5 +31,4 @@
 #include "Interaction/Rest/Util.hpp"
 #include "Fwd.hpp"
 #include "Common/Crypto.hpp"
-#include <Poco/Net/HTTPRequest.h>
 #include <Poco/URI.h>

@@ -156,7 +156,7 @@ Crex24TradingSystem::Crex24TradingSystem(const App &,
                         GetLog()),
       m_tradingSession(CreateCrex24Session(m_settings, true)),
       m_pollingSession(CreateCrex24Session(m_settings, false)),
-      m_pollingTask(m_settings.pollingSetttings, GetLog()) {}
+      m_pollingTask(m_settings.pollingSettings, GetLog()) {}
 
 bool Crex24TradingSystem::IsConnected() const { return !m_products.empty(); }
 
@@ -177,14 +177,14 @@ void Crex24TradingSystem::CreateConnection() {
         UpdateOrders();
         return true;
       },
-      m_settings.pollingSetttings.GetActualOrdersRequestFrequency(), true);
+      m_settings.pollingSettings.GetActualOrdersRequestFrequency(), true);
   m_pollingTask.AddTask(
       "Balances", 1,
       [this]() {
         UpdateBalances();
         return true;
       },
-      m_settings.pollingSetttings.GetBalancesRequestFrequency(), true);
+      m_settings.pollingSettings.GetBalancesRequestFrequency(), true);
 
   m_pollingTask.AccelerateNextPolling();
 }
