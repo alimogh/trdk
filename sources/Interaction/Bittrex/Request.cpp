@@ -9,15 +9,16 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "BittrexRequest.hpp"
+#include "Request.hpp"
 
 using namespace trdk;
 using namespace Lib;
-using namespace Interaction::Rest;
-
+using namespace Interaction;
+using namespace Rest;
+using namespace Bittrex;
 namespace net = Poco::Net;
 
-BittrexRequest::Response BittrexRequest::Send(
+Bittrex::Request::Response Bittrex::Request::Send(
     std::unique_ptr<net::HTTPSClientSession> &session) {
   auto result = Base::Send(session);
   const auto &response = boost::get<1>(result);
@@ -61,7 +62,7 @@ BittrexRequest::Response BittrexRequest::Send(
   return result;
 }
 
-FloodControl &BittrexRequest::GetFloodControl() const {
+FloodControl &Bittrex::Request::GetFloodControl() const {
   static auto result = CreateDisabledFloodControl();
   return *result;
 }

@@ -249,7 +249,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
         m_tradingSession(CreateSession(m_endpoint.host, m_settings, true)),
         m_balances(*this, GetTsLog(), GetTsTradingLog()),
         m_pollingTask(boost::make_unique<PollingTask>(
-            m_settings.pollingSetttings, GetMdsLog())) {}
+            m_settings.pollingSettings, GetMdsLog())) {}
 
   ~CcexExchange() override {
     try {
@@ -353,21 +353,21 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
           UpdateSecurities();
           return true;
         },
-        m_settings.pollingSetttings.GetPricesRequestFrequency(), false);
+        m_settings.pollingSettings.GetPricesRequestFrequency(), false);
     m_pollingTask->AddTask(
         "Actual orders", 0,
         [this] {
           UpdateOrders();
           return true;
         },
-        m_settings.pollingSetttings.GetActualOrdersRequestFrequency(), true);
+        m_settings.pollingSettings.GetActualOrdersRequestFrequency(), true);
     m_pollingTask->AddTask(
         "Balances", 1,
         [this] {
           UpdateBalances();
           return true;
         },
-        m_settings.pollingSetttings.GetBalancesRequestFrequency(), true);
+        m_settings.pollingSettings.GetBalancesRequestFrequency(), true);
 
     m_pollingTask->AccelerateNextPolling();
 

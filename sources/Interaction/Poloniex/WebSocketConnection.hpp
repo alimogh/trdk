@@ -14,12 +14,14 @@ namespace trdk {
 namespace Interaction {
 namespace Poloniex {
 
-class WebSocketConnection : public Lib::WebSocketConnection {
+class WebSocketConnection : public TradingLib::WebSocketConnection {
  public:
-  typedef Lib::WebSocketConnection Base;
+  using Base = TradingLib::WebSocketConnection;
 
   WebSocketConnection();
-  void Connect();
+  ~WebSocketConnection() override = default;
+
+  void Connect() override;
 };
 }  // namespace Poloniex
 }  // namespace Interaction

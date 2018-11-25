@@ -305,6 +305,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="Util.cpp" />
+    <ClCompile Include="WebSocketMarketDataSource.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Algo.hpp" />
@@ -324,6 +325,8 @@
     <ClInclude Include="Trend.hpp" />
     <ClInclude Include="Util.hpp" />
     <ClInclude Include="GeneralAlgos.hpp" />
+    <ClInclude Include="WebSocketConnection.hpp" />
+    <ClInclude Include="WebSocketMarketDataSource.hpp" />
   </ItemGroup>
   <ItemGroup>
   </ItemGroup>

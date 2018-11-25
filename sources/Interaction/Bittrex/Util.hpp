@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/08/26 19:29:25
+ *   Created: 2017/11/19 18:24:27
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -11,12 +11,18 @@
 #pragma once
 
 namespace trdk {
-namespace TradingLib {
+namespace Interaction {
+namespace Bittrex {
 
-class Algo;
-class OrderPolicy;
-class Trend;
-class PositionController;
-class WebSocketConnection;
-}  // namespace TradingLib
+struct Product {
+  std::string id;
+  Qty minQty;
+};
+
+boost::unordered_map<std::string, Product> RequestBittrexProductList(
+    std::unique_ptr<Poco::Net::HTTPSClientSession> &,
+    const Context &,
+    ModuleEventsLog &);
+}  // namespace Bittrex
+}  // namespace Interaction
 }  // namespace trdk

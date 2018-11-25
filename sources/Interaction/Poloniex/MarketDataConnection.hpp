@@ -19,8 +19,14 @@ namespace Poloniex {
 
 class MarketDataConnection : public WebSocketConnection {
  public:
-  void Start(const boost::unordered_map<ProductId, SecuritySubscription> &,
-             const Events &);
+  explicit MarketDataConnection(
+      const boost::unordered_map<ProductId, SecuritySubscription> &);
+  ~MarketDataConnection() override = default;
+
+  void StartData(const Events &) override;
+
+ private:
+  const boost::unordered_map<ProductId, SecuritySubscription> &m_subscription;
 };
 }  // namespace Poloniex
 }  // namespace Interaction

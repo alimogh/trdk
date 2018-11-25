@@ -35,7 +35,7 @@ CexioMarketDataSource::CexioMarketDataSource(const App &,
       m_serverTimeDiff(
           GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),
       m_session(CreateCexioSession(m_settings, false)),
-      m_pollingTask(boost::make_unique<PollingTask>(m_settings.pollingSetttings,
+      m_pollingTask(boost::make_unique<PollingTask>(m_settings.pollingSettings,
                                                     GetLog())) {}
 
 CexioMarketDataSource::~CexioMarketDataSource() {
@@ -91,13 +91,13 @@ void CexioMarketDataSource::SubscribeToSecurities() {
     }
   }
 
-  m_pollingTask->AddTask(
-      "Prices", 1,
-      [this]() {
-        UpdatePrices();
-        return true;
-      },
-      m_settings.pollingSetttings.GetPricesRequestFrequency(), false);
+  m_pollingTask->AddTask("Prices", 1,
+                         [this]() {
+                           UpdatePrices();
+                           return true;
+                         },
+                         m_settings.pollingSettings.GetPricesRequestFrequency(),
+                         false);
   m_pollingTask->AccelerateNextPolling();
 }
 

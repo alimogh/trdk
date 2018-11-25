@@ -4,9 +4,6 @@ EXPORTS
 	CreateYobitnetMarketDataSource
 	CreateCcex
 	CreateCcexMarketDataSource
-	CreateBittrexTradingSystem
-	CreateBittrexMarketDataSource
-	CreateBittrex
 	CreateCryptopiaTradingSystem
 	CreateCryptopiaMarketDataSource
 	CreateCryptopia

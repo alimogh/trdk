@@ -227,7 +227,7 @@ class Exchange : public TradingSystem, public MarketDataSource {
             CreateSession("api.pro.coinbase.com", m_settings, true)),
         m_balances(*this, GetTsLog(), GetTsTradingLog()),
         m_pollingTask(boost::make_unique<PollingTask>(
-            m_settings.pollingSetttings, GetMdsLog())) {}
+            m_settings.pollingSettings, GetMdsLog())) {}
 
   Exchange(Exchange&&) = default;
   Exchange(const Exchange&) = delete;
@@ -369,14 +369,14 @@ class Exchange : public TradingSystem, public MarketDataSource {
           UpdateOrders();
           return true;
         },
-        m_settings.pollingSetttings.GetActualOrdersRequestFrequency(), true);
+        m_settings.pollingSettings.GetActualOrdersRequestFrequency(), true);
     m_pollingTask->AddTask(
         "Balances", 1,
         [this]() {
           UpdateBalances();
           return true;
         },
-        m_settings.pollingSetttings.GetBalancesRequestFrequency(), true);
+        m_settings.pollingSettings.GetBalancesRequestFrequency(), true);
 
     m_marketDataConnection = std::move(marketDataConnection);
 

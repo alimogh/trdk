@@ -18,4 +18,5 @@
 #include "App.hpp"
 #include "Fwd.hpp"
 #include <Poco/Net/HTTPMessage.h>
+#include <Poco/Net/HTTPRequest.h>
 #include <Poco/Net/HTTPSClientSession.h>

@@ -10,18 +10,16 @@
 
 #pragma once
 
-#include "BittrexRequest.hpp"
-#include "BittrexUtil.hpp"
-#include "PollingTask.hpp"
-#include "Settings.hpp"
+#include "Request.hpp"
+#include "Util.hpp"
 
 namespace trdk {
 namespace Interaction {
-namespace Rest {
+namespace Bittrex {
 
-class BittrexTradingSystem : public TradingSystem {
+class TradingSystem : public trdk::TradingSystem {
  public:
-  typedef TradingSystem Base;
+  typedef trdk::TradingSystem Base;
 
  private:
   struct Settings : Rest::Settings {
@@ -35,9 +33,9 @@ class BittrexTradingSystem : public TradingSystem {
 
   class OrderTransactionRequest;
 
-  class PrivateRequest : public BittrexRequest {
+  class PrivateRequest : public Request {
    public:
-    typedef BittrexRequest Base;
+    typedef Request Base;
 
     explicit PrivateRequest(const std::string &name,
                             const std::string &uriParams,
@@ -85,13 +83,13 @@ class BittrexTradingSystem : public TradingSystem {
   };
 
  public:
-  explicit BittrexTradingSystem(const App &,
-                                const TradingMode &,
-                                Context &,
-                                std::string instanceName,
-                                std::string title,
-                                const boost::property_tree::ptree &);
-  ~BittrexTradingSystem() override = default;
+  explicit TradingSystem(const Rest::App &,
+                         const TradingMode &,
+                         Context &,
+                         std::string instanceName,
+                         std::string title,
+                         const boost::property_tree::ptree &);
+  ~TradingSystem() override = default;
 
   bool IsConnected() const override { return !m_products.empty(); }
 
@@ -142,7 +140,7 @@ class BittrexTradingSystem : public TradingSystem {
   Settings m_settings;
   const boost::posix_time::time_duration m_serverTimeDiff;
 
-  boost::unordered_map<std::string, BittrexProduct> m_products;
+  boost::unordered_map<std::string, Product> m_products;
 
   TradingLib::BalancesContainer m_balances;
   BalancesRequest m_balancesRequest;
@@ -150,9 +148,9 @@ class BittrexTradingSystem : public TradingSystem {
   std::unique_ptr<Poco::Net::HTTPSClientSession> m_tradingSession;
   std::unique_ptr<Poco::Net::HTTPSClientSession> m_pollingSession;
 
-  PollingTask m_pollingTask;
+  Rest::PollingTask m_pollingTask;
 };
 
-}  // namespace Rest
+}  // namespace Bittrex
 }  // namespace Interaction
 }  // namespace trdk

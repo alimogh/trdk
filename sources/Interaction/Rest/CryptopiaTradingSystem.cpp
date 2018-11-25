@@ -167,13 +167,14 @@ CryptopiaTradingSystem::CryptopiaTradingSystem(const App &,
       m_settings(conf, GetLog()),
       m_serverTimeDiff(
           GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),
-      m_nonces(boost::make_unique<NonceStorage::UnsignedInt64SecondsGenerator>()),
+      m_nonces(
+          boost::make_unique<NonceStorage::UnsignedInt64SecondsGenerator>()),
       m_balances(*this, GetLog(), GetTradingLog()),
       m_balancesRequest(m_nonces, m_settings, GetContext(), GetLog()),
       m_openOrdersRequestsVersion(0),
       m_tradingSession(CreateSession("www.cryptopia.co.nz", m_settings, true)),
       m_pollingSession(CreateSession("www.cryptopia.co.nz", m_settings, false)),
-      m_pollingTask(m_settings.pollingSetttings, GetLog()) {}
+      m_pollingTask(m_settings.pollingSettings, GetLog()) {}
 
 void CryptopiaTradingSystem::CreateConnection() {
   Assert(m_products.empty());
@@ -192,7 +193,7 @@ void CryptopiaTradingSystem::CreateConnection() {
         UpdateBalances();
         return true;
       },
-      m_settings.pollingSetttings.GetBalancesRequestFrequency(), true);
+      m_settings.pollingSettings.GetBalancesRequestFrequency(), true);
 
   m_pollingTask.AccelerateNextPolling();
 }
@@ -541,7 +542,7 @@ void CryptopiaTradingSystem::SubscribeToOrderUpdates(
   }
   m_pollingTask.ReplaceTask(
       "Orders", 0, [this]() { return UpdateOrders(); },
-      m_settings.pollingSetttings.GetActualOrdersRequestFrequency(), true);
+      m_settings.pollingSettings.GetActualOrdersRequestFrequency(), true);
 }
 
 boost::optional<OrderId> CryptopiaTradingSystem::FindNewOrderId(

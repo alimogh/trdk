@@ -18,7 +18,14 @@ namespace Poloniex {
 
 class TradingSystemConnection : public WebSocketConnection {
  public:
-  void Start(const AuthSettings &, Rest::NonceStorage &, const Events &);
+  explicit TradingSystemConnection(const AuthSettings &, Rest::NonceStorage &);
+  ~TradingSystemConnection() override = default;
+
+  void StartData(const Events &) override;
+
+ private:
+  const AuthSettings &m_settings;
+  Rest::NonceStorage &m_nonceStorage;
 };
 }  // namespace Poloniex
 }  // namespace Interaction

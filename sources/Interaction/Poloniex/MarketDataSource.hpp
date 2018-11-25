@@ -16,22 +16,20 @@ namespace trdk {
 namespace Interaction {
 namespace Poloniex {
 
-class MarketDataSource : public trdk::MarketDataSource {
+class MarketDataSource : public TradingLib::WebSocketMarketDataSource {
  public:
-  typedef trdk::MarketDataSource Base;
+  typedef WebSocketMarketDataSource Base;
 
   explicit MarketDataSource(const Rest::App &,
                             Context &,
                             std::string instanceName,
                             std::string title,
                             const boost::property_tree::ptree &conf);
-  MarketDataSource(MarketDataSource &&) = delete;
+  MarketDataSource(MarketDataSource &&) = default;
   MarketDataSource(const MarketDataSource &) = delete;
   MarketDataSource &operator=(MarketDataSource &&) = delete;
   MarketDataSource &operator=(const MarketDataSource &) = delete;
-  ~MarketDataSource() override;
-
-  void Connect() override;
+  ~MarketDataSource() override = default;
 
   void SubscribeToSecurities() override;
 
@@ -41,12 +39,11 @@ class MarketDataSource : public trdk::MarketDataSource {
   trdk::Security &CreateNewSecurityObject(const Lib::Symbol &) override;
 
  private:
-  void StartConnection(MarketDataConnection &);
-  void ScheduleReconnect();
+  std::unique_ptr<Connection> CreateConnection() const override;
 
-  void UpdatePrices(const boost::posix_time::ptime &,
-                    const boost::property_tree::ptree &,
-                    const Lib::TimeMeasurement::Milestones &);
+  void HandleMessage(const boost::posix_time::ptime &,
+                     const boost::property_tree::ptree &,
+                     const Lib::TimeMeasurement::Milestones &) override;
   void UpdatePrices(const boost::posix_time::ptime &,
                     const boost::property_tree::ptree &,
                     SecuritySubscription &,
@@ -55,14 +52,8 @@ class MarketDataSource : public trdk::MarketDataSource {
   const Rest::Settings m_settings;
 
   const boost::unordered_map<std::string, Product> &m_products;
-  boost::unordered_set<std::string> m_symbolListHint;
+  const boost::unordered_set<std::string> m_symbolListHint;
   boost::unordered_map<ProductId, SecuritySubscription> m_securities;
-
-  boost::mutex m_connectionMutex;
-  bool m_isStarted = false;
-  std::unique_ptr<MarketDataConnection> m_connection;
-
-  Timer::Scope m_timerScope;
 };
 
 }  // namespace Poloniex
