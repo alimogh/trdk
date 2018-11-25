@@ -14,12 +14,14 @@ namespace trdk {
 namespace Interaction {
 namespace Bittrex {
 
+using ProductId = std::string;
+
 struct Product {
-  std::string id;
+  ProductId id;
   Qty minQty;
 };
 
-boost::unordered_map<std::string, Product> RequestBittrexProductList(
+const boost::unordered_map<std::string, Product> &GetProductList(
     std::unique_ptr<Poco::Net::HTTPSClientSession> &,
     const Context &,
     ModuleEventsLog &);

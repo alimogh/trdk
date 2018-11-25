@@ -15,6 +15,7 @@
 using namespace trdk;
 using namespace Lib;
 using namespace Interaction;
+using namespace Bittrex;
 namespace net = Poco::Net;
 
 namespace {
@@ -42,8 +43,8 @@ std::string NormilizeSymbol(std::string source, const Settings &settings) {
 }
 }  // namespace
 
-boost::unordered_map<std::string, Bittrex::Product>
-Bittrex::RequestBittrexProductList(
+namespace {
+const boost::unordered_map<std::string, Bittrex::Product> &RequestProductList(
     std::unique_ptr<net::HTTPSClientSession> &session,
     const Context &context,
     ModuleEventsLog &log) {
@@ -74,5 +75,14 @@ Bittrex::RequestBittrexProductList(
   if (result.empty()) {
     throw Exception("Exchange doesn't have products");
   }
+  return result;
+}
+}  // namespace
+
+const boost::unordered_map<std::string, Product> &Bittrex::GetProductList(
+    std::unique_ptr<net::HTTPSClientSession> &session,
+    const Context &context,
+    ModuleEventsLog &log) {
+  static const auto result = RequestProductList(session, context, log);
   return result;
 }

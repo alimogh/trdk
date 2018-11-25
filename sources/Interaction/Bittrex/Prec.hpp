@@ -12,8 +12,9 @@
 
 #include "Interaction/Rest/Common.hpp"
 #include "TradingLib/BalancesContainer.hpp"
+#include "TradingLib/WebSocketConnection.hpp"
+#include "TradingLib/WebSocketMarketDataSource.hpp"
 #include "Core/Bar.hpp"
-#include "Core/MarketDataSource.hpp"
 #include "Core/Settings.hpp"
 #include "Core/Trade.hpp"
 #include "Core/TradingLog.hpp"

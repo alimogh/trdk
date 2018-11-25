@@ -10,49 +10,51 @@
 
 #pragma once
 
-#include "Request.hpp"
 #include "Util.hpp"
 
 namespace trdk {
 namespace Interaction {
 namespace Bittrex {
 
-class MarketDataSource : public trdk::MarketDataSource {
+class MarketDataSource : public TradingLib::WebSocketMarketDataSource {
  public:
-  typedef trdk::MarketDataSource Base;
+  typedef WebSocketMarketDataSource Base;
 
   explicit MarketDataSource(const Rest::App &,
                             Context &context,
                             std::string instanceName,
                             std::string title,
                             const boost::property_tree::ptree &);
-  ~MarketDataSource() override;
+  MarketDataSource(MarketDataSource &&) = default;
+  MarketDataSource(const MarketDataSource &) = delete;
+  const MarketDataSource &operator=(MarketDataSource &&) = delete;
+  const MarketDataSource &operator=(const MarketDataSource &) = delete;
+  ~MarketDataSource() override = default;
 
   void Connect() override;
-
-  void SubscribeToSecurities() override;
 
   const boost::unordered_set<std::string> &GetSymbolListHint() const override;
 
  protected:
-  trdk::Security &CreateNewSecurityObject(const Lib::Symbol &) override;
+  Security &CreateNewSecurityObject(const Lib::Symbol &) override;
 
  private:
-  void UpdatePrices();
+  std::unique_ptr<Connection> CreateConnection() const override;
+
+  void HandleMessage(const boost::posix_time::ptime &,
+                     const boost::property_tree::ptree &,
+                     const Lib::TimeMeasurement::Milestones &) override;
+
   void UpdatePrices(const boost::posix_time::ptime &,
                     const boost::property_tree::ptree &,
                     Rest::Security &,
                     const Lib::TimeMeasurement::Milestones &);
 
   const Rest::Settings m_settings;
-  boost::unordered_map<std::string, Product> m_products;
+  const boost::unordered_map<std::string, Product> *m_products = nullptr;
   boost::unordered_set<std::string> m_symbolListHint;
-  boost::mutex m_securitiesLock;
-  std::vector<std::pair<boost::shared_ptr<Rest::Security>,
-                        std::unique_ptr<PublicRequest>>>
+  boost::unordered_map<ProductId, boost::shared_ptr<Rest::Security>>
       m_securities;
-  std::unique_ptr<Poco::Net::HTTPSClientSession> m_session;
-  std::unique_ptr<Rest::PollingTask> m_pollingTask;
 };
 
 }  // namespace Bittrex
