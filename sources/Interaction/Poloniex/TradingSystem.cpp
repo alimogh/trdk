@@ -153,36 +153,35 @@ bool p::TradingSystem::CheckSymbol(const std::string &symbol) const {
 
 boost::shared_ptr<TradingSystemConnection>
 p::TradingSystem::CreateListeningConnection() {
-  auto result = boost::make_shared<TradingSystemConnection>();
+  auto result =
+      boost::make_shared<TradingSystemConnection>(m_settings, m_nonces);
   result->Connect();
-  result->Start(
-      m_settings, m_nonces,
-      TradingSystemConnection::Events{
-          []() -> const TradingSystemConnection::EventInfo { return {}; },
-          [this](const TradingSystemConnection::EventInfo &,
-                 const ptr::ptree &message) { HandleMessage(message); },
-          [this]() {
-            const boost::mutex::scoped_lock lock(m_listeningConnectionMutex);
-            if (!m_listeningConnection) {
-              GetLog().Debug("Disconnected.");
-              return;
-            }
-            const auto connection = std::move(m_listeningConnection);
-            GetLog().Warn("Connection lost.");
-            GetContext().GetTimer().Schedule(
-                [this, connection]() {
-                  {
-                    const boost::mutex::scoped_lock lock(
-                        m_listeningConnectionMutex);
-                  }
-                  ScheduleListeningConnectionReconnect();
-                },
-                m_timerScope);
-          },
-          [this](const std::string &event) { GetLog().Debug(event.c_str()); },
-          [this](const std::string &event) { GetLog().Info(event.c_str()); },
-          [this](const std::string &event) { GetLog().Warn(event.c_str()); },
-          [this](const std::string &event) { GetLog().Error(event.c_str()); }});
+  result->StartData(TradingSystemConnection::Events{
+      []() -> const TradingSystemConnection::EventInfo { return {}; },
+      [this](const TradingSystemConnection::EventInfo &,
+             const ptr::ptree &message) { HandleMessage(message); },
+      [this]() {
+        const boost::mutex::scoped_lock lock(m_listeningConnectionMutex);
+        if (!m_listeningConnection) {
+          GetLog().Debug("Disconnected.");
+          return;
+        }
+        const auto connection = std::move(m_listeningConnection);
+        GetLog().Warn("Connection lost.");
+        GetContext().GetTimer().Schedule(
+            [this, connection]() {
+              {
+                const boost::mutex::scoped_lock lock(
+                    m_listeningConnectionMutex);
+              }
+              ScheduleListeningConnectionReconnect();
+            },
+            m_timerScope);
+      },
+      [this](const std::string &event) { GetLog().Debug(event.c_str()); },
+      [this](const std::string &event) { GetLog().Info(event.c_str()); },
+      [this](const std::string &event) { GetLog().Warn(event.c_str()); },
+      [this](const std::string &event) { GetLog().Error(event.c_str()); }});
   return result;
 }
 

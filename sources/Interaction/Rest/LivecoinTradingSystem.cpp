@@ -198,7 +198,7 @@ LivecoinTradingSystem::LivecoinTradingSystem(const App &,
       m_balancesRequest(m_settings, GetContext(), GetLog()),
       m_tradingSession(CreateSession("api.livecoin.net", m_settings, true)),
       m_pollingSession(CreateSession("api.livecoin.net", m_settings, false)),
-      m_pollingTask(m_settings.pollingSetttings, GetLog()) {}
+      m_pollingTask(m_settings.pollingSettings, GetLog()) {}
 
 void LivecoinTradingSystem::CreateConnection() {
   Assert(m_products.empty());
@@ -217,14 +217,14 @@ void LivecoinTradingSystem::CreateConnection() {
         UpdateOrders();
         return true;
       },
-      m_settings.pollingSetttings.GetActualOrdersRequestFrequency(), true);
+      m_settings.pollingSettings.GetActualOrdersRequestFrequency(), true);
   m_pollingTask.AddTask(
       "Balances", 1,
       [this]() {
         UpdateBalances();
         return true;
       },
-      m_settings.pollingSetttings.GetBalancesRequestFrequency(), true);
+      m_settings.pollingSettings.GetBalancesRequestFrequency(), true);
 
   m_pollingTask.AccelerateNextPolling();
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/08/26 19:29:25
+ *   Created: 2018/11/25 20:53
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,15 +8,4 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
-#pragma once
-
-namespace trdk {
-namespace TradingLib {
-
-class Algo;
-class OrderPolicy;
-class Trend;
-class PositionController;
-class WebSocketConnection;
-}  // namespace TradingLib
-}  // namespace trdk
+#include "Prec.hpp"

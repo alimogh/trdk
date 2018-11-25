@@ -29,4 +29,3 @@
 #include "Fwd.hpp"
 #include "Common/Crypto.hpp"
 #include <boost/algorithm/string/predicate.hpp>
-#include <Poco/Net/HTTPRequest.h>

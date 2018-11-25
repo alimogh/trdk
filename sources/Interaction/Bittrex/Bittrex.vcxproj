@@ -51,9 +51,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{C73A9600-7598-4603-885F-248D4FC88192}</ProjectGuid>
-    <RootNamespace>Rest</RootNamespace>
-    <ProjectName>REST</ProjectName>
+    <ProjectGuid>{734C033F-B5EC-4607-BCC0-164494FCD3F2}</ProjectGuid>
+    <RootNamespace>Bittrex</RootNamespace>
+    <ProjectName>Bittrex</ProjectName>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -135,7 +135,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="Rest.props" />
+    <Import Project="Bittrex.props" />
     <Import Project="..\..\Distribution Standalone Debug.props" />
     <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
@@ -146,7 +146,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="Rest.props" />
+    <Import Project="Bittrex.props" />
     <Import Project="..\..\Distribution Standalone Debug.props" />
     <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
@@ -158,7 +158,7 @@
     <Import Project="..\..\Static Lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="Rest.props" />
+    <Import Project="Bittrex.props" />
     <Import Project="..\..\Distribution Dll Debug.props" />
     <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
@@ -170,7 +170,7 @@
     <Import Project="..\..\Static Lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="Rest.props" />
+    <Import Project="Bittrex.props" />
     <Import Project="..\..\Distribution Dll Debug.props" />
     <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
@@ -181,7 +181,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="Rest.props" />
+    <Import Project="Bittrex.props" />
     <Import Project="..\..\Distribution Standalone Release.props" />
     <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
@@ -192,7 +192,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="Rest.props" />
+    <Import Project="Bittrex.props" />
     <Import Project="..\..\Distribution Standalone Release.props" />
     <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
@@ -204,7 +204,7 @@
     <Import Project="..\..\Static Lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="Rest.props" />
+    <Import Project="Bittrex.props" />
     <Import Project="..\..\Distribution Dll Release.props" />
     <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
@@ -216,7 +216,7 @@
     <Import Project="..\..\Static Lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="Rest.props" />
+    <Import Project="Bittrex.props" />
     <Import Project="..\..\Distribution Dll Release.props" />
     <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
@@ -227,7 +227,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="Rest.props" />
+    <Import Project="Bittrex.props" />
     <Import Project="..\..\Distribution Standalone Test.props" />
     <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
@@ -238,7 +238,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="Rest.props" />
+    <Import Project="Bittrex.props" />
     <Import Project="..\..\Distribution Standalone Test.props" />
     <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
@@ -250,7 +250,7 @@
     <Import Project="..\..\Static Lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="Rest.props" />
+    <Import Project="Bittrex.props" />
     <Import Project="..\..\Distribution Dll Test.props" />
     <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
@@ -262,78 +262,48 @@
     <Import Project="..\..\Static Lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
-    <Import Project="Rest.props" />
+    <Import Project="Bittrex.props" />
     <Import Project="..\..\Distribution Dll Test.props" />
     <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">
-    <TargetName>Rest_dbg</TargetName>
+    <TargetName>Bittrex_dbg</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">
-    <TargetName>Rest_dbg</TargetName>
+    <TargetName>Bittrex_dbg</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">
-    <TargetName>Rest</TargetName>
+    <TargetName>Bittrex</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">
-    <TargetName>Rest</TargetName>
+    <TargetName>Bittrex</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">
-    <TargetName>Rest_dbg</TargetName>
+    <TargetName>Bittrex_dbg</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">
-    <TargetName>Rest_dbg</TargetName>
+    <TargetName>Bittrex_dbg</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">
-    <TargetName>Rest</TargetName>
+    <TargetName>Bittrex</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">
-    <TargetName>Rest</TargetName>
+    <TargetName>Bittrex</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">
-    <TargetName>Rest_test</TargetName>
+    <TargetName>Bittrex_test</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">
-    <TargetName>Rest_test</TargetName>
+    <TargetName>Bittrex_test</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">
-    <TargetName>Rest_test</TargetName>
+    <TargetName>Bittrex_test</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">
-    <TargetName>Rest_test</TargetName>
+    <TargetName>Bittrex_test</TargetName>
   </PropertyGroup>
   <ItemGroup>
-    <ClCompile Include="App.cpp" />
-    <ClCompile Include="CcexExchange.cpp" />
-    <ClCompile Include="CexioMarketDataSource.cpp" />
-    <ClCompile Include="CexioRequest.cpp" />
-    <ClCompile Include="CexioTradingSystem.cpp" />
-    <ClCompile Include="CexioTradingSystemAndMarketDataSource.cpp" />
-    <ClCompile Include="CexioUtil.cpp" />
-    <ClCompile Include="Crex24MarketDataSource.cpp" />
-    <ClCompile Include="Crex24Request.cpp" />
-    <ClCompile Include="Crex24TradingSystem.cpp" />
-    <ClCompile Include="Crex24TradingSystemAndMarketDataSource.cpp" />
-    <ClCompile Include="Crex24Util.cpp" />
-    <ClCompile Include="CryptopiaMarketDataSource.cpp" />
-    <ClCompile Include="CryptopiaRequest.cpp" />
-    <ClCompile Include="CryptopiaTradingSystem.cpp" />
-    <ClCompile Include="CryptopiaTradingSystemAndMarketDataSource.cpp" />
-    <ClCompile Include="CryptopiaUtil.cpp" />
-    <ClCompile Include="ExcambiorexMarketDataSource.cpp" />
-    <ClCompile Include="ExcambiorexRequest.cpp" />
-    <ClCompile Include="ExcambiorexTradingSystem.cpp" />
-    <ClCompile Include="ExcambiorexTradingSystemAndMarketDataSource.cpp" />
-    <ClCompile Include="ExcambiorexUtil.cpp" />
-    <ClCompile Include="FloodControl.cpp" />
-    <ClCompile Include="LivecoinMarketDataSource.cpp" />
-    <ClCompile Include="LivecoinRequest.cpp" />
-    <ClCompile Include="LivecoinTradingSystem.cpp" />
-    <ClCompile Include="LivecoinTradingSystemAndMarketDataSource.cpp" />
-    <ClCompile Include="LivecoinUtil.cpp" />
-    <ClCompile Include="NonceStorage.cpp" />
-    <ClCompile Include="PollingSettings.cpp" />
-    <ClCompile Include="PollingTask.cpp" />
+    <ClCompile Include="MarketDataSource.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Create</PrecompiledHeader>
@@ -349,48 +319,17 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Request.cpp" />
-    <ClCompile Include="Security.cpp" />
+    <ClCompile Include="TradingSystem.cpp" />
+    <ClCompile Include="TradingSystemAndMarketDataSource.cpp" />
     <ClCompile Include="Util.cpp" />
     <ClCompile Include="Version.cpp" />
-    <ClCompile Include="YobitnetExchange.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Api.h" />
-    <ClInclude Include="App.hpp" />
-    <ClInclude Include="CexioMarketDataSource.hpp" />
-    <ClInclude Include="CexioRequest.hpp" />
-    <ClInclude Include="CexioTradingSystem.hpp" />
-    <ClInclude Include="CexioUtil.hpp" />
-    <ClInclude Include="Common.hpp" />
-    <ClInclude Include="Crex24MarketDataSource.hpp" />
-    <ClInclude Include="Crex24Request.hpp" />
-    <ClInclude Include="Crex24TradingSystem.hpp" />
-    <ClInclude Include="Crex24Util.hpp" />
-    <ClInclude Include="CryptopiaMarketDataSource.hpp" />
-    <ClInclude Include="CryptopiaRequest.hpp" />
-    <ClInclude Include="CryptopiaTradingSystem.hpp" />
-    <ClInclude Include="CryptopiaUtil.hpp" />
-    <ClInclude Include="ExcambiorexMarketDataSource.hpp" />
-    <ClInclude Include="ExcambiorexRequest.hpp" />
-    <ClInclude Include="ExcambiorexTradingSystem.hpp" />
-    <ClInclude Include="ExcambiorexUtil.hpp" />
-    <ClInclude Include="FloodControl.hpp" />
-    <ClInclude Include="Fwd.hpp" />
-    <ClInclude Include="LivecoinMarketDataSource.hpp" />
-    <ClInclude Include="LivecoinRequest.hpp" />
-    <ClInclude Include="LivecoinTradingSystem.hpp" />
-    <ClInclude Include="LivecoinUtil.hpp" />
-    <ClInclude Include="NonceStorage.hpp" />
-    <ClInclude Include="PollingSettings.hpp" />
-    <ClInclude Include="PollingTask.hpp" />
+    <ClInclude Include="MarketDataSource.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="Request.hpp" />
-    <ClInclude Include="Security.hpp" />
-    <ClInclude Include="Settings.hpp" />
+    <ClInclude Include="TradingSystem.hpp" />
     <ClInclude Include="Util.hpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Rest.def" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Common\Common.vcxproj">
@@ -399,15 +338,18 @@
     <ProjectReference Include="..\..\Core\Core.vcxproj">
       <Project>{48ce7676-dcb3-41f2-bed9-313d6ff57a97}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\TradingLib\TradingLib.vcxproj">
+      <Project>{419ce21f-83cd-4bfb-aef1-086c9b42c9f4}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\Version\Version.vcxproj">
       <Project>{6884dfb9-d84c-4f37-853f-79565671a1e3}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\TradingLib\TradingLib.vcxproj">
-      <Project>{419CE21F-83CD-4BFB-AEF1-086C9B42C9F4}</Project>
+    <ProjectReference Include="..\Rest\Rest.vcxproj">
+      <Project>{c73a9600-7598-4603-885f-248d4fc88192}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="Rest.rc" />
+    <ResourceCompile Include="Bittrex.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

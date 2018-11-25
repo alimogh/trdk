@@ -10,25 +10,22 @@
 
 #pragma once
 
-#include "FloodControl.hpp"
-#include "Request.hpp"
-
 namespace trdk {
 namespace Interaction {
-namespace Rest {
+namespace Bittrex {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class BittrexRequest : public Request {
+class Request : public Rest::Request {
  public:
-  typedef Request Base;
+  typedef Rest::Request Base;
 
-  explicit BittrexRequest(const std::string &uri,
-                          const std::string &name,
-                          const std::string &uriParams,
-                          const Context &context,
-                          ModuleEventsLog &log,
-                          ModuleTradingLog *tradingLog = nullptr)
+  explicit Request(const std::string &uri,
+                   const std::string &name,
+                   const std::string &uriParams,
+                   const Context &context,
+                   ModuleEventsLog &log,
+                   ModuleTradingLog *tradingLog = nullptr)
       : Base("/api/v1.1" + uri,
              name,
              Poco::Net::HTTPRequest::HTTP_GET,
@@ -36,30 +33,30 @@ class BittrexRequest : public Request {
              context,
              log,
              tradingLog) {}
-  ~BittrexRequest() override = default;
+  ~Request() override = default;
 
   Response Send(std::unique_ptr<Poco::Net::HTTPSClientSession> &) override;
 
  protected:
-  FloodControl &GetFloodControl() const override;
+  Rest::FloodControl &GetFloodControl() const override;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class BittrexPublicRequest : public BittrexRequest {
+class PublicRequest : public Request {
  public:
-  explicit BittrexPublicRequest(const std::string &name,
-                                const std::string &uriParams,
-                                const Context &context,
-                                ModuleEventsLog &log)
-      : BittrexRequest("/public/" + name, name, uriParams, context, log) {}
-  ~BittrexPublicRequest() override = default;
+  explicit PublicRequest(const std::string &name,
+                         const std::string &uriParams,
+                         const Context &context,
+                         ModuleEventsLog &log)
+      : Request("/public/" + name, name, uriParams, context, log) {}
+  ~PublicRequest() override = default;
 
  protected:
   bool IsPriority() const override { return false; }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-}  // namespace Rest
+}  // namespace Bittrex
 }  // namespace Interaction
 }  // namespace trdk

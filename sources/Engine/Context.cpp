@@ -193,7 +193,7 @@ void Engine::Context::Start(
         }
         try {
           source->Connect();
-        } catch (const ConnectError &ex) {
+        } catch (const CommunicationError &ex) {
           boost::format error(
               R"(Failed to connect to market data source "%1%": "%2%")");
           error % source->GetInstanceName()  // 1
@@ -233,7 +233,7 @@ void Engine::Context::Start(
         }
         try {
           tradingSystem->Connect();
-        } catch (const ConnectError &ex) {
+        } catch (const CommunicationError &ex) {
           boost::format error(
               R"(Failed to connect to trading system "%1%": "%2%")");
           error % tradingSystem->GetInstanceName()  // 1
@@ -321,7 +321,7 @@ void Engine::Context::Start(
     ForEachMarketDataSource([&](MarketDataSource &source) -> bool {
       try {
         source.SubscribeToSecurities();
-      } catch (const ConnectError &ex) {
+      } catch (const CommunicationError &ex) {
         boost::format message(
             "Failed to make market data subscription: \"%1%\"");
         message % ex;

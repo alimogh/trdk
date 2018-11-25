@@ -10,23 +10,23 @@
 
 #pragma once
 
-#include "BittrexUtil.hpp"
-#include "Settings.hpp"
+#include "Request.hpp"
+#include "Util.hpp"
 
 namespace trdk {
 namespace Interaction {
-namespace Rest {
+namespace Bittrex {
 
-class BittrexMarketDataSource : public MarketDataSource {
+class MarketDataSource : public trdk::MarketDataSource {
  public:
-  typedef MarketDataSource Base;
+  typedef trdk::MarketDataSource Base;
 
-  explicit BittrexMarketDataSource(const App &,
-                                   Context &context,
-                                   std::string instanceName,
-                                   std::string title,
-                                   const boost::property_tree::ptree &);
-  ~BittrexMarketDataSource() override;
+  explicit MarketDataSource(const Rest::App &,
+                            Context &context,
+                            std::string instanceName,
+                            std::string title,
+                            const boost::property_tree::ptree &);
+  ~MarketDataSource() override;
 
   void Connect() override;
 
@@ -44,17 +44,17 @@ class BittrexMarketDataSource : public MarketDataSource {
                     Rest::Security &,
                     const Lib::TimeMeasurement::Milestones &);
 
-  const Settings m_settings;
-  boost::unordered_map<std::string, BittrexProduct> m_products;
+  const Rest::Settings m_settings;
+  boost::unordered_map<std::string, Product> m_products;
   boost::unordered_set<std::string> m_symbolListHint;
   boost::mutex m_securitiesLock;
   std::vector<std::pair<boost::shared_ptr<Rest::Security>,
-                        std::unique_ptr<BittrexPublicRequest>>>
+                        std::unique_ptr<PublicRequest>>>
       m_securities;
   std::unique_ptr<Poco::Net::HTTPSClientSession> m_session;
-  std::unique_ptr<PollingTask> m_pollingTask;
+  std::unique_ptr<Rest::PollingTask> m_pollingTask;
 };
 
-}  // namespace Rest
+}  // namespace Bittrex
 }  // namespace Interaction
 }  // namespace trdk

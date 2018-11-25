@@ -13,9 +13,10 @@
 #include "Common/Common.hpp"
 #include "Interaction/Rest/Common.hpp"
 #include "TradingLib/BalancesContainer.hpp"
+#include "TradingLib/WebSocketConnection.hpp"
+#include "TradingLib/WebSocketMarketDataSource.hpp"
 #include "Core/Context.hpp"
 #include "Core/EventsLog.hpp"
-#include "Core/MarketDataSource.hpp"
 #include "Core/Settings.hpp"
 #include "Core/Timer.hpp"
 #include "Core/TradingLog.hpp"
@@ -30,6 +31,4 @@
 #include "Interaction/Rest/Util.hpp"
 #include "Fwd.hpp"
 #include "Common/Crypto.hpp"
-#include "Common/WebSocketConnection.hpp"
-#include <Poco/Net/HTTPRequest.h>
 #include <Poco/URI.h>

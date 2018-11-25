@@ -17,15 +17,17 @@ using namespace Poloniex;
 
 namespace ptr = boost::property_tree;
 
-void MarketDataConnection::Start(
-    const boost::unordered_map<ProductId, SecuritySubscription> &list,
-    const Events &events) {
-  if (list.empty()) {
+MarketDataConnection::MarketDataConnection(
+    const boost::unordered_map<ProductId, SecuritySubscription> &subscription)
+    : m_subscription(subscription) {}
+
+void MarketDataConnection::StartData(const Events &events) {
+  if (m_subscription.empty()) {
     return;
   }
   Handshake("/");
-  WebSocketConnection::Start(events);
-  for (const auto &security : list) {
+  Start(events);
+  for (const auto &security : m_subscription) {
     ptr::ptree request;
     request.add("command", "subscribe");
     request.add("channel", security.first);

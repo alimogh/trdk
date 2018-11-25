@@ -17,16 +17,16 @@ namespace Interaction {
 namespace Rest {
 
 struct TRDK_INTERACTION_REST_API Settings {
-  PollingSettings pollingSetttings;
+  PollingSettings pollingSettings;
 
   explicit Settings(const boost::property_tree::ptree &conf,
                     ModuleEventsLog &log)
-      : pollingSetttings(conf) {
+      : pollingSettings(conf) {
     Log(log);
     Validate();
   }
 
-  void Log(ModuleEventsLog &log) { pollingSetttings.Log(log); }
+  void Log(ModuleEventsLog &log) { pollingSettings.Log(log); }
 
   void Validate() {}
 };

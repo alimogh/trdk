@@ -11,7 +11,6 @@
 #include "Prec.hpp"
 #include "MarketDataSource.hpp"
 #include "MarketDataConnection.hpp"
-#include "Session.hpp"
 
 using namespace trdk;
 using namespace Lib;
@@ -23,6 +22,17 @@ namespace ptr = boost::property_tree;
 namespace pt = boost::posix_time;
 namespace p = Poloniex;
 
+namespace {
+boost::unordered_set<std::string> CreateSymbolListHint(
+    const boost::unordered_map<std::string, Product> &products) {
+  boost::unordered_set<std::string> result;
+  for (const auto &product : products) {
+    result.insert(product.first);
+  }
+  return result;
+}
+}  // namespace
+
 p::MarketDataSource::MarketDataSource(const App &,
                                       Context &context,
                                       std::string instanceName,
@@ -30,66 +40,14 @@ p::MarketDataSource::MarketDataSource(const App &,
                                       const ptr::ptree &conf)
     : Base(context, std::move(instanceName), std::move(title)),
       m_settings(conf, GetLog()),
-      m_products(GetProductList()) {}
-
-p::MarketDataSource::~MarketDataSource() {
-  {
-    boost::mutex::scoped_lock lock(m_connectionMutex);
-    auto connection = std::move(m_connection);
-    lock.unlock();
-  }
-  // Each object, that implements CreateNewSecurityObject should wait for log
-  // flushing before destroying objects:
-  GetTradingLog().WaitForFlush();
-}
-
-void p::MarketDataSource::Connect() {
-  Assert(!m_connection);
-
-  const boost::unordered_map<std::string, Product> *products;
-  {
-    auto session = CreateSession(m_settings, false);
-    try {
-      products = &GetProductList();
-    } catch (const std::exception &ex) {
-      throw ConnectError(ex.what());
-    }
-  }
-
-  boost::unordered_set<std::string> symbolListHint;
-  for (const auto &product : *products) {
-    symbolListHint.insert(product.first);
-  }
-
-  const boost::mutex::scoped_lock lock(m_connectionMutex);
-  auto connection = boost::make_unique<MarketDataConnection>();
-  try {
-    connection->Connect();
-  } catch (const std::exception &ex) {
-    GetLog().Error("Failed to connect: \"%1%\".", ex.what());
-    throw ConnectError(ex.what());
-  }
-
-  m_symbolListHint = std::move(symbolListHint);
-  m_connection = std::move(connection);
-}
+      m_products(GetProductList()),
+      m_symbolListHint(CreateSymbolListHint(m_products)) {}
 
 void p::MarketDataSource::SubscribeToSecurities() {
   if (m_securities.empty()) {
     return;
   }
-  boost::mutex::scoped_lock lock(m_connectionMutex);
-  if (!m_connection) {
-    return;
-  }
-  if (!m_isStarted) {
-    StartConnection(*m_connection);
-    m_isStarted = true;
-  } else {
-    auto connection = std::move(m_connection);
-    ScheduleReconnect();
-    lock.unlock();
-  }
+  Base::SubscribeToSecurities();
 }
 
 trdk::Security &p::MarketDataSource::CreateNewSecurityObject(
@@ -102,13 +60,15 @@ trdk::Security &p::MarketDataSource::CreateNewSecurityObject(
   }
   const auto &result = m_securities.emplace(
       product->second.id,
-      SecuritySubscription{boost::make_shared<Rest::Security>(
-          GetContext(), symbol, *this,
-          Rest::Security::SupportedLevel1Types()
-              .set(LEVEL1_TICK_BID_PRICE)
-              .set(LEVEL1_TICK_BID_QTY)
-              .set(LEVEL1_TICK_ASK_PRICE)
-              .set(LEVEL1_TICK_BID_QTY))});
+      SecuritySubscription{
+          boost::make_shared<Rest::Security>(GetContext(), symbol, *this,
+                                             Security::SupportedLevel1Types()
+                                                 .set(LEVEL1_TICK_BID_PRICE)
+                                                 .set(LEVEL1_TICK_BID_QTY)
+                                                 .set(LEVEL1_TICK_ASK_PRICE)
+                                                 .set(LEVEL1_TICK_BID_QTY)),
+          {},
+          {}});
   Assert(result.second);
   result.first->second.security->SetTradingSessionState(pt::not_a_date_time,
                                                         true);
@@ -120,66 +80,16 @@ const boost::unordered_set<std::string>
   return m_symbolListHint;
 }
 
-void p::MarketDataSource::StartConnection(MarketDataConnection &connection) {
-  connection.Start(
-      m_securities,
-      MarketDataConnection::Events{
-          [this]() -> MarketDataConnection::EventInfo {
-            const auto &context = GetContext();
-            return {context.GetCurrentTime(),
-                    context.StartStrategyTimeMeasurement()};
-          },
-          [this](const MarketDataConnection::EventInfo &info,
-                 const ptr::ptree &message) {
-            UpdatePrices(info.readTime, message, info.delayMeasurement);
-          },
-          [this]() {
-            const boost::mutex::scoped_lock lock(m_connectionMutex);
-            if (!m_connection) {
-              GetLog().Debug("Disconnected.");
-              return;
-            }
-            const boost::shared_ptr<MarketDataConnection> connection(
-                std::move(m_connection));
-            GetLog().Warn("Connection lost.");
-            GetContext().GetTimer().Schedule(
-                [this, connection]() {
-                  { const boost::mutex::scoped_lock lock(m_connectionMutex); }
-                  ScheduleReconnect();
-                },
-                m_timerScope);
-          },
-          [this](const std::string &event) { GetLog().Debug(event.c_str()); },
-          [this](const std::string &event) { GetLog().Info(event.c_str()); },
-          [this](const std::string &event) { GetLog().Warn(event.c_str()); },
-          [this](const std::string &event) { GetLog().Error(event.c_str()); }});
+std::unique_ptr<p::MarketDataSource::Connection>
+p::MarketDataSource::CreateConnection() const {
+  return boost::make_unique<MarketDataConnection>(m_securities);
 }
 
-void p::MarketDataSource::ScheduleReconnect() {
-  GetContext().GetTimer().Schedule(
-      [this]() {
-        const boost::mutex::scoped_lock lock(m_connectionMutex);
-        GetLog().Info("Reconnecting...");
-        Assert(!m_connection);
-        auto connection = boost::make_unique<MarketDataConnection>();
-        try {
-          connection->Connect();
-        } catch (const std::exception &ex) {
-          GetLog().Error("Failed to connect: \"%1%\".", ex.what());
-          ScheduleReconnect();
-          return;
-        }
-        StartConnection(*connection);
-        m_connection = std::move(connection);
-      },
-      m_timerScope);
-}
-
-void p::MarketDataSource::UpdatePrices(const pt::ptime &time,
-                                       const ptr::ptree &message,
-                                       const Milestones &delayMeasurement) {
+void p::MarketDataSource::HandleMessage(const pt::ptime &time,
+                                        const ptr::ptree &message,
+                                        const Milestones &delayMeasurement) {
   SecuritySubscription *security = nullptr;
-  auto hasSequnceNumber = false;
+  auto hasSequenceNumber = false;
   for (const auto &node : message) {
     if (!security) {
       const auto &product = node.second.get_value<ProductId>();
@@ -190,8 +100,8 @@ void p::MarketDataSource::UpdatePrices(const pt::ptime &time,
         throw Exception(error.str().c_str());
       }
       security = &it->second;
-    } else if (!hasSequnceNumber) {
-      hasSequnceNumber = true;
+    } else if (!hasSequenceNumber) {
+      hasSequenceNumber = true;
     } else {
       UpdatePrices(time, node.second, *security, delayMeasurement);
     }

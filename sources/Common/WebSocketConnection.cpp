@@ -154,20 +154,28 @@ void WebSocketConnection::Connect(const std::string &port) {
   auto &socket = m_pimpl->m_stream.next_layer().next_layer();
   m_pimpl->m_stream.next_layer().set_verify_mode(ssl::verify_none);
 
-  const auto endpoints =
-      tcp::resolver(m_pimpl->m_ioContext).resolve(m_pimpl->m_host, port);
-  io::connect(socket, endpoints.begin(), endpoints.end());
+  try {
+    const auto endpoints =
+        tcp::resolver(m_pimpl->m_ioContext).resolve(m_pimpl->m_host, port);
+    io::connect(socket, endpoints.begin(), endpoints.end());
 
-  socket.set_option(tcp::no_delay(true));
+    socket.set_option(tcp::no_delay(true));
 
-  m_pimpl->m_stream.next_layer().handshake(ssl::stream_base::client);
+    m_pimpl->m_stream.next_layer().handshake(ssl::stream_base::client);
+  } catch (const std::exception &ex) {
+    throw ConnectError(ex.what());
+  }
 }
 
 void WebSocketConnection::Handshake(const std::string &target) {
-  m_pimpl->m_stream.handshake_ex(m_pimpl->m_host, target, [](auto &request) {
-    request.insert(beast::http::field::user_agent,
-                   TRDK_NAME " " TRDK_BUILD_IDENTITY);
-  });
+  try {
+    m_pimpl->m_stream.handshake_ex(m_pimpl->m_host, target, [](auto &request) {
+      request.insert(beast::http::field::user_agent,
+                     TRDK_NAME " " TRDK_BUILD_IDENTITY);
+    });
+  } catch (const std::exception &ex) {
+    throw ConnectError(ex.what());
+  }
 }
 
 void WebSocketConnection::Start(const Events &events) {
@@ -197,5 +205,10 @@ void WebSocketConnection::Stop() {
 }
 
 void WebSocketConnection::Write(const ptr::ptree &message) {
-  m_pimpl->m_stream.write(io::buffer(ConvertToString(message, false)));
+  const auto &data = ConvertToString(message, false);
+  try {
+    m_pimpl->m_stream.write(io::buffer(data));
+  } catch (const std::exception &ex) {
+    throw CommunicationError(ex.what());
+  }
 }

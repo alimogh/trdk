@@ -9,8 +9,8 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "BittrexUtil.hpp"
-#include "BittrexRequest.hpp"
+#include "Util.hpp"
+#include "Request.hpp"
 
 using namespace trdk;
 using namespace Lib;
@@ -42,19 +42,19 @@ std::string NormilizeSymbol(std::string source, const Settings &settings) {
 }
 }  // namespace
 
-boost::unordered_map<std::string, Rest::BittrexProduct>
-Rest::RequestBittrexProductList(
+boost::unordered_map<std::string, Bittrex::Product>
+Bittrex::RequestBittrexProductList(
     std::unique_ptr<net::HTTPSClientSession> &session,
     const Context &context,
     ModuleEventsLog &log) {
-  boost::unordered_map<std::string, BittrexProduct> result;
-  BittrexPublicRequest request("getmarkets", std::string(), context, log);
+  boost::unordered_map<std::string, Product> result;
+  PublicRequest request("getmarkets", std::string(), context, log);
   try {
     const auto response = boost::get<1>(request.Send(session));
     for (const auto &node : response) {
       const auto &data = node.second;
-      BittrexProduct product = {data.get<std::string>("MarketName"),
-                                data.get<Qty>("MinTradeSize")};
+      Product product = {data.get<std::string>("MarketName"),
+                         data.get<Qty>("MinTradeSize")};
       auto symbol = NormilizeSymbol(product.id, context.GetSettings());
       if (!data.get<bool>("IsActive")) {
         log.Warn(R"(Symbol "%1%" is inactive.)", symbol);

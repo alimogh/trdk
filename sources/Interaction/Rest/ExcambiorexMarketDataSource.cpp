@@ -47,7 +47,7 @@ ExcambiorexMarketDataSource::ExcambiorexMarketDataSource(
     : Base(context, std::move(instanceName), std::move(title)),
       m_settings(conf, GetLog()),
       m_session(CreateExcambiorexSession(m_settings, false)),
-      m_pollingTask(boost::make_unique<PollingTask>(m_settings.pollingSetttings,
+      m_pollingTask(boost::make_unique<PollingTask>(m_settings.pollingSettings,
                                                     GetLog())) {}
 
 ExcambiorexMarketDataSource::~ExcambiorexMarketDataSource() {
@@ -103,7 +103,7 @@ void ExcambiorexMarketDataSource::SubscribeToSecurities() {
         UpdatePrices(*request);
         return true;
       },
-      m_settings.pollingSetttings.GetPricesRequestFrequency(), false);
+      m_settings.pollingSettings.GetPricesRequestFrequency(), false);
 }
 
 trdk::Security& ExcambiorexMarketDataSource::CreateNewSecurityObject(

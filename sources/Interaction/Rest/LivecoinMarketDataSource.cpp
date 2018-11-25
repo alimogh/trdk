@@ -39,7 +39,7 @@ LivecoinMarketDataSource::LivecoinMarketDataSource(const App &,
                              GetContext(),
                              GetLog()),
       m_session(CreateSession("api.livecoin.net", m_settings, false)),
-      m_pollingTask(boost::make_unique<PollingTask>(m_settings.pollingSetttings,
+      m_pollingTask(boost::make_unique<PollingTask>(m_settings.pollingSettings,
                                                     GetLog())) {}
 
 LivecoinMarketDataSource::~LivecoinMarketDataSource() {
@@ -98,7 +98,7 @@ void LivecoinMarketDataSource::SubscribeToSecurities() {
         UpdatePrices();
         return true;
       },
-      m_settings.pollingSetttings.GetPricesRequestFrequency(), false);
+      m_settings.pollingSettings.GetPricesRequestFrequency(), false);
   m_pollingTask->AccelerateNextPolling();
 }
 

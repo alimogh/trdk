@@ -106,7 +106,8 @@ class SourcePropertiesDialog::Implementation {
     result.add("tradingMode", "live");
     result.add("title", m_ui.exchange->currentText().toStdString());
     if (impl != "Exmo" && impl != "Huobi" && impl != "Kraken" &&
-        impl != "Binance" && impl != "Coinbase" && impl != "Poloniex") {
+        impl != "Binance" && impl != "Coinbase" && impl != "Poloniex" &&
+        impl != "Bittrex") {
       result.add("module", "Rest");
       result.add("factory", "Create" + impl);
     } else {

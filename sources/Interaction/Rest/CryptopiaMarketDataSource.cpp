@@ -34,7 +34,7 @@ CryptopiaMarketDataSource::CryptopiaMarketDataSource(const App &,
     : Base(context, std::move(instanceName), std::move(title)),
       m_settings(conf, GetLog()),
       m_session(CreateSession("www.cryptopia.co.nz", m_settings, false)),
-      m_pollingTask(boost::make_unique<PollingTask>(m_settings.pollingSetttings,
+      m_pollingTask(boost::make_unique<PollingTask>(m_settings.pollingSettings,
                                                     GetLog())) {}
 
 CryptopiaMarketDataSource::~CryptopiaMarketDataSource() {
@@ -114,7 +114,7 @@ void CryptopiaMarketDataSource::SubscribeToSecurities() {
         }
         return true;
       },
-      m_settings.pollingSetttings.GetPricesRequestFrequency(), false);
+      m_settings.pollingSettings.GetPricesRequestFrequency(), false);
   m_pollingTask->AccelerateNextPolling();
 }
 

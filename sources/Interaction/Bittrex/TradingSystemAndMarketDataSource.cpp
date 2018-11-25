@@ -9,23 +9,27 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "BittrexMarketDataSource.hpp"
-#include "BittrexTradingSystem.hpp"
+#include "MarketDataSource.hpp"
+#include "TradingSystem.hpp"
 
 using namespace trdk;
 using namespace Lib;
-using namespace Interaction::Rest;
+using namespace Interaction;
+using namespace Rest;
+using namespace Bittrex;
 
-TradingSystemAndMarketDataSourceFactoryResult CreateBittrex(
+TradingSystemAndMarketDataSourceFactoryResult
+CreateTradingSystemAndMarketDataSource(
     const TradingMode &mode,
     Context &context,
     std::string instanceName,
     std::string title,
     const boost::property_tree::ptree &conf) {
-  auto tradingSystem = boost::make_shared<BittrexTradingSystem>(
+#pragma comment(linker, "/EXPORT:" __FUNCTION__ "=" __FUNCDNAME__)
+  auto tradingSystem = boost::make_shared<Bittrex::TradingSystem>(
       App::GetInstance(), mode, context, instanceName, title, conf);
   return {std::move(tradingSystem),
-          boost::make_shared<BittrexMarketDataSource>(
+          boost::make_shared<Bittrex::MarketDataSource>(
               App::GetInstance(), context, std::move(instanceName),
               std::move(title), conf)};
 }

@@ -108,7 +108,7 @@ ExcambiorexTradingSystem::ExcambiorexTradingSystem(const App &,
       m_tradingSession(CreateExcambiorexSession(m_settings, true)),
       m_pollingSession(CreateExcambiorexSession(m_settings, false)),
       m_orderRequestListVersion(0),
-      m_pollingTask(m_settings.pollingSetttings, GetLog()) {}
+      m_pollingTask(m_settings.pollingSettings, GetLog()) {}
 
 bool ExcambiorexTradingSystem::IsConnected() const {
   return !m_products.empty();
@@ -166,14 +166,14 @@ void ExcambiorexTradingSystem::CreateConnection() {
         UpdateOrders();
         return true;
       },
-      m_settings.pollingSetttings.GetActualOrdersRequestFrequency(), true);
+      m_settings.pollingSettings.GetActualOrdersRequestFrequency(), true);
   m_pollingTask.AddTask(
       "Balances", 1,
       [this]() {
         UpdateBalances();
         return true;
       },
-      m_settings.pollingSetttings.GetBalancesRequestFrequency(), true);
+      m_settings.pollingSettings.GetBalancesRequestFrequency(), true);
 
   m_pollingTask.AccelerateNextPolling();
 }
@@ -419,7 +419,7 @@ void ExcambiorexTradingSystem::SubsctibeAtOrderUpdates(
   }
   m_pollingTask.AddTask(
       "Orders", 0, [this]() { return UpdateOrders(); },
-      m_settings.pollingSetttings.GetActualOrdersRequestFrequency(), true);
+      m_settings.pollingSettings.GetActualOrdersRequestFrequency(), true);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

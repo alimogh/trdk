@@ -9,34 +9,34 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "BittrexMarketDataSource.hpp"
-#include "BittrexRequest.hpp"
-#include "PollingTask.hpp"
-#include "Security.hpp"
+#include "MarketDataSource.hpp"
+#include "Request.hpp"
 #include "Util.hpp"
 
 using namespace trdk;
 using namespace Lib;
 using namespace TimeMeasurement;
-using namespace Interaction::Rest;
+using namespace Interaction;
+using namespace Rest;
+using namespace Bittrex;
 namespace r = Interaction::Rest;
 namespace pt = boost::posix_time;
 namespace ptr = boost::property_tree;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-BittrexMarketDataSource::BittrexMarketDataSource(const App &,
-                                                 Context &context,
-                                                 std::string instanceName,
-                                                 std::string title,
-                                                 const ptr::ptree &conf)
+Bittrex::MarketDataSource::MarketDataSource(const App &,
+                                            Context &context,
+                                            std::string instanceName,
+                                            std::string title,
+                                            const ptr::ptree &conf)
     : Base(context, std::move(instanceName), std::move(title)),
       m_settings(conf, GetLog()),
       m_session(CreateSession("bittrex.com", m_settings, false)),
-      m_pollingTask(boost::make_unique<PollingTask>(m_settings.pollingSetttings,
+      m_pollingTask(boost::make_unique<PollingTask>(m_settings.pollingSettings,
                                                     GetLog())) {}
 
-BittrexMarketDataSource::~BittrexMarketDataSource() {
+Bittrex::MarketDataSource::~MarketDataSource() {
   try {
     m_pollingTask.reset();
     // Each object, that implements CreateNewSecurityObject should wait for
@@ -48,10 +48,10 @@ BittrexMarketDataSource::~BittrexMarketDataSource() {
   }
 }
 
-void BittrexMarketDataSource::Connect() {
+void Bittrex::MarketDataSource::Connect() {
   GetLog().Debug("Creating connection...");
 
-  boost::unordered_map<std::string, BittrexProduct> products;
+  boost::unordered_map<std::string, Product> products;
 
   try {
     products = RequestBittrexProductList(m_session, GetContext(), GetLog());
@@ -63,13 +63,13 @@ void BittrexMarketDataSource::Connect() {
     symbolListHint.insert(product.first);
   }
 
-  m_pollingTask->AddTask(
-      "Prices", 1,
-      [this]() {
-        UpdatePrices();
-        return true;
-      },
-      m_settings.pollingSetttings.GetPricesRequestFrequency(), false);
+  m_pollingTask->AddTask("Prices", 1,
+                         [this]() {
+                           UpdatePrices();
+                           return true;
+                         },
+                         m_settings.pollingSettings.GetPricesRequestFrequency(),
+                         false);
 
   m_pollingTask->AccelerateNextPolling();
 
@@ -78,11 +78,11 @@ void BittrexMarketDataSource::Connect() {
 }
 
 const boost::unordered_set<std::string>
-    &BittrexMarketDataSource::GetSymbolListHint() const {
+    &Bittrex::MarketDataSource::GetSymbolListHint() const {
   return m_symbolListHint;
 }
 
-void BittrexMarketDataSource::SubscribeToSecurities() {
+void Bittrex::MarketDataSource::SubscribeToSecurities() {
   const boost::mutex::scoped_lock lock(m_securitiesLock);
   for (auto &security : m_securities) {
     if (security.second) {
@@ -94,14 +94,14 @@ void BittrexMarketDataSource::SubscribeToSecurities() {
     if (product == m_products.cend()) {
       continue;
     }
-    security.second = std::make_unique<BittrexPublicRequest>(
+    security.second = std::make_unique<PublicRequest>(
         "getorderbook", "market=" + product->second.id + "&type=both",
         GetContext(), GetLog());
     security.first->SetTradingSessionState(pt::not_a_date_time, true);
   }
 }
 
-trdk::Security &BittrexMarketDataSource::CreateNewSecurityObject(
+trdk::Security &Bittrex::MarketDataSource::CreateNewSecurityObject(
     const Symbol &symbol) {
   const auto &product = m_products.find(symbol.GetSymbol());
   if (product == m_products.cend()) {
@@ -122,7 +122,7 @@ trdk::Security &BittrexMarketDataSource::CreateNewSecurityObject(
   return *m_securities.back().first;
 }
 
-void BittrexMarketDataSource::UpdatePrices() {
+void Bittrex::MarketDataSource::UpdatePrices() {
   const boost::mutex::scoped_lock lock(m_securitiesLock);
   for (const auto &subscribtion : m_securities) {
     auto &security = *subscribtion.first;
@@ -168,11 +168,12 @@ boost::optional<std::pair<Level1TickValue, Level1TickValue>> ReadTopPrice(
   return boost::none;
 }
 #pragma warning(pop)
-}
-void BittrexMarketDataSource::UpdatePrices(const pt::ptime &time,
-                                           const ptr::ptree &source,
-                                           r::Security &security,
-                                           const Milestones &delayMeasurement) {
+}  // namespace
+void Bittrex::MarketDataSource::UpdatePrices(
+    const pt::ptime &time,
+    const ptr::ptree &source,
+    r::Security &security,
+    const Milestones &delayMeasurement) {
   const auto &bid = ReadTopPrice<LEVEL1_TICK_BID_PRICE, LEVEL1_TICK_BID_QTY>(
       source.get_child_optional("buy"));
   const auto &ask = ReadTopPrice<LEVEL1_TICK_ASK_PRICE, LEVEL1_TICK_ASK_QTY>(
@@ -193,12 +194,12 @@ void BittrexMarketDataSource::UpdatePrices(const pt::ptime &time,
 
 ////////////////////////////////////////////////////////////////////////////////
 
-boost::shared_ptr<MarketDataSource> CreateBittrexMarketDataSource(
+boost::shared_ptr<trdk::MarketDataSource> CreateBittrexMarketDataSource(
     Context &context,
     std::string instanceName,
     std::string title,
     const ptr::ptree &configuration) {
-  return boost::make_shared<BittrexMarketDataSource>(
+  return boost::make_shared<Bittrex::MarketDataSource>(
       App::GetInstance(), context, std::move(instanceName), std::move(title),
       configuration);
 }
