@@ -21,6 +21,7 @@
 #pragma warning(disable : 4706)
 #pragma warning(disable : 4127)
 #include "GeneratedFiles/Orm/include/Trdk_FrontEnd_Lib_Orm_all_include.gen.h"
+#undef BOOST_ALL_NO_LIB
 #pragma warning(pop)
 
 #include "Common.hpp"

@@ -16,9 +16,9 @@ namespace trdk {
 namespace Interaction {
 namespace Huobi {
 
-class MarketDataSource : public trdk::MarketDataSource {
+class MarketDataSource : public TradingLib::WebSocketMarketDataSource {
  public:
-  typedef trdk::MarketDataSource Base;
+  typedef WebSocketMarketDataSource Base;
 
   explicit MarketDataSource(const Rest::App &,
                             Context &context,
@@ -29,11 +29,9 @@ class MarketDataSource : public trdk::MarketDataSource {
   MarketDataSource(const MarketDataSource &) = delete;
   MarketDataSource &operator=(const MarketDataSource &) = delete;
   MarketDataSource &operator=(MarketDataSource &&) = delete;
-  ~MarketDataSource() override;
+  ~MarketDataSource() override = default;
 
   void Connect() override;
-
-  void SubscribeToSecurities() override;
 
   const boost::unordered_set<std::string> &GetSymbolListHint() const override;
 
@@ -41,21 +39,26 @@ class MarketDataSource : public trdk::MarketDataSource {
   Security &CreateNewSecurityObject(const Lib::Symbol &) override;
 
  private:
-  void UpdatePrices(Rest::Security &, Request &);
-  void UpdatePrices(const boost::property_tree::ptree &,
+  std::unique_ptr<Connection> CreateConnection() const override;
+
+  void HandleMessage(const boost::posix_time::ptime &,
+                     const boost::property_tree::ptree &,
+                     const Lib::TimeMeasurement::Milestones &) override;
+
+  void UpdatePrices(const boost::posix_time::ptime &,
+                    const boost::property_tree::ptree &,
                     Rest::Security &,
                     const Lib::TimeMeasurement::Milestones &);
 
-  const Rest::Settings m_settings;
+  const boost::posix_time::time_duration m_serverTimeDiff =
+      Lib::GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone());
 
-  std::unique_ptr<Poco::Net::HTTPSClientSession> m_session;
+  const Rest::Settings m_settings;
 
   boost::unordered_map<std::string, Product> m_products;
   boost::unordered_set<std::string> m_symbolListHint;
   boost::unordered_map<ProductId, boost::shared_ptr<Rest::Security>>
       m_securities;
-
-  std::unique_ptr<Rest::PollingTask> m_pollingTask;
 };
 
 }  // namespace Huobi

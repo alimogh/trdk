@@ -12,10 +12,6 @@
 
 #define BOOST_COROUTINES_NO_DEPRECATION_WARNING
 
-#include "Assert.hpp"
-#include <boost/algorithm/string.hpp>
-#include <boost/asio.hpp>
-#include <boost/asio/ssl.hpp>
 #ifdef _DEBUG
 #pragma comment(lib, "ssleay32MTd.lib")
 #pragma comment(lib, "libeay32MTd.lib")
@@ -23,12 +19,21 @@
 #pragma comment(lib, "ssleay32MT.lib")
 #pragma comment(lib, "libeay32MT.lib")
 #endif  // _DEBUG
+
+#pragma warning(push)
+#pragma warning(disable : 4702)  // Warning	C4702	unreachable code
+
+#include "Assert.hpp"
+#include <boost/algorithm/string.hpp>
+#include <boost/asio.hpp>
 #include <boost/asio/connect.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <boost/atomic.hpp>
+#include <boost/beast/core.hpp>
+#include <boost/beast/websocket.hpp>
 #include <boost/beast/websocket/ssl.hpp>
 #include <boost/date_time/gregorian/gregorian_io.hpp>
 #include <boost/date_time/local_time/local_time_types.hpp>
@@ -57,10 +62,6 @@
 #include <iomanip>
 #include <iostream>
 
-#pragma warning(push)
-#pragma warning(disable : 4702)  // Warning	C4702	unreachable code
-#include <boost/beast/core.hpp>
-#include <boost/beast/websocket.hpp>
 #pragma warning(pop)
 
 #include <Windows.h>
