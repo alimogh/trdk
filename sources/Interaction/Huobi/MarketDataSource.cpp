@@ -75,7 +75,7 @@ trdk::Security &Huobi::MarketDataSource::CreateNewSecurityObject(
   const auto &result = m_securities.emplace(
       product->second.id,
       boost::make_shared<Rest::Security>(GetContext(), symbol, *this,
-                                         Rest::Security::SupportedLevel1Types()
+                                         Security::SupportedLevel1Types()
                                              .set(LEVEL1_TICK_BID_PRICE)
                                              .set(LEVEL1_TICK_BID_QTY)
                                              .set(LEVEL1_TICK_ASK_PRICE)
@@ -89,6 +89,8 @@ std::unique_ptr<Huobi::MarketDataSource::Connection>
 Huobi::MarketDataSource::CreateConnection() const {
   class Connection : public TradingLib::WebSocketConnection {
    public:
+    typedef WebSocketConnection Base;
+
     explicit Connection(
         const boost::unordered_map<ProductId, boost::shared_ptr<Rest::Security>>
             &subscription)
@@ -109,13 +111,21 @@ Huobi::MarketDataSource::CreateConnection() const {
       Start(events);
       for (const auto &security : m_subscription) {
         ptr::ptree request;
-        request.add("req", "market." + security.first + ".depth.step1");
+        request.add("sub", "market." + security.first + ".depth.step0");
         request.add("id", security.first);
         Write(request);
       }
     }
 
-   private:
+   protected:
+    ptr::ptree ParseJson(std::istream &is) const override {
+      namespace ios = boost::iostreams;
+      ios::filtering_istream filter;
+      filter.push(ios::gzip_decompressor{});
+      filter.push(is);
+      return Base::ParseJson(filter);
+    }
+
     const boost::unordered_map<ProductId, boost::shared_ptr<Rest::Security>>
         &m_subscription;
   };
@@ -123,10 +133,27 @@ Huobi::MarketDataSource::CreateConnection() const {
   return boost::make_unique<Connection>(m_securities);
 }
 
-void Huobi::MarketDataSource::HandleMessage(const pt::ptime &,
-                                            const ptr::ptree &message,
-                                            const Milestones &) {
-  GetLog().Debug("XXX: %1%", Lib::ConvertToString(message, false));
+void Huobi::MarketDataSource::HandleMessage(
+    const pt::ptime &,
+    const ptr::ptree &message,
+    const Milestones &delayMeasurement) {
+  const auto &channel = message.get_optional<std::string>("ch");
+  if (channel) {
+    auto symbol = channel->substr(7);
+    symbol = symbol.substr(0, symbol.find('.'));
+    const auto &security = m_securities.find(symbol);
+    if (security == m_securities.cend()) {
+      throw Exception("Unknown symbol");
+    }
+    UpdatePrices(
+        ConvertToPTimeFromMicroseconds(message.get<uintmax_t>("ts") * 1000) -
+            m_serverTimeDiff,
+        message.get_child("tick"), *security->second, delayMeasurement);
+    return;
+  }
+  if (message.get_optional<uintmax_t>("ping")) {
+    Send(message);
+  }
 }
 
 namespace {
@@ -162,18 +189,17 @@ boost::optional<std::pair<Level1TickValue, Level1TickValue>> ReadTopPrice(
   return std::make_pair(*price, *qty);
 }
 #pragma warning(pop)
+
 }  // namespace
 
-void Huobi::MarketDataSource::UpdatePrices(const ptr::ptree &source,
+void Huobi::MarketDataSource::UpdatePrices(const pt::ptime &time,
+                                           const ptr::ptree &source,
                                            Rest::Security &security,
                                            const Milestones &delayMeasurement) {
-  const auto &time =
-      ConvertToPTimeFromMicroseconds(source.get<int64_t>("ts") * 1000);
-
   const auto &bid = ReadTopPrice<LEVEL1_TICK_BID_PRICE, LEVEL1_TICK_BID_QTY>(
-      source.get_child_optional("tick.bids"));
+      source.get_child_optional("bids"));
   const auto &ask = ReadTopPrice<LEVEL1_TICK_ASK_PRICE, LEVEL1_TICK_ASK_QTY>(
-      source.get_child_optional("tick.asks"));
+      source.get_child_optional("asks"));
 
   if (bid && ask) {
     security.SetLevel1(time, bid->first, bid->second, ask->first, ask->second,

@@ -45,9 +45,13 @@ class MarketDataSource : public TradingLib::WebSocketMarketDataSource {
                      const boost::property_tree::ptree &,
                      const Lib::TimeMeasurement::Milestones &) override;
 
-  void UpdatePrices(const boost::property_tree::ptree &,
+  void UpdatePrices(const boost::posix_time::ptime &,
+                    const boost::property_tree::ptree &,
                     Rest::Security &,
                     const Lib::TimeMeasurement::Milestones &);
+
+  const boost::posix_time::time_duration m_serverTimeDiff =
+      Lib::GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone());
 
   const Rest::Settings m_settings;
 
