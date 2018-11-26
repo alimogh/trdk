@@ -389,7 +389,7 @@ std::string Lib::ConvertToString(const ptr::ptree &source,
                                  const bool multiline) {
   std::stringstream result;
   ptr::write_json(result, source, multiline);
-  return result.str();
+  return boost::trim_copy(result.str());
 }
 
 ////////////////////////////////////////////////////////////////////////////////

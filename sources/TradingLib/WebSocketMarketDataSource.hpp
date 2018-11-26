@@ -34,6 +34,9 @@ class WebSocketMarketDataSource : public MarketDataSource {
   void Connect() override;
   void SubscribeToSecurities() override;
 
+ protected:
+  void Send(const boost::property_tree::ptree &);
+
  private:
   virtual std::unique_ptr<Connection> CreateConnection() const = 0;
 

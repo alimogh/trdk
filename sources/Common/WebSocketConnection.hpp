@@ -58,13 +58,15 @@ class WebSocketConnection {
 
   void Connect(const std::string& port);
 
+  void Write(const boost::property_tree::ptree&);
+
  protected:
   void Handshake(const std::string& target);
 
   void Start(const Events&);
   void Stop();
 
-  void Write(const boost::property_tree::ptree&);
+  virtual boost::property_tree::ptree ParseJson(std::istream&) const;
 
  private:
   class Implementation;
