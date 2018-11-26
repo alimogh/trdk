@@ -94,7 +94,7 @@ class WebSocketConnection::Implementation {
         {
           std::istream is(&buffer);
           try {
-            ptr::read_json(is, message);
+            message = m_self.ParseJson(is);
             AssertEq(0, buffer.size());
           } catch (const ptr::json_parser_error &ex) {
             boost::format errorMessage(
@@ -211,4 +211,10 @@ void WebSocketConnection::Write(const ptr::ptree &message) {
   } catch (const std::exception &ex) {
     throw CommunicationError(ex.what());
   }
+}
+
+ptr::ptree WebSocketConnection::ParseJson(std::istream &is) const {
+  ptr::ptree result;
+  ptr::read_json(is, result);
+  return result;
 }

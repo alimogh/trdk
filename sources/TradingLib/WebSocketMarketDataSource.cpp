@@ -125,3 +125,11 @@ void WebSocketMarketDataSource::SubscribeToSecurities() {
   m_pimpl->ScheduleReconnect();
   lock.unlock();
 }
+
+void WebSocketMarketDataSource::Send(const ptr::ptree &message) {
+  boost::mutex::scoped_lock lock(m_pimpl->m_connectionMutex);
+  if (!m_pimpl->m_connection) {
+    throw Exception("Failed to send message, connection is closed");
+  }
+  m_pimpl->m_connection->Write(message);
+}
