@@ -309,8 +309,12 @@ class aa::Strategy::Implementation : boost::noncopyable {
       const auto &spreadRatio =
           CaclSpreadAndRatio(sellTarget, buyTarget).second;
       if (!m_tradingSettings.isEnabled ||
-          spreadRatio < m_tradingSettings.minPriceDifferenceRatio ||
-          CheckActualPositions(sellTarget, buyTarget)) {
+          spreadRatio < m_tradingSettings.minPriceDifferenceRatio) {
+        continue;
+      }
+      if (CheckActualPositions(sellTarget, buyTarget)) {
+        static const std::string error = "position is already opened";
+        session.RegisterCheckError(sellTarget, buyTarget, error);
         continue;
       }
       Trade(sellTarget, buyTarget, spreadRatio, session, delayMeasurement);
@@ -411,7 +415,7 @@ class aa::Strategy::Implementation : boost::noncopyable {
     }
 
     {
-      const auto &checkTarget = [&](Security &target, bool isBuy,
+      const auto &checkTarget = [&](Security &target, const bool isBuy,
                                     const Price &price) -> bool {
         const auto &result =
             OrderBestSecurityChecker::Create(m_self, isBuy, qty, price)
