@@ -31,6 +31,8 @@
 #include "Common/Crypto.hpp"
 
 #pragma warning(push)
+#pragma warning(disable : 4702)
+#pragma warning(disable : 4706)
 #pragma warning( \
     disable : 4458)  // Warning	C4458	declaration of 'traits_type'
                      // hides class member	Common
