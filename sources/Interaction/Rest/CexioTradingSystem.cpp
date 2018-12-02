@@ -166,8 +166,8 @@ void CexioTradingSystem::UpdateBalances() {
       continue;
     }
     try {
-      m_balances.Set(node.first, node.second.get<Volume>("available"),
-                     node.second.get<Volume>("orders"));
+      m_balances.Set(node.first, node.second.get<Volume>("available", 0),
+                     node.second.get<Volume>("orders", 0));
     } catch (const std::exception &ex) {
       boost::format error("Failed to read balance: \"%1%\" (%2%)");
       error % ex.what()                             // 1
