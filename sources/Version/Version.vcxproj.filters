@@ -26,9 +26,6 @@
     <ClInclude Include="Version.h">
       <Filter>Output</Filter>
     </ClInclude>
-    <ClInclude Include="Restrictions.h">
-      <Filter>Output</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="version">

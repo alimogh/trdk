@@ -28,8 +28,3 @@
 #include <boost/variant/apply_visitor.hpp>
 #include <boost/variant/variant.hpp>
 #include <bitset>
-
-#include "Version/Restrictions.h"
-#if TRDK_GUARANTEED_USAGE_STOP_TIMESTAMP_MS || TRDK_USAGE_STOP_TIMESTAMP_MS
-#include <boost/random.hpp>
-#endif

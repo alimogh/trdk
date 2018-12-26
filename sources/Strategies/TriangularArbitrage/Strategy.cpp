@@ -40,8 +40,8 @@ class BuyLegPolicy : public LegPolicy {
     return security.GetAskQty();
   }
 
-  Price GetPrice(const Security &security) const override {
-    return security.GetAskPrice();
+  Price GetPriceValue(const Security &security) const override {
+    return security.GetAskPriceValue();
   }
 
   Qty GetOrderQtyAllowedByBalance(const TradingSystem &tradingSystem,
@@ -74,8 +74,8 @@ class SellLegPolicy : public LegPolicy {
     return security.GetBidQty();
   }
 
-  Price GetPrice(const Security &security) const override {
-    return security.GetBidPrice();
+  Price GetPriceValue(const Security &security) const override {
+    return security.GetBidPriceValue();
   }
 
   Qty GetOrderQtyAllowedByBalance(const TradingSystem &tradingSystem,
@@ -97,7 +97,7 @@ class DirectLegPolicy : public Base {
   virtual ~DirectLegPolicy() override = default;
 
   virtual typename Base::X CalcX(const Security &security) const override {
-    return GetPrice(security);
+    return GetPriceValue(security);
   }
 };
 
@@ -108,7 +108,7 @@ class OppositeLegPolicy : public Base {
   virtual ~OppositeLegPolicy() override = default;
 
   virtual typename Base::X CalcX(const Security &security) const override {
-    return 1 / GetPrice(security);
+    return 1 / GetPriceValue(security);
   }
 };
 
@@ -200,10 +200,18 @@ class ta::Strategy::Implementation : private boost::noncopyable {
         hasSkippedSecurities = true;
         continue;
       }
+      const auto &leg1Price = m_legs[LEG_1]->GetPriceValue(*leg1);
+      if (isnan(leg1Price)) {
+        continue;
+      }
       auto &leg1Trading = m_self.GetTradingSystem(leg1->GetSource().GetIndex());
       for (auto *const leg2 : m_legs[LEG_2]->GetSecurities()) {
         if (!IsExchangeEnabled(*leg2, m_middleExchanges)) {
           hasSkippedSecurities = true;
+          continue;
+        }
+        const auto &leg2Price = m_legs[LEG_2]->GetPriceValue(*leg2);
+        if (isnan(leg2Price)) {
           continue;
         }
         auto &leg2Trading =
@@ -213,17 +221,18 @@ class ta::Strategy::Implementation : private boost::noncopyable {
             hasSkippedSecurities = true;
             continue;
           }
+          const auto &leg3Price = m_legs[LEG_3]->GetPriceValue(*leg3);
+          if (isnan(leg3Price)) {
+            continue;
+          }
           auto &leg3Trading =
               m_self.GetTradingSystem(leg3->GetSource().GetIndex());
           try {
             auto thisConfigurationError = CheckSignal(
                 opportunities,
-                {Opportunity::Target{leg1, &leg1Trading,
-                                     m_legs[LEG_1]->GetPrice(*leg1)},
-                 Opportunity::Target{leg2, &leg2Trading,
-                                     m_legs[LEG_2]->GetPrice(*leg2)},
-                 Opportunity::Target{leg3, &leg3Trading,
-                                     m_legs[LEG_3]->GetPrice(*leg3)}},
+                {Opportunity::Target{leg1, &leg1Trading, leg1Price},
+                 Opportunity::Target{leg2, &leg2Trading, leg2Price},
+                 Opportunity::Target{leg3, &leg3Trading, leg3Price}},
                 configurationError ? true : false);
             if (thisConfigurationError && !configurationError) {
               configurationError = std::move(thisConfigurationError);

@@ -168,25 +168,6 @@ function CreateVersionCppHeaderFile() {
 	versionFile.WriteLine(requiredModulesLine);
 	versionFile.WriteLine("");
 
-	var restrictionsFile = fileSystem.CreateTextFile(outputDir + "Restrictions.h", true);
-	restrictionsFile.WriteLine("");
-	restrictionsFile.WriteLine("#pragma once");
-	restrictionsFile.WriteLine("");
-	if (branch.name != "master" && (branch.guaranteedUsageDaysNumber != 0 || branch.numberOfDaysBeforeUsageStop != 0)) {
-		var date = new Date;
-		date.setDate(date.getDate() + branch.guaranteedUsageDaysNumber);
-		restrictionsFile.WriteLine("// " + date.toString());
-		restrictionsFile.WriteLine("#define TRDK_GUARANTEED_USAGE_STOP_TIMESTAMP_MS " + date.getTime());
-		date = new Date;
-		date.setDate(date.getDate() + branch.numberOfDaysBeforeUsageStop);
-		restrictionsFile.WriteLine("// " + date.toString());
-		restrictionsFile.WriteLine("#define TRDK_USAGE_STOP_TIMESTAMP_MS " + date.getTime());
-	} else {
-		restrictionsFile.WriteLine("#define TRDK_GUARANTEED_USAGE_STOP_TIMESTAMP_MS 0");
-		restrictionsFile.WriteLine("#define TRDK_USAGE_STOP_TIMESTAMP_MS 0");
-	}
-	restrictionsFile.WriteLine("");
-
 }
 
 //////////////////////////////////////////////////////////////////////////

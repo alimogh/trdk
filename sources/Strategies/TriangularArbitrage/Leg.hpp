@@ -45,15 +45,17 @@ struct Opportunity {
   bool isSignaled;
 };
 
-class LegPolicy : private boost::noncopyable {
+class LegPolicy {
  public:
   typedef Y X;
 
- public:
   explicit LegPolicy(const std::string &symbol);
+  LegPolicy(const LegPolicy &) = delete;
+  LegPolicy(LegPolicy &&) = delete;
+  LegPolicy &operator=(const LegPolicy &) = delete;
+  LegPolicy &operator=(LegPolicy &&) = delete;
   virtual ~LegPolicy() = default;
 
- public:
   const std::string &GetSymbol() const;
 
   boost::unordered_set<Security *> &GetSecurities();
@@ -64,7 +66,7 @@ class LegPolicy : private boost::noncopyable {
   virtual const OrderSide &GetSide() const = 0;
 
   virtual Qty GetQty(const Security &) const = 0;
-  virtual Price GetPrice(const Security &) const = 0;
+  virtual Price GetPriceValue(const Security &) const = 0;
   virtual X CalcX(const Security &) const = 0;
   virtual Qty CalcPnl(const Qty &thisLegQty, const Qty &leg1Qty) const = 0;
   virtual Qty GetOrderQtyAllowedByBalance(const TradingSystem &,

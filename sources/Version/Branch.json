@@ -10,8 +10,6 @@
   "concurrencyProfileDebug": "PROFILE_RELAX",
   "concurrencyProfileTest": "PROFILE_RELAX",
   "concurrencyProfileRelease": "PROFILE_RELAX",
-  "guaranteedUsageDaysNumber": 30,
-  "numberOfDaysBeforeUsageStop": 75,
   "requiredModules": [
     "Core",
     "Engine",
