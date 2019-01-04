@@ -61,9 +61,27 @@ PrivateRequest::Response PrivateRequest::Send(
     std::unique_ptr<Poco::Net::HTTPSClientSession> &session) {
   Assert(!m_nonce);
   m_nonce.emplace(m_nonceStorage.TakeNonce());
+
+  // ReSharper disable CppImplicitDefaultConstructorNotAvailable
+  struct NonceScope {  // NOLINT
+    // ReSharper restore CppImplicitDefaultConstructorNotAvailable
+    boost::optional<Rest::NonceStorage::TakenValue> *nonce;
+
+    ~NonceScope() { Reset(); }
+    void Reset() noexcept {
+      if (!nonce) {
+        return;
+      }
+      *nonce = boost::none;
+      nonce = nullptr;
+    }
+  } nonceScope = {&m_nonce};
+
   const auto &result = Base::Send(session);
+
   Assert(m_nonce);
-  m_nonce = boost::none;
+  nonceScope.Reset();
+
   CheckResponseError(boost::get<1>(result));
   return result;
 }
