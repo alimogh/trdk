@@ -6,7 +6,7 @@
   "domain": "robotdk.com",
   "licenseServiceSubdomain": "licensing",
   "supportEmail": "support@robotdk.com",
-  "copyright": "Copyright 2018 (C) Eugene V. Palchukovsky, robotdk.com. All rights reserved.",
+  "copyright": "Copyright 2019 (C) Eugene V. Palchukovsky, robotdk.com. All rights reserved.",
   "concurrencyProfileDebug": "PROFILE_RELAX",
   "concurrencyProfileTest": "PROFILE_RELAX",
   "concurrencyProfileRelease": "PROFILE_RELAX",
