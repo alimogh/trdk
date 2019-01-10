@@ -93,6 +93,10 @@ void p::MarketDataSource::HandleMessage(const pt::ptime &time,
   for (const auto &node : message) {
     if (!security) {
       const auto &product = node.second.get_value<ProductId>();
+      if (product == 1010) {
+        // [1010] - heartbeat
+        return;
+      }
       const auto it = m_securities.find(product);
       if (it == m_securities.cend()) {
         boost::format error("Price update for unknown product \"%1%\"");
@@ -140,6 +144,7 @@ void p::MarketDataSource::UpdatePrices(const pt::ptime &time,
     auto hasQty = false;
     for (const auto &line : node.second) {
       if (hasQty) {
+        security.security->SetOnline(pt::not_a_date_time, false);
         throw Exception("Book line has wrong format");
       }
       if (!type) {
@@ -160,7 +165,8 @@ void p::MarketDataSource::UpdatePrices(const pt::ptime &time,
                         side.second);
               }
             }
-          } break;
+            break;
+          }
           case 'o':
             if (!isBid) {
               switch (line.second.get_value<int>()) {
@@ -171,6 +177,7 @@ void p::MarketDataSource::UpdatePrices(const pt::ptime &time,
                   isBid.emplace(true);
                   break;
                 default:
+                  security.security->SetOnline(pt::not_a_date_time, false);
                   throw Exception("Unknown book line side");
               }
             } else if (!price) {
@@ -213,11 +220,14 @@ void p::MarketDataSource::UpdatePrices(const pt::ptime &time,
       }
     }
   }
-  if (!security.bids.empty() && !security.asks.empty()) {
-    const auto &bestBid = security.bids.crbegin()->second;
-    const auto &bestAsk = security.asks.cbegin()->second;
-    security.security->SetLevel1(time, bestBid.first, bestBid.second,
-                                 bestAsk.first, bestAsk.second,
-                                 delayMeasurement);
+  if (security.bids.empty() || security.asks.empty()) {
+    security.security->SetOnline(pt::not_a_date_time, false);
+    return;
   }
+
+  const auto &bestBid = security.bids.crbegin()->second;
+  const auto &bestAsk = security.asks.cbegin()->second;
+  security.security->SetLevel1(time, bestBid.first, bestBid.second,
+                               bestAsk.first, bestAsk.second, delayMeasurement);
+  security.security->SetOnline(pt::not_a_date_time, true);
 }
