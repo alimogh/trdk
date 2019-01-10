@@ -732,13 +732,16 @@ class Exchange : public TradingSystem, public MarketDataSource {
   void FlushPrices(const pt::ptime& time,
                    SecuritySubscription& security,
                    const Milestones& delayMeasurement) {
-    if (!security.bids.empty() && !security.asks.empty()) {
-      const auto& bestBid = security.bids.crbegin()->second;
-      const auto& bestAsk = security.asks.cbegin()->second;
-      security.security->SetLevel1(time, bestBid.first, bestBid.second,
-                                   bestAsk.first, bestAsk.second,
-                                   delayMeasurement);
+    if (security.bids.empty() || security.asks.empty()) {
+      security.security->SetOnline(pt::not_a_date_time, false);
+      return;
     }
+    const auto& bestBid = security.bids.crbegin()->second;
+    const auto& bestAsk = security.asks.cbegin()->second;
+    security.security->SetLevel1(time, bestBid.first, bestBid.second,
+                                 bestAsk.first, bestAsk.second,
+                                 delayMeasurement);
+    security.security->SetOnline(pt::not_a_date_time, true);
   }
 
 #if 0
