@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "FileSystemChangeNotificator.hpp"
+#include "Exception.hpp"
 
 namespace fs = boost::filesystem;
 using namespace trdk::Lib;
@@ -40,6 +41,7 @@ class FileSystemChangeNotificator::Implementation : private boost::noncopyable {
   ~Implementation() { thread.join(); }
 
   void Task() {
+    StructuredException::SetupForThisThread();
     HANDLE events[] = {stopEvent, watchHandle};
     try {
       for (;;) {

@@ -19,9 +19,11 @@ namespace Lib {
 class Exception : public std::exception {
  public:
   explicit Exception(const char* what) noexcept;
+  Exception(Exception&&) noexcept = default;
   Exception(const Exception&) noexcept;
   ~Exception() noexcept override;
 
+  Exception& operator=(Exception&&) noexcept = default;
   Exception& operator=(const Exception&) noexcept;
 
   friend std::ostream& operator<<(std::ostream&, const Exception&);
@@ -93,6 +95,12 @@ class StrategyCriticalException : public Exception {
   explicit StrategyCriticalException(const char *what) noexcept
       : Exception(what) {}
 };
+
+class StructuredException : public Exception {
+ public:
+  explicit StructuredException(const char* what) noexcept : Exception(what) {}
+
+  static void SetupForThisThread() noexcept;
 
 }  // namespace Lib
 }  // namespace trdk

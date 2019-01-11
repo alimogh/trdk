@@ -16,7 +16,7 @@ using namespace trdk::Lib;
 //////////////////////////////////////////////////////////////////////////
 
 Exception::Exception(const char *what) noexcept : m_doFree(false) {
-  const size_t buffSize = (strlen(what) + 1) * sizeof(char);
+  const auto buffSize = (strlen(what) + 1) * sizeof(char);
   m_what = static_cast<char *>(malloc(buffSize));
   if (m_what) {
     memcpy(const_cast<char *>(m_what), what, buffSize);
@@ -26,10 +26,10 @@ Exception::Exception(const char *what) noexcept : m_doFree(false) {
   }
 }
 
-Exception::Exception(const Exception &rhs) noexcept {
+Exception::Exception(const Exception &rhs) noexcept : exception(rhs) {
   m_doFree = rhs.m_doFree;
   if (m_doFree) {
-    const size_t buffSize = (strlen(rhs.m_what) + 1) * sizeof(char);
+    const auto buffSize = (strlen(rhs.m_what) + 1) * sizeof(char);
     m_what = static_cast<char *>(malloc(buffSize));
     if (m_what) {
       memcpy(const_cast<char *>(m_what), rhs.m_what, buffSize);
@@ -98,3 +98,32 @@ RiskControlException::RiskControlException(const char *what) noexcept
     : Exception(what) {}
 
 //////////////////////////////////////////////////////////////////////////
+
+namespace {
+void sehTranslator(unsigned int, EXCEPTION_POINTERS *exception) {
+  char infoBuffer[1024] = {};
+  for (size_t i = 0; i < exception->ExceptionRecord->NumberParameters; ++i) {
+    sprintf(infoBuffer + strlen(infoBuffer),
+#ifdef _WIN64
+            " 0x%016llX"
+#else
+            " 0x%08X"
+#endif
+            ,
+            exception->ExceptionRecord->ExceptionInformation[i]);
+  }
+  char messageBuffer[1024] = {};
+  sprintf(messageBuffer,
+          "Structured exception 0x%08IX occurred at address 0x%08IX. "
+          "Parameters:%s.",
+          intptr_t(exception->ExceptionRecord->ExceptionCode),
+          intptr_t(exception->ExceptionRecord->ExceptionAddress), infoBuffer);
+  throw StructuredException(messageBuffer);
+}
+}  // namespace
+
+void StructuredException::SetupForThisThread() noexcept {
+  _set_se_translator(sehTranslator);
+}
+
+////////////////////////////////////////////////////////////////////////////////
