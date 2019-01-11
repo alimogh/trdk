@@ -168,6 +168,7 @@ class Timer::Implementation : private boost::noncopyable {
   }
 
   void ExecuteScheduling() {
+    StructuredException::SetupForThisThread();
     m_context.GetLog().Debug("Started timer task.");
 
     try {

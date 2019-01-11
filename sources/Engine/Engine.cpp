@@ -178,6 +178,7 @@ void Engine::Stop(const trdk::StopMode& stopMode) {
   }
 
   boost::thread stopThread([this, &stopMode]() {
+    StructuredException::SetupForThisThread();
     try {
       m_pimpl->m_context->Stop(stopMode);
     } catch (...) {

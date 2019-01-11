@@ -117,6 +117,8 @@ void PollingTask::AccelerateNextPolling() {
 }
 
 void PollingTask::RunTasks() {
+  StructuredException::SetupForThisThread();
+
   m_log.Debug("Starting polling task...");
 
   try {
