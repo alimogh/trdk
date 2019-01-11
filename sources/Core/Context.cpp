@@ -174,6 +174,7 @@ class StatReport : private boost::noncopyable {
   }
 
   void ThreadMain() {
+    StructuredException::SetupForThisThread();
     m_context.GetLog().Debug("Started stat-monitoring task.");
     try {
       Lock lock(m_mutex);

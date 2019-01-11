@@ -430,16 +430,15 @@ struct AsyncLogConcurrencyPolicy<trdk::Lib::Concurrency::PROFILE_HFT> {
 
 template <typename RecordT,
           typename LogT,
-          trdk::Lib::Concurrency::Profile concurrencyProfile>
-class AsyncLog : private boost::noncopyable {
+          Lib::Concurrency::Profile concurrencyProfile>
+class AsyncLog : boost::noncopyable {
  public:
   typedef RecordT Record;
   typedef LogT Log;
   typedef trdk::Log::ThreadId ThreadId;
 
  private:
-  typedef typename trdk::AsyncLogConcurrencyPolicy<concurrencyProfile>
-      ConcurrencyPolicy;
+  typedef AsyncLogConcurrencyPolicy<concurrencyProfile> ConcurrencyPolicy;
   typedef typename ConcurrencyPolicy::Mutex Mutex;
   typedef typename ConcurrencyPolicy::Lock Lock;
   typedef typename ConcurrencyPolicy::Condition Condition;
@@ -453,7 +452,7 @@ class AsyncLog : private boost::noncopyable {
     Condition condition;
   };
 
-  class WriteTask : private boost::noncopyable {
+  class WriteTask : boost::noncopyable {
    public:
     explicit WriteTask(Log &log, Queue &queue)
         : m_log(log), m_queue(queue), m_answerCondition(nullptr) {
@@ -471,7 +470,6 @@ class AsyncLog : private boost::noncopyable {
       }
     }
 
-   public:
     void WaitForFlush() const {
       Lock lock(m_queue.mutex);
       while (m_answerCondition) {
@@ -489,6 +487,7 @@ class AsyncLog : private boost::noncopyable {
 
    private:
     void TaskMain() {
+      Lib::StructuredException::SetupForThisThread();
 #ifdef _DEBUG
       const Record *lastRecord = nullptr;
 #endif

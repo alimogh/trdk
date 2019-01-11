@@ -210,6 +210,7 @@ class Test::TradingSystem::Implementation : boost::noncopyable {
 
  private:
   void Task() {
+    StructuredException::SetupForThisThread();
     try {
       {
         Lock lock(m_mutex);
