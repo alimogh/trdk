@@ -88,9 +88,10 @@ class SymbolIsNotSupportedException : public Exception {
       : Exception(what) {}
 };
 
-class StructuredException : public Exception {
+class StructuredException : public std::exception {
  public:
-  explicit StructuredException(const char* what) noexcept : Exception(what) {}
+  explicit StructuredException(const char* what) noexcept
+      : std::exception(what) {}
 
   static void SetupForThisThread() noexcept;
 };
