@@ -223,6 +223,8 @@ class Exchange : public TradingSystem, public MarketDataSource {
         m_serverTimeDiff(
             GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),
         m_isConnected(false),
+        m_dataSession(
+            CreateSession("api.pro.coinbase.com", m_settings, false)),
         m_tradingSession(
             CreateSession("api.pro.coinbase.com", m_settings, true)),
         m_balances(*this, GetTsLog(), GetTsTradingLog()),
@@ -487,11 +489,8 @@ class Exchange : public TradingSystem, public MarketDataSource {
  private:
   void RequestProducts() {
     boost::unordered_map<std::string, Product> products;
-    auto marketDataSession =
-        CreateSession("api.pro.coinbase.com", m_settings, false);
     PublicRequest request("products", "", GetContext(), GetTsLog());
-    const auto response = boost::get<1>(request.Send(marketDataSession));
-    marketDataSession.reset();
+    const auto response = boost::get<1>(request.Send(m_dataSession));
     for (const auto& node : response) {
       const auto& productNode = node.second;
       Product product = {productNode.get<std::string>("id"),
@@ -521,7 +520,7 @@ class Exchange : public TradingSystem, public MarketDataSource {
     PrivateRequest request("accounts", net::HTTPRequest::HTTP_GET, m_settings,
                            false, std::string(), GetContext(), GetTsLog());
     try {
-      const auto response = boost::get<1>(request.Send(m_tradingSession));
+      const auto response = boost::get<1>(request.Send(m_dataSession));
       for (const auto& node : response) {
         const auto& account = node.second;
         m_balances.Set(account.get<std::string>("currency"),
@@ -609,7 +608,7 @@ class Exchange : public TradingSystem, public MarketDataSource {
       OrderStatusRequest request(orderId, m_settings, GetContext(), GetTsLog(),
                                  GetTsTradingLog());
       try {
-        UpdateOrder(boost::get<1>(request.Send(m_tradingSession)));
+        UpdateOrder(boost::get<1>(request.Send(m_dataSession)));
       } catch (const OrderIsUnknownException&) {
         OnOrderCanceled(GetContext().GetCurrentTime(), orderId, boost::none,
                         boost::none);
@@ -875,6 +874,7 @@ class Exchange : public TradingSystem, public MarketDataSource {
   const boost::posix_time::time_duration m_serverTimeDiff;
 
   bool m_isConnected;
+  std::unique_ptr<net::HTTPSClientSession> m_dataSession;
   std::unique_ptr<net::HTTPSClientSession> m_tradingSession;
 
   SecuritiesMutex m_securitiesMutex;
